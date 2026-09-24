@@ -1,10 +1,12 @@
 #!/usr/bin/env bun
 import { configActivate, configCheck } from "./commands/config";
 import { dbMigrate } from "./commands/db";
+import { lookupCommand } from "./commands/lookup";
 import { EXIT, takeFlag, UsageError, warn, type Command } from "./util";
 
 /** Command table: "group sub" or single-word commands. */
 export const COMMANDS: Record<string, Command> = {
+  lookup: lookupCommand,
   "db migrate": dbMigrate,
   "config check": configCheck,
   "config activate": configActivate,

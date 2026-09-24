@@ -1,0 +1,318 @@
+{
+  "$comment": "US1 acceptance scenarios. Expected values are computed by hand from the formulas in research R4/R5 and config/scoring/2026-09-24.1.json, not by running the scorer. Default evaluation time: defaults.at; clock (now): defaults.now.",
+  "defaults": {
+    "at": "2026-09-10T12:00:00.000Z",
+    "now": "2026-09-24T12:00:00.000Z",
+    "versions": [{ "at": "2026-08-01T00:00:00.000Z" }]
+  },
+  "cases": [
+    {
+      "scenario": "US1-1", "name": "Tor exit only gives one tor_exit reason worth the whole risk", "family": 4,
+      "seed": {
+        "network": [{ "prefix": "185.220.100.0/22", "asn": 205100, "org": "F3 Netze e.V.", "country": "DE", "from": "2026-08-01T00:00:00Z" }],
+        "categories": [{ "prefix": "185.220.101.5/32", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-15T00:00:00Z", "lastSeen": "2026-09-10T10:00:00Z" }]
+      },
+      "ip": "185.220.101.5",
+      "expected": {
+        "ip": "185.220.101.5", "risk": 34.3, "level": "medium", "categories": ["tor"],
+        "reasons": [{ "code": "tor_exit", "kind": "category", "source": "tor-exit", "prefix": "185.220.101.5/32", "firstSeen": "2026-08-15T00:00:00.000Z", "lastSeen": "2026-09-10T10:00:00.000Z", "contribution": 34.3, "shippable": true }],
+        "network": { "asn": 205100, "org": "F3 Netze e.V.", "prefix": "185.220.100.0/22", "country": "DE" },
+        "behaviorHistoryIncomplete": false
+      }
+    },
+    {
+      "scenario": "US1-1", "name": "Tor exit only gives one tor_exit reason worth the whole risk", "family": 6,
+      "seed": {
+        "network": [{ "prefix": "2a0b:f4c2::/32", "asn": 208294, "org": "Relays e.V.", "country": "NL", "from": "2026-08-01T00:00:00Z" }],
+        "categories": [{ "prefix": "2a0b:f4c2:2::5/128", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-15T00:00:00Z", "lastSeen": "2026-09-10T10:00:00Z" }]
+      },
+      "ip": "2a0b:f4c2:2::5",
+      "expected": {
+        "ip": "2a0b:f4c2:2::5", "risk": 34.3, "level": "medium", "categories": ["tor"],
+        "reasons": [{ "code": "tor_exit", "kind": "category", "source": "tor-exit", "prefix": "2a0b:f4c2:2::5/128", "firstSeen": "2026-08-15T00:00:00.000Z", "lastSeen": "2026-09-10T10:00:00.000Z", "contribution": 34.3, "shippable": true }],
+        "network": { "asn": 208294, "org": "Relays e.V.", "prefix": "2a0b:f4c2::/32", "country": "NL" },
+        "behaviorHistoryIncomplete": false
+      }
+    },
+    {
+      "scenario": "US1-2", "name": "hosting plus brute force 1 h ago combine by noisy-OR; overlapping prefixes and duplicate sightings", "family": 4,
+      "seed": {
+        "network": [
+          { "prefix": "45.155.204.0/22", "asn": 210644, "org": "Wide Hosting Ltd", "country": "GB", "from": "2026-08-01T00:00:00Z" },
+          { "prefix": "45.155.205.0/24", "asn": 49505, "org": "Narrow DC LLC", "country": "RU", "from": "2026-08-01T00:00:00Z" }
+        ],
+        "categories": [{ "prefix": "45.155.205.0/24", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }],
+        "sightings": [
+          { "prefix": "45.155.205.10/32", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-09T00:00:00Z", "lastSeen": "2026-09-10T11:00:00Z", "open": true },
+          { "prefix": "45.155.205.0/24", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-01T00:00:00Z", "lastSeen": "2026-09-08T00:00:00Z" }
+        ]
+      },
+      "ip": "45.155.205.10",
+      "expected": {
+        "ip": "45.155.205.10", "risk": 48.6, "level": "medium", "categories": ["hosting"],
+        "reasons": [
+          { "code": "ssh_bruteforce", "kind": "behavior", "source": "blocklist-de", "prefix": "45.155.205.10/32", "firstSeen": "2026-09-01T00:00:00.000Z", "lastSeen": "2026-09-10T11:00:00.000Z", "contribution": 39.3 },
+          { "code": "hosting", "kind": "category", "source": "x4bnet-datacenter", "prefix": "45.155.205.0/24", "lastSeen": "2026-09-10T04:00:00.000Z", "contribution": 9.3 }
+        ],
+        "network": { "asn": 49505, "org": "Narrow DC LLC", "prefix": "45.155.205.0/24", "country": "RU" },
+        "behaviorHistoryIncomplete": false
+      }
+    },
+    {
+      "scenario": "US1-2", "name": "hosting plus brute force 1 h ago combine by noisy-OR; overlapping prefixes and duplicate sightings", "family": 6,
+      "seed": {
+        "network": [
+          { "prefix": "2a0e:1c80::/29", "asn": 210644, "org": "Wide Hosting Ltd", "country": "GB", "from": "2026-08-01T00:00:00Z" },
+          { "prefix": "2a0e:1c80:1::/48", "asn": 49505, "org": "Narrow DC LLC", "country": "RU", "from": "2026-08-01T00:00:00Z" }
+        ],
+        "categories": [{ "prefix": "2a0e:1c80:1::/48", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }],
+        "sightings": [
+          { "prefix": "2a0e:1c80:1:1::10/128", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-09T00:00:00Z", "lastSeen": "2026-09-10T11:00:00Z", "open": true },
+          { "prefix": "2a0e:1c80:1:1::/64", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-01T00:00:00Z", "lastSeen": "2026-09-08T00:00:00Z" }
+        ]
+      },
+      "ip": "2a0e:1c80:1:1::10",
+      "expected": {
+        "ip": "2a0e:1c80:1:1::10", "risk": 48.6, "level": "medium", "categories": ["hosting"],
+        "reasons": [
+          { "code": "ssh_bruteforce", "kind": "behavior", "source": "blocklist-de", "prefix": "2a0e:1c80:1:1::10/128", "firstSeen": "2026-09-01T00:00:00.000Z", "lastSeen": "2026-09-10T11:00:00.000Z", "contribution": 39.3 },
+          { "code": "hosting", "kind": "category", "source": "x4bnet-datacenter", "prefix": "2a0e:1c80:1::/48", "lastSeen": "2026-09-10T04:00:00.000Z", "contribution": 9.3 }
+        ],
+        "network": { "asn": 49505, "org": "Narrow DC LLC", "prefix": "2a0e:1c80:1::/48", "country": "RU" },
+        "behaviorHistoryIncomplete": false
+      }
+    },
+    {
+      "scenario": "US1-2", "name": "excluding the brute-force source leaves only hosting", "family": 4,
+      "seed": {
+        "categories": [{ "prefix": "45.155.205.0/24", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }],
+        "sightings": [{ "prefix": "45.155.205.10/32", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-09T00:00:00Z", "lastSeen": "2026-09-10T11:00:00Z", "open": true }]
+      },
+      "ip": "45.155.205.10", "options": { "excludeSources": ["blocklist-de"] },
+      "expected": {
+        "risk": 12, "level": "low", "categories": ["hosting"],
+        "reasons": [{ "code": "hosting", "source": "x4bnet-datacenter", "contribution": 12 }]
+      }
+    },
+    {
+      "scenario": "US1-2", "name": "excluding the brute-force source leaves only hosting", "family": 6,
+      "seed": {
+        "categories": [{ "prefix": "2a0e:1c80:1::/48", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }],
+        "sightings": [{ "prefix": "2a0e:1c80:1:1::10/128", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-09T00:00:00Z", "lastSeen": "2026-09-10T11:00:00Z", "open": true }]
+      },
+      "ip": "2a0e:1c80:1:1::10", "options": { "excludeSources": ["blocklist-de"] },
+      "expected": {
+        "risk": 12, "level": "low", "categories": ["hosting"],
+        "reasons": [{ "code": "hosting", "source": "x4bnet-datacenter", "contribution": 12 }]
+      }
+    },
+    {
+      "scenario": "US1-3", "name": "a behavior signal three half-lives old weighs 1/8 (38.5 → 4.8125)", "family": 4,
+      "seed": {
+        "network": [{ "prefix": "80.82.77.0/24", "asn": 202425, "org": "IP Volume inc", "country": "SC", "from": "2026-08-01T00:00:00Z" }],
+        "sightings": [{ "prefix": "80.82.77.33/32", "code": "login_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-30T00:00:00Z", "lastSeen": "2026-09-01T12:00:00Z" }]
+      },
+      "ip": "80.82.77.33",
+      "expected": {
+        "risk": 4.8, "level": "low", "categories": [],
+        "reasons": [{ "code": "login_bruteforce", "kind": "behavior", "source": "blocklist-de", "lastSeen": "2026-09-01T12:00:00.000Z", "contribution": 4.8 }]
+      }
+    },
+    {
+      "scenario": "US1-3", "name": "a behavior signal three half-lives old weighs 1/8 (38.5 → 4.8125)", "family": 6,
+      "seed": {
+        "network": [{ "prefix": "2a03:b0c0::/32", "asn": 14061, "org": "DigitalOcean, LLC", "country": "US", "from": "2026-08-01T00:00:00Z" }],
+        "sightings": [{ "prefix": "2a03:b0c0:3:d0::1a/128", "code": "login_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-30T00:00:00Z", "lastSeen": "2026-09-01T12:00:00Z" }]
+      },
+      "ip": "2a03:b0c0:3:d0::1a",
+      "expected": {
+        "risk": 4.8, "level": "low", "categories": [],
+        "reasons": [{ "code": "login_bruteforce", "kind": "behavior", "source": "blocklist-de", "lastSeen": "2026-09-01T12:00:00.000Z", "contribution": 4.8 }]
+      }
+    },
+    {
+      "scenario": "US1-3", "name": "the same signal seen now is the undecayed reference (38.5)", "family": 4,
+      "seed": { "sightings": [{ "prefix": "80.82.77.33/32", "code": "login_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-30T00:00:00Z", "lastSeen": "2026-09-10T12:00:00Z" }] },
+      "ip": "80.82.77.33",
+      "expected": { "risk": 38.5, "level": "medium", "reasons": [{ "code": "login_bruteforce", "contribution": 38.5 }] }
+    },
+    {
+      "scenario": "US1-3", "name": "the same signal seen now is the undecayed reference (38.5)", "family": 6,
+      "seed": { "sightings": [{ "prefix": "2a03:b0c0:3:d0::1a/128", "code": "login_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-30T00:00:00Z", "lastSeen": "2026-09-10T12:00:00Z" }] },
+      "ip": "2a03:b0c0:3:d0::1a",
+      "expected": { "risk": 38.5, "level": "medium", "reasons": [{ "code": "login_bruteforce", "contribution": 38.5 }] }
+    },
+    {
+      "scenario": "US1-3", "name": "a feed-provided lastSeen in the future counts as seen at the evaluation time", "family": 4,
+      "seed": { "sightings": [{ "prefix": "80.82.77.34/32", "code": "login_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-10T17:00:00Z", "lastSeen": "2026-09-10T17:00:00Z", "recordedAt": "2026-09-10T11:00:00Z", "feedTime": true }] },
+      "ip": "80.82.77.34",
+      "expected": { "risk": 38.5, "reasons": [{ "code": "login_bruteforce", "firstSeen": "2026-09-10T12:00:00.000Z", "lastSeen": "2026-09-10T12:00:00.000Z", "contribution": 38.5 }] }
+    },
+    {
+      "scenario": "US1-3", "name": "a feed-provided lastSeen in the future counts as seen at the evaluation time", "family": 6,
+      "seed": { "sightings": [{ "prefix": "2a03:b0c0:3:d0::1b/128", "code": "login_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-10T17:00:00Z", "lastSeen": "2026-09-10T17:00:00Z", "recordedAt": "2026-09-10T11:00:00Z", "feedTime": true }] },
+      "ip": "2a03:b0c0:3:d0::1b",
+      "expected": { "risk": 38.5, "reasons": [{ "code": "login_bruteforce", "firstSeen": "2026-09-10T12:00:00.000Z", "lastSeen": "2026-09-10T12:00:00.000Z", "contribution": 38.5 }] }
+    },
+    {
+      "scenario": "US1-4", "name": "a routed address with no signals has risk 0 and network info", "family": 4,
+      "seed": { "network": [{ "prefix": "8.8.8.0/24", "asn": 15169, "org": "GOOGLE", "country": "US", "from": "2026-08-01T00:00:00Z" }] },
+      "ip": "8.8.8.8",
+      "expected": { "ip": "8.8.8.8", "risk": 0, "level": "low", "categories": [], "reasons": [], "network": { "asn": 15169, "org": "GOOGLE", "prefix": "8.8.8.0/24", "country": "US" } }
+    },
+    {
+      "scenario": "US1-4", "name": "a routed address with no signals has risk 0 and network info", "family": 6,
+      "seed": { "network": [{ "prefix": "2001:4860::/32", "asn": 15169, "org": "GOOGLE", "country": "US", "from": "2026-08-01T00:00:00Z" }] },
+      "ip": "2001:4860:4860::8888",
+      "expected": { "ip": "2001:4860:4860::8888", "risk": 0, "level": "low", "categories": [], "reasons": [], "network": { "asn": 15169, "org": "GOOGLE", "prefix": "2001:4860::/32", "country": "US" } }
+    },
+    {
+      "scenario": "US1-4", "name": "an address in no routed prefix has unknown network fields", "family": 4,
+      "seed": {},
+      "ip": "1.1.1.1",
+      "expected": { "risk": 0, "level": "low", "reasons": [], "network": { "asn": null, "org": null, "prefix": null, "country": null } }
+    },
+    {
+      "scenario": "US1-4", "name": "an address in no routed prefix has unknown network fields", "family": 6,
+      "seed": {},
+      "ip": "2606:4700:4700::1111",
+      "expected": { "risk": 0, "level": "low", "reasons": [], "network": { "asn": null, "org": null, "prefix": null, "country": null } }
+    },
+    {
+      "scenario": "US1-5", "name": "an address in a listed prefix gets the same verdict in both families", "family": 4,
+      "seed": {
+        "network": [{ "prefix": "88.99.0.0/16", "asn": 24940, "org": "Hetzner Online GmbH", "country": "DE", "from": "2026-08-01T00:00:00Z" }],
+        "categories": [{ "prefix": "88.99.0.0/16", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }]
+      },
+      "ip": "88.99.1.2",
+      "expected": { "ip": "88.99.1.2", "risk": 12, "level": "low", "categories": ["hosting"], "reasons": [{ "code": "hosting", "prefix": "88.99.0.0/16", "contribution": 12 }], "network": { "asn": 24940, "prefix": "88.99.0.0/16" } }
+    },
+    {
+      "scenario": "US1-5", "name": "an address in a listed prefix gets the same verdict in both families", "family": 6,
+      "seed": {
+        "network": [{ "prefix": "2a01:4f8::/32", "asn": 24940, "org": "Hetzner Online GmbH", "country": "DE", "from": "2026-08-01T00:00:00Z" }],
+        "categories": [{ "prefix": "2a01:4f8::/32", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }]
+      },
+      "ip": "2a01:4f8:1:2::3",
+      "expected": { "ip": "2a01:4f8:1:2::3", "risk": 12, "level": "low", "categories": ["hosting"], "reasons": [{ "code": "hosting", "prefix": "2a01:4f8::/32", "contribution": 12 }], "network": { "asn": 24940, "prefix": "2a01:4f8::/32" } }
+    },
+    {
+      "scenario": "US1-5", "name": "IPv4-mapped IPv6 input is looked up as the IPv4 address", "family": 6,
+      "seed": { "categories": [{ "prefix": "88.99.0.0/16", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }] },
+      "ip": "::FFFF:5863:102",
+      "expected": { "ip": "88.99.1.2", "risk": 12, "categories": ["hosting"] }
+    },
+    {
+      "scenario": "US1-5", "name": "IPv4-mapped IPv6 input is looked up as the IPv4 address", "family": 4,
+      "seed": { "categories": [{ "prefix": "88.99.0.0/16", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }] },
+      "ip": "::ffff:88.99.1.2",
+      "expected": { "ip": "88.99.1.2", "risk": 12, "categories": ["hosting"] }
+    },
+    {
+      "scenario": "US1-5", "name": "a special-purpose address is a bogon without any feed data", "family": 4,
+      "seed": {},
+      "ip": "10.1.2.3",
+      "expected": { "ip": "10.1.2.3", "risk": 30, "level": "medium", "categories": ["bogon"], "reasons": [{ "code": "bogon", "source": "iana-special-purpose", "prefix": "10.0.0.0/8", "contribution": 30 }], "network": { "asn": null, "prefix": null } }
+    },
+    {
+      "scenario": "US1-5", "name": "a special-purpose address is a bogon without any feed data (zone id dropped)", "family": 6,
+      "seed": {},
+      "ip": "fe80::1%eth0",
+      "expected": { "ip": "fe80::1", "risk": 30, "level": "medium", "categories": ["bogon"], "reasons": [{ "code": "bogon", "source": "iana-special-purpose", "prefix": "fe80::/10", "contribution": 30 }] }
+    },
+    {
+      "scenario": "US1-5", "name": "the same code from two sources gives two reasons", "family": 4,
+      "configPatch": { "sourceConfidence": { "cymru-fullbogons": 0.9 } },
+      "seed": { "categories": [{ "prefix": "10.0.0.0/8", "code": "bogon", "source": "cymru-fullbogons", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T08:00:00Z", "shippable": false }] },
+      "ip": "10.1.2.3",
+      "expected": {
+        "risk": 48.9, "level": "medium", "categories": ["bogon"],
+        "reasons": [
+          { "code": "bogon", "source": "iana-special-purpose", "prefix": "10.0.0.0/8", "contribution": 26, "shippable": true },
+          { "code": "bogon", "source": "cymru-fullbogons", "prefix": "10.0.0.0/8", "contribution": 22.9, "shippable": false }
+        ]
+      }
+    },
+    {
+      "scenario": "US1-5", "name": "the same code from two sources gives two reasons", "family": 6,
+      "configPatch": { "sourceConfidence": { "cymru-fullbogons": 0.9 } },
+      "seed": { "categories": [{ "prefix": "fc00::/7", "code": "bogon", "source": "cymru-fullbogons", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T08:00:00Z", "shippable": false }] },
+      "ip": "fd00::1",
+      "expected": {
+        "risk": 48.9, "level": "medium", "categories": ["bogon"],
+        "reasons": [
+          { "code": "bogon", "source": "iana-special-purpose", "prefix": "fc00::/7", "contribution": 26, "shippable": true },
+          { "code": "bogon", "source": "cymru-fullbogons", "prefix": "fc00::/7", "contribution": 22.9, "shippable": false }
+        ]
+      }
+    },
+    {
+      "scenario": "US1-6", "name": "a past time inside a closed category interval reproduces the old verdict", "family": 4,
+      "seed": {
+        "runs": [{ "feed": "tor-exit", "at": "2026-09-02T12:00:00Z" }],
+        "categories": [{ "prefix": "185.220.101.7/32", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-01T00:00:00Z", "to": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-04T12:00:00Z" }]
+      },
+      "ip": "185.220.101.7", "at": "2026-09-03T00:00:00.000Z",
+      "expected": { "risk": 34.3, "categories": ["tor"], "reasons": [{ "code": "tor_exit", "firstSeen": "2026-08-01T00:00:00.000Z", "lastSeen": "2026-09-02T12:00:00.000Z", "contribution": 34.3 }], "evaluatedAt": "2026-09-03T00:00:00.000Z" }
+    },
+    {
+      "scenario": "US1-6", "name": "a past time inside a closed category interval reproduces the old verdict", "family": 6,
+      "seed": {
+        "runs": [{ "feed": "tor-exit", "at": "2026-09-02T12:00:00Z" }],
+        "categories": [{ "prefix": "2a0b:f4c2:2::7/128", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-01T00:00:00Z", "to": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-04T12:00:00Z" }]
+      },
+      "ip": "2a0b:f4c2:2::7", "at": "2026-09-03T00:00:00.000Z",
+      "expected": { "risk": 34.3, "categories": ["tor"], "reasons": [{ "code": "tor_exit", "firstSeen": "2026-08-01T00:00:00.000Z", "lastSeen": "2026-09-02T12:00:00.000Z", "contribution": 34.3 }], "evaluatedAt": "2026-09-03T00:00:00.000Z" }
+    },
+    {
+      "scenario": "US1-6", "name": "after the interval closed the category is gone", "family": 4,
+      "seed": { "categories": [{ "prefix": "185.220.101.7/32", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-01T00:00:00Z", "to": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-04T12:00:00Z" }] },
+      "ip": "185.220.101.7", "at": "2026-09-06T00:00:00.000Z",
+      "expected": { "risk": 0, "categories": [], "reasons": [] }
+    },
+    {
+      "scenario": "US1-6", "name": "after the interval closed the category is gone", "family": 6,
+      "seed": { "categories": [{ "prefix": "2a0b:f4c2:2::7/128", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-01T00:00:00Z", "to": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-04T12:00:00Z" }] },
+      "ip": "2a0b:f4c2:2::7", "at": "2026-09-06T00:00:00.000Z",
+      "expected": { "risk": 0, "categories": [], "reasons": [] }
+    },
+    {
+      "scenario": "US1-6", "name": "a past time between two behavior episodes sees only the first one", "family": 4,
+      "seed": {
+        "sightings": [
+          { "prefix": "80.82.77.40/32", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-20T00:00:00Z", "lastSeen": "2026-08-25T00:00:00Z" },
+          { "prefix": "80.82.77.40/32", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-09T00:00:00Z", "open": true }
+        ]
+      },
+      "ip": "80.82.77.40", "at": "2026-09-01T00:00:00.000Z",
+      "expected": { "risk": 8.3, "level": "low", "reasons": [{ "code": "ssh_bruteforce", "firstSeen": "2026-08-20T00:00:00.000Z", "lastSeen": "2026-08-25T00:00:00.000Z", "contribution": 8.3 }] }
+    },
+    {
+      "scenario": "US1-6", "name": "a past time between two behavior episodes sees only the first one", "family": 6,
+      "seed": {
+        "sightings": [
+          { "prefix": "2a03:b0c0:3:d0::40/128", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-20T00:00:00Z", "lastSeen": "2026-08-25T00:00:00Z" },
+          { "prefix": "2a03:b0c0:3:d0::40/128", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-09T00:00:00Z", "open": true }
+        ]
+      },
+      "ip": "2a03:b0c0:3:d0::40", "at": "2026-09-01T00:00:00.000Z",
+      "expected": { "risk": 8.3, "level": "low", "reasons": [{ "code": "ssh_bruteforce", "firstSeen": "2026-08-20T00:00:00.000Z", "lastSeen": "2026-08-25T00:00:00.000Z", "contribution": 8.3 }] }
+    },
+    {
+      "scenario": "US1-6", "name": "a time near the retention horizon flags the behavior part as incomplete", "family": 4,
+      "seed": { "versions": [{ "at": "2026-01-01T00:00:00.000Z" }] },
+      "ip": "8.8.4.4", "at": "2026-01-27T12:00:00.000Z",
+      "expected": { "risk": 0, "behaviorHistoryIncomplete": true }
+    },
+    {
+      "scenario": "US1-6", "name": "a time near the retention horizon flags the behavior part as incomplete", "family": 6,
+      "seed": { "versions": [{ "at": "2026-01-01T00:00:00.000Z" }] },
+      "ip": "2001:4860:4860::8844", "at": "2026-01-27T12:00:00.000Z",
+      "expected": { "risk": 0, "behaviorHistoryIncomplete": true }
+    }
+  ],
+  "invalid": {
+    "scenario": "US1-7",
+    "inputs": ["010.0.0.1", "1.2.3", "", "0x7f.1", "192.0.2.1/24", "256.1.1.1", "2001:db8::1::1", "2001:db8:0:0:0:0:0:0:1", "12345::1", "fe80::1%"]
+  }
+}
