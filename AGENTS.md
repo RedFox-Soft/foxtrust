@@ -21,7 +21,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 
 ## Workflow
 - Feature specs: spec-kit skills (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`). Output goes to `specs/NNN-name/`.
-- Principles: `.specify/memory/constitution.md` (still a template; fill via `/speckit-constitution`).
+- Principles: `.specify/memory/constitution.md` (v1.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
 
 ## Commits
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<scope>): <subject>`.
