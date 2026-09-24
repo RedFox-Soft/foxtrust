@@ -1,0 +1,52 @@
+import { rm } from "node:fs/promises";
+import type { Db } from "../db/client";
+import { createDataVersion, resolveVersionAt } from "../db/versions";
+
+export const ARTIFACT_RETENTION_DAYS = 30;
+const DAY_MS = 86_400_000;
+
+export type RetentionReport = {
+  rawDeleted: number;
+  episodesTrimmed: number;
+  aggregatesDeleted: number;
+  artifactsDeleted: number;
+  dataVersion: string;
+};
+
+/**
+ * FR-029 and data-model.md retention: raw behavior rows older than `rawDays`, daily aggregates
+ * older than `rawDays + aggregateDays`, fetched artifacts older than 30 days (held runs excepted).
+ * Deleted aggregates cannot change a current verdict by more than rounding (FR-029a).
+ */
+export async function runRetention(sql: Db, now: Date = new Date()): Promise<RetentionReport> {
+  const version = await resolveVersionAt(sql, now);
+  if (!version) throw new Error("no scoring configuration is active; run `foxtrust config activate <file>`");
+  const { rawDays, aggregateDays } = version.config.retention;
+  const rawCutoff = new Date(now.getTime() - rawDays * DAY_MS);
+  const aggregateCutoffDay = new Date(now.getTime() - (rawDays + aggregateDays) * DAY_MS).toISOString().slice(0, 10);
+  const artifactCutoff = new Date(now.getTime() - ARTIFACT_RETENTION_DAYS * DAY_MS);
+
+  const report = (await sql.begin(async (tx) => {
+    const raw = await tx`DELETE FROM behavior_sighting WHERE last_seen < ${rawCutoff}`;
+    const trimmed = await tx`UPDATE behavior_sighting SET first_seen = ${rawCutoff} WHERE first_seen < ${rawCutoff}`;
+    const aggregates = await tx`DELETE FROM behavior_daily WHERE day < ${aggregateCutoffDay}::date`;
+    const dv = await createDataVersion(tx, { cause: "retention" });
+    return {
+      rawDeleted: Number(raw.count ?? 0),
+      episodesTrimmed: Number(trimmed.count ?? 0),
+      aggregatesDeleted: Number(aggregates.count ?? 0),
+      artifactsDeleted: 0,
+      dataVersion: dv.label,
+    };
+  })) as RetentionReport;
+
+  const expired = await sql`
+    SELECT id, artifact_path FROM feed_run
+    WHERE artifact_path IS NOT NULL AND started_at < ${artifactCutoff} AND status <> 'held'`;
+  for (const row of expired) {
+    await rm(row.artifact_path, { recursive: true, force: true });
+    await sql`UPDATE feed_run SET artifact_path = NULL WHERE id = ${row.id}`;
+    report.artifactsDeleted++;
+  }
+  return report;
+}

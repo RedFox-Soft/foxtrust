@@ -1,12 +1,25 @@
 #!/usr/bin/env bun
-import { configActivate, configCheck } from "./commands/config";
+import { FEEDS } from "../feeds/registry";
+import { checkSources } from "../ingest/schedule";
+import { configActivate, configCheck, extraConfigChecks } from "./commands/config";
 import { dbMigrate } from "./commands/db";
+import { feedsConfirm, feedsStatus } from "./commands/feeds";
+import { ingestCommand } from "./commands/ingest";
 import { lookupCommand } from "./commands/lookup";
+import { retentionRun } from "./commands/retention";
+import { scheduleCommand } from "./commands/schedule";
 import { EXIT, takeFlag, UsageError, warn, type Command } from "./util";
+
+extraConfigChecks.push((config) => checkSources(FEEDS, config));
 
 /** Command table: "group sub" or single-word commands. */
 export const COMMANDS: Record<string, Command> = {
   lookup: lookupCommand,
+  ingest: ingestCommand,
+  schedule: scheduleCommand,
+  "feeds status": feedsStatus,
+  "feeds confirm": feedsConfirm,
+  "retention run": retentionRun,
   "db migrate": dbMigrate,
   "config check": configCheck,
   "config activate": configActivate,
