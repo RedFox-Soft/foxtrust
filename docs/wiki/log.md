@@ -16,3 +16,5 @@ Operations:
 ## [2026-09-24] schema | language set to English for all wiki pages
 
 ## [2026-09-24] ingest | Feed licence review 2026-09-24 → 1 source page, 8 feed entity pages (stage 1 core feeds)
+
+## [2026-09-24] ingest | Stage 1 design decisions → 4 ADRs (synthesis) and 9 signal-code concept pages from specs/001-core-ip-lookup research

@@ -9,7 +9,12 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Runtime and package manager: **Bun** (`bun install`, `bun test`, `bun run`). Do not use npm/yarn/pnpm or Node-only APIs when a Bun API exists.
 - HTTP: **Elysia**. Language: **TypeScript** (strict).
 - Database: **PostgreSQL**. Store IPs and ranges as `inet`/`cidr` and index them with GiST; do not store IPs as text or integers.
-- No `package.json` exists yet. Add commands here once they exist.
+- Commands:
+  - `bun install`; `docker compose up -d db` (PostgreSQL 18); copy `.env.example` to `.env`.
+  - `bun test` runs the acceptance and security tests and needs `DATABASE_URL_TEST`.
+  - `bun run typecheck`; `bun run bench` (success-criteria measurements, on demand).
+  - `bun run foxtrust <command>`: `db migrate`, `config check|activate`, `ingest`, `schedule`, `feeds status|confirm`, `lookup`, `retention run`, `eval`.
+- No runtime dependencies: use Bun built-ins (`Bun.sql`, `Bun.cron`, `Bun.YAML`). Justify any new dependency in the feature plan.
 
 ## Domain Rules
 - Keep network **categories** (hosting, vpn, tor, bogon…) separate from **behavior** signals (bruteforce, spam, scan…). Never collapse them into one flag.

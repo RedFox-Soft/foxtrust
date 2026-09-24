@@ -25,8 +25,19 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 
 ## Concepts
 
-(populated as concept pages are created)
+- [[code-hosting]] — category code `hosting`, weight 0.15
+- [[code-cloud]] — category code `cloud`, weight 0.1 (reserved, no stage 1 feed)
+- [[code-vpn]] — category code `vpn`, weight 0.25 (reserved, no stage 1 feed)
+- [[code-tor-exit]] — category code `tor_exit`, weight 0.35
+- [[code-bogon]] — category code `bogon`, weight 0.3
+- [[code-botnet-c2]] — behavior code `botnet_c2`, weight 0.9, half-life 336 h
+- [[code-hijacked-netblock]] — behavior code `hijacked_netblock`, weight 0.85, half-life 720 h
+- [[code-ssh-bruteforce]] — behavior code `ssh_bruteforce`, weight 0.6, half-life 72 h
+- [[code-login-bruteforce]] — behavior code `login_bruteforce`, weight 0.55, half-life 72 h
 
 ## Synthesis
 
-(populated as query answers are filed back)
+- [[adr-history-and-retention]] — ADR: intervals, listing episodes, daily aggregates; retention 90 d + 365 d, artifacts 30 d
+- [[adr-log-share-contributions]] — ADR: log-share split of noisy-OR risk into reasons that add up exactly
+- [[adr-category-only-cap]] — ADR: cap the category part at 69 so categories alone never reach high
+- [[adr-stage1-feed-selection]] — ADR: the 7 stage 1 feeds, rejected feeds, stage 2 behavior-licence risk
