@@ -10,11 +10,18 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 
 ## Sources
 
-(populated as sources are ingested)
+- [[2026-09-24-feed-licence-review]] — licence check of ~25 IP feeds; network/hosting/Tor shippable, behavior data mostly local-only
 
 ## Entities
 
-(populated as entity pages are created)
+- [[iptoasn]] — feed: prefix → ASN, org, registration country; PDDL, shippable
+- [[x4bnet-datacenter]] — feed: hosting/datacenter CIDRs; MIT (keep notice), shippable
+- [[tor-exit]] — feed: Tor CollecTor exit lists with timestamps; CC0, shippable
+- [[cymru-fullbogons]] — feed: unallocated/reserved space; no licence, local-only
+- [[spamhaus-drop]] — feed: hijacked netblocks; attribution, revocable, redistribution unknown → local-only
+- [[feodo-tracker]] — feed: botnet C2; CC0 vs 2025 terms contested → local-only
+- [[blocklist-de]] — feed: SSH/login brute force, 48 h lists; no licence, local-only
+- [[iana-special-purpose]] — built-in special-purpose/bogon ranges; CC0, shippable
 
 ## Concepts
 

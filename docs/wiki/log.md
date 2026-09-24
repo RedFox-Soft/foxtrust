@@ -14,3 +14,5 @@ Operations:
 ## [2026-09-24] schema | init project wiki at docs/wiki; IP Trust page kinds, tags, feed-licence rule, graph ontology (feed, provider, component, signal, category, decision)
 
 ## [2026-09-24] schema | language set to English for all wiki pages
+
+## [2026-09-24] ingest | Feed licence review 2026-09-24 → 1 source page, 8 feed entity pages (stage 1 core feeds)
