@@ -30,6 +30,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Subject: imperative, lowercase, no trailing period, ≤ 72 chars. Body lines ≤ 100 chars.
 - Breaking change: `!` before `:` plus a `BREAKING CHANGE: <impact>` footer.
 - One coherent change per commit.
+- No AI attribution: never add `Co-Authored-By` trailers or "Generated with …" lines to commits or PRs.
 
 ## External References
 | Need | File |
