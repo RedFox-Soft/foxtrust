@@ -1,18 +1,19 @@
 <!--
 Sync Impact Report
-- Version change: template (unversioned) → 1.0.0
-- Principles (all new):
-  I. Category and Behavior Are Separate Layers
-  II. Explainable Verdicts
-  III. Licence-Clean, Traceable Data
-  IV. Privacy by Default for First-Party Data
-  V. Test-First Core (NON-NEGOTIABLE)
-  VI. Measured Accuracy
-  VII. Open Formats and Simplicity
-- Added sections: Technology and Data Constraints; Development Workflow; Governance
+- Version change: 2.0.0 → 2.1.0 (MINOR: Principle V expanded)
+  (previous: 1.0.0 → 2.0.0, MAJOR: Principle V redefined)
+- Modified principles:
+  V. Tests for User Cases and Security Only: added test naming (`USn-m:` / `SEC:`) and the
+     rule that success-criteria measurements are not tests (allowed, run on demand)
+- Added sections: none
 - Removed sections: none
-- Templates: .specify/templates/*.md read the constitution at runtime; no edits required
-  (plan-template "Constitution Check" gates are derived from this file).
+- Templates: .specify/templates/*.md read the constitution at runtime; no edits required.
+- Dependent artifacts:
+  ⚠ specs/001-core-ip-lookup/tasks.md still lists unit tests for internal modules
+    (IP, scoring, config, parsers, guards, schedule); regenerate with /speckit-tasks.
+  ⚠ specs/001-core-ip-lookup/plan.md Constitution Check row V and research.md R11 describe
+    the old rule; update on the next /speckit-plan run.
+  ✅ AGENTS.md updated with the new testing rule.
 - Deferred TODOs: none
 -->
 
@@ -66,15 +67,26 @@ Rationale: shipping a snapshot in the SDK is redistribution; one bad feed taints
 
 Rationale: first-party signals are a competitive advantage only if integrators can trust them.
 
-### V. Test-First Core (NON-NEGOTIABLE)
+### V. Tests for User Cases and Security Only
 
-- Core modules MUST be developed test-first (red → green → refactor): scoring and decay,
-  policy evaluation, feed parsers and normalizers, IP/CIDR matching (IPv4 and IPv6), MMDB
-  writing and reading.
-- All other code MUST ship with tests in the same commit as the behavior change.
-- Feed parsers MUST be tested against recorded fixture files, not live network calls.
+- Tests MUST be written only for:
+  - **User cases**: the acceptance scenarios of the user stories in a feature spec
+    (`specs/NNN-name/spec.md`). Each scenario MUST have a test.
+  - **Security issues**: a found vulnerability, or behavior whose failure is a security issue.
+    Each one MUST have a test that fails without the fix.
+- Everything else MUST NOT get dedicated tests: internal modules, helpers, CLI plumbing,
+  parsers, normalizers, refactors and configuration. That code is covered only to the extent
+  that a user-case or security test exercises it.
+- Tests MUST NOT call live networks. They MUST use recorded fixture files.
+- Plans and task lists MUST NOT add test tasks outside these two categories.
+- Every user-case test name MUST start with its scenario id (e.g. `US1-3: …`), and every
+  security test name with `SEC: …`, so coverage is traceable without the spec files.
+- Measurements of success criteria are not tests: benchmarks, labelled-set evaluation and
+  sampling checks. They are allowed, they live in `tests/perf/` or the evaluation tooling, and
+  they run on demand, not in the default `bun test` run.
 
-Rationale: errors in the core silently mislabel real users at scale.
+Rationale: tests are spent where a failure hurts a user or opens a hole. Internal code stays
+free to change without rewriting a layer of tests.
 
 ### VI. Measured Accuracy
 
@@ -128,4 +140,4 @@ Rationale: open formats drive adoption without our SDK; fewer moving parts keep 
 - Compliance is checked in every `/speckit-plan` Constitution Check and `/speckit-analyze` run;
   unresolved violations block implementation.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-24
+**Version**: 2.1.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-24

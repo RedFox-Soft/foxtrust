@@ -21,7 +21,14 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 
 ## Workflow
 - Feature specs: spec-kit skills (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`). Output goes to `specs/NNN-name/`.
-- Principles: `.specify/memory/constitution.md` (v1.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
+- Principles: `.specify/memory/constitution.md` (v2.1.0). It overrides this file on conflict; amend via `/speckit-constitution`.
+
+## Tests
+- Write tests **only** for user cases (acceptance scenarios of the user stories in `specs/NNN-name/spec.md`) and for security issues.
+- Skip everything else: no dedicated tests for internal modules, helpers, CLI plumbing, parsers, refactors or config.
+- Tests never call live networks; use recorded fixtures.
+- Name tests by what they cover: `US1-3: …` for a scenario, `SEC: …` for a security issue.
+- Success-criteria measurements (benchmarks, labelled-set evaluation) are not tests: keep them in `tests/perf/` or the eval tooling, run on demand.
 
 ## Commits
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<scope>): <subject>`.
