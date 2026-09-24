@@ -3,6 +3,7 @@ import { FEEDS } from "../feeds/registry";
 import { checkSources } from "../ingest/schedule";
 import { configActivate, configCheck, extraConfigChecks } from "./commands/config";
 import { dbMigrate } from "./commands/db";
+import { evalCommand } from "./commands/eval";
 import { feedsConfirm, feedsStatus } from "./commands/feeds";
 import { ingestCommand } from "./commands/ingest";
 import { lookupCommand } from "./commands/lookup";
@@ -17,6 +18,7 @@ export const COMMANDS: Record<string, Command> = {
   lookup: lookupCommand,
   ingest: ingestCommand,
   schedule: scheduleCommand,
+  eval: evalCommand,
   "feeds status": feedsStatus,
   "feeds confirm": feedsConfirm,
   "retention run": retentionRun,
@@ -61,5 +63,9 @@ export async function main(argv: string[]): Promise<number> {
 }
 
 if (import.meta.main) {
+  // Output piped into e.g. `head` closes early; that is not an error.
+  process.stdout.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code === "EPIPE") process.exit(process.exitCode ?? 0);
+  });
   process.exitCode = await main(Bun.argv.slice(2));
 }
