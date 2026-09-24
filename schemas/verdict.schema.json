@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foxtrust.dev/schemas/verdict/v1.json",
+  "title": "Verdict",
+  "description": "Result of a local lookup for one IP address (FR-002, FR-003).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ip",
+    "risk",
+    "level",
+    "categories",
+    "reasons",
+    "network",
+    "dataVersion",
+    "evaluatedAt",
+    "behaviorHistoryIncomplete"
+  ],
+  "properties": {
+    "ip": {
+      "type": "string",
+      "description": "Canonical address: dotted quad for IPv4 (IPv4-mapped IPv6 is unwrapped), RFC 5952 for IPv6."
+    },
+    "risk": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "multipleOf": 0.1,
+      "description": "100 · (1 − Π(1 − w·c·decay)), with the category-only cap applied, rounded to 0.1."
+    },
+    "level": {
+      "enum": ["low", "medium", "high"],
+      "description": "Taken from the rounded risk and the thresholds of the scoring configuration."
+    },
+    "categories": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" },
+      "description": "Distinct category names of the category signals, sorted (e.g. [\"cloud\", \"tor\"])."
+    },
+    "reasons": {
+      "type": "array",
+      "description": "One entry per (code, source), sorted by contribution descending, then code, then source.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "kind", "source", "prefix", "lastSeen", "contribution", "shippable"],
+        "properties": {
+          "code": { "type": "string", "examples": ["tor_exit", "bruteforce"] },
+          "kind": { "enum": ["category", "behavior"] },
+          "source": { "type": "string", "examples": ["tor-exit", "iana-special-purpose"] },
+          "prefix": { "type": "string", "description": "The matched prefix in CIDR notation." },
+          "firstSeen": { "type": "string", "format": "date-time" },
+          "lastSeen": { "type": "string", "format": "date-time" },
+          "contribution": {
+            "type": "number",
+            "minimum": 0,
+            "multipleOf": 0.1,
+            "description": "Share of risk. The contributions of all reasons add up to risk exactly."
+          },
+          "shippable": {
+            "type": "boolean",
+            "description": "False when the source licence forbids redistribution or commercial use (FR-015)."
+          }
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asn", "org", "prefix", "country"],
+      "properties": {
+        "asn": { "type": ["integer", "null"], "minimum": 1 },
+        "org": { "type": ["string", "null"] },
+        "prefix": { "type": ["string", "null"] },
+        "country": { "type": ["string", "null"], "pattern": "^[A-Z]{2}$" }
+      },
+      "description": "From the most specific routed prefix. null means unknown (FR-022)."
+    },
+    "dataVersion": {
+      "type": "string",
+      "pattern": "^dv[0-9]+\\.[a-z0-9-]+/[0-9]+\\.[0-9a-f]{8}$",
+      "examples": ["dv42.noisy-or/1.3f9a2b1c"]
+    },
+    "evaluatedAt": { "type": "string", "format": "date-time" },
+    "behaviorHistoryIncomplete": {
+      "type": "boolean",
+      "description": "True when behavior data that could affect this evaluation time has been deleted by retention."
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foxtrust.dev/schemas/scoring-config/v1.json",
+  "title": "ScoringConfig",
+  "description": "Versioned scoring configuration (FR-010, FR-011, FR-012, FR-029, FR-029a). Stored whole in scoring_config.body. Checks that go beyond this schema are listed in data-model.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "algorithm", "levels", "categoryOnlyMaxRisk", "retention", "codes", "sourceConfidence"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[0-9]+$" },
+    "algorithm": { "const": "noisy-or/1" },
+    "levels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["medium", "high"],
+      "properties": {
+        "medium": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100, "default": 30 },
+        "high": { "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 70 }
+      }
+    },
+    "categoryOnlyMaxRisk": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Upper bound of the combined category part. Must be below levels.high (FR-009).",
+      "default": 69
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rawDays", "aggregateDays"],
+      "properties": {
+        "rawDays": { "type": "integer", "minimum": 1, "default": 90 },
+        "aggregateDays": { "type": "integer", "minimum": 1, "default": 365, "description": "Kept after the raw window." }
+      }
+    },
+    "codes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "category", "weight", "description"],
+            "properties": {
+              "kind": { "const": "category" },
+              "category": { "type": "string", "description": "Name shown in verdict.categories (tor_exit → tor)." },
+              "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+              "description": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "weight", "halfLifeHours", "description"],
+            "properties": {
+              "kind": { "const": "behavior" },
+              "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+              "halfLifeHours": { "type": "number", "exclusiveMinimum": 0 },
+              "description": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+    "sourceConfidence": {
+      "type": "object",
+      "description": "Default confidence per source (feed id), used when the feed gives none.",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    }
+  }
+}

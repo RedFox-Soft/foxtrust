@@ -1,0 +1,73 @@
+{
+  "version": "2026-09-24.1",
+  "algorithm": "noisy-or/1",
+  "levels": { "medium": 30, "high": 70 },
+  "categoryOnlyMaxRisk": 69,
+  "retention": { "rawDays": 90, "aggregateDays": 365 },
+  "codes": {
+    "hosting": {
+      "kind": "category",
+      "category": "hosting",
+      "weight": 0.15,
+      "description": "Address is in a hosting or datacenter range."
+    },
+    "cloud": {
+      "kind": "category",
+      "category": "cloud",
+      "weight": 0.1,
+      "description": "Address is in a published public cloud range (no feed in stage 1)."
+    },
+    "vpn": {
+      "kind": "category",
+      "category": "vpn",
+      "weight": 0.25,
+      "description": "Address belongs to a commercial VPN provider (no feed in stage 1)."
+    },
+    "tor_exit": {
+      "kind": "category",
+      "category": "tor",
+      "weight": 0.35,
+      "description": "Address is a Tor exit node."
+    },
+    "bogon": {
+      "kind": "category",
+      "category": "bogon",
+      "weight": 0.3,
+      "description": "Address is reserved, special-purpose or unallocated and should not appear as a public source."
+    },
+    "botnet_c2": {
+      "kind": "behavior",
+      "weight": 0.9,
+      "halfLifeHours": 336,
+      "description": "Address was seen operating as a botnet command-and-control server."
+    },
+    "hijacked_netblock": {
+      "kind": "behavior",
+      "weight": 0.85,
+      "halfLifeHours": 720,
+      "description": "Address is in a netblock listed as hijacked or controlled by criminals."
+    },
+    "ssh_bruteforce": {
+      "kind": "behavior",
+      "weight": 0.6,
+      "halfLifeHours": 72,
+      "description": "Address was seen brute-forcing SSH logins."
+    },
+    "login_bruteforce": {
+      "kind": "behavior",
+      "weight": 0.55,
+      "halfLifeHours": 72,
+      "description": "Address was seen brute-forcing web or application logins."
+    }
+  },
+  "sourceConfidence": {
+    "iana-special-purpose": 1.0,
+    "iptoasn": 1.0,
+    "tor-exit": 0.98,
+    "cymru-fullbogons": 0.95,
+    "spamhaus-drop": 0.95,
+    "feodo-tracker": 0.9,
+    "x4bnet-datacenter": 0.8,
+    "blocklist-de": 0.7
+  }
+}
