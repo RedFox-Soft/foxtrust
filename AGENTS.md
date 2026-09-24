@@ -29,7 +29,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Scopes (optional): `ingest`, `scoring`, `db`, `api`, `snapshot`, `sdk`, `wiki`, `specs`.
 - Subject: imperative, lowercase, no trailing period, ≤ 72 chars. Body lines ≤ 100 chars.
 - Breaking change: `!` before `:` plus a `BREAKING CHANGE: <impact>` footer.
-- One coherent change per commit. Work on a branch, not `main`.
+- One coherent change per commit.
 
 ## External References
 | Need | File |
