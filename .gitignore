@@ -1,2 +1,11 @@
 # Spec Kit feature specs are kept local, not in the repository.
 specs/
+
+node_modules/
+var/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+{
+  "name": "foxtrust",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "foxtrust": "src/cli/main.ts"
+  },
+  "scripts": {
+    "foxtrust": "bun run src/cli/main.ts",
+    "test": "bun test tests/acceptance tests/security",
+    "typecheck": "tsc --noEmit",
+    "bench": "bun run tests/perf/run.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "ajv": "^8.20.0",
+    "typescript": "^7.0.2"
+  }
+}
