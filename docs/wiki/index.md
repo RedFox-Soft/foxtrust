@@ -22,6 +22,7 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[feodo-tracker]] — feed: botnet C2; CC0 vs 2025 terms contested → local-only
 - [[blocklist-de]] — feed: SSH/login brute force, 48 h lists; no licence, local-only
 - [[iana-special-purpose]] — built-in special-purpose/bogon ranges; CC0, shippable
+- [[iana-address-space]] — feed: IANA IPv4/IPv6 allocation registries → unallocated/reserved bogons; CC0, shippable
 
 ## Concepts
 
@@ -42,3 +43,5 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-category-only-cap]] — ADR: cap the category part at 69 so categories alone never reach high
 - [[adr-stage1-feed-selection]] — ADR: the 7 stage 1 feeds, rejected feeds, stage 2 behavior-licence risk
 - [[adr-customer-facing-behavior-data]] — ADR: no licence requests; DROP/Feodo/blocklist.de stay internal; customer behavior signals from first-party data only
+- [[adr-publication-topology]] — ADR: own publication server, three containers from one image, signing key as a Docker secret, verifiers pin keys
+- [[adr-snapshot-format]] — ADR: flattened customer records in MMDB, cumulative deltas with tombstones, detached Ed25519 signatures, `/v1/` layout

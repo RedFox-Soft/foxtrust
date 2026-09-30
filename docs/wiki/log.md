@@ -22,3 +22,9 @@ Operations:
 ## [2026-09-30] ingest | Licence re-check (docs/raw/2026-09-30-licence-recheck.md): Spamhaus DROP terms moved, product-credit statement gone, §3.2 name ban; abuse.ch questions go via Spamhaus → spamhaus-drop, feodo-tracker updated
 
 ## [2026-09-30] query | Decision: no licence requests to Spamhaus/abuse.ch; behavior feeds stay internal; customer-facing behavior from first-party data → adr-customer-facing-behavior-data (new); spamhaus-drop, feodo-tracker, blocklist-de, adr-stage1-feed-selection updated
+
+## [2026-09-30] ingest | New feed page iana-address-space (IANA IPv4/IPv6 allocation registries, CC0) for public bogons in stage 2 snapshots
+
+## [2026-09-30] ingest | x4bnet-datacenter: licence text found in the repository README (no LICENSE file); copyright notice recorded for snapshot manifests
+
+## [2026-09-30] query | Stage 2 decisions filed: adr-publication-topology (new), adr-snapshot-format (new); SCHEMA.md gains the `notice:` field for feeds whose licence requires attribution
