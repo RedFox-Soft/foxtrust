@@ -15,8 +15,9 @@ services:
       timeout: 3s
       retries: 30
 
-  # Feed ingestion on a schedule plus nightly retention. Docker restarts it if it exits;
-  # `docker compose ps` shows "unhealthy" when its heartbeat is older than 3 minutes.
+  # Feed ingestion on a schedule, nightly retention, and snapshot builds (daily full, hourly delta).
+  # Docker restarts it if it exits; `docker compose ps` shows "unhealthy" when its heartbeat is
+  # older than 3 minutes. Snapshot jobs run only when the signing key secret is present.
   scheduler:
     build: .
     restart: unless-stopped
@@ -25,15 +26,65 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://foxtrust:foxtrust@db:5432/foxtrust
+      FOXTRUST_SIGNING_KEY: /run/secrets/signing_key
+      FOXTRUST_PUBLICATION_DIR: /app/var/publication
+      FOXTRUST_DISPUTE_URL: ${FOXTRUST_DISPUTE_URL:-}
+    secrets:
+      - signing_key
     volumes:
       - feed-artifacts:/app/var
+      - publication:/app/var/publication
     stop_grace_period: 60s
-    logging:
+    logging: &logging
       driver: json-file
       options:
         max-size: "10m"
         max-file: "5"
 
+  # Public, read-only file server for snapshots (contracts/publication.md). Put a TLS proxy in front.
+  publication:
+    build: .
+    restart: unless-stopped
+    command: ["bun", "run", "src/cli/main.ts", "publication", "serve", "--dir", "/app/var/publication", "--port", "8081"]
+    volumes:
+      - publication:/app/var/publication:ro
+    ports:
+      - "8081:8081"
+    # Healthy when it answers at all (a 404 before the first snapshot is fine).
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:8081/v1/manifest.json').then(() => process.exit(0), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+  # Customer-side forward-auth service (contracts/verify-http.md). No database.
+  verify:
+    build: .
+    restart: unless-stopped
+    command: ["bun", "run", "src/cli/main.ts", "verify", "serve"]
+    environment:
+      FOXTRUST_PUBLICATION_URL: http://publication:8081
+      FOXTRUST_TRUSTED_KEYS: ${FOXTRUST_TRUSTED_KEYS:-}
+      FOXTRUST_POLICY_FILE: /app/config/policies/example.yaml
+      FOXTRUST_TRUSTED_PROXIES: 172.16.0.0/12
+      FOXTRUST_CHALLENGE_URL: ${FOXTRUST_CHALLENGE_URL:-}
+      FOXTRUST_CHALLENGE_SECRET: ${FOXTRUST_CHALLENGE_SECRET:-}
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+secrets:
+  signing_key:
+    file: ${FOXTRUST_SIGNING_KEY_FILE:-./var/keys/signing.key.pem}
+
 volumes:
   pgdata:
   feed-artifacts:
+  publication:
