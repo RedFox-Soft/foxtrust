@@ -4,9 +4,9 @@ An IP reputation service. For every address it answers three questions:
 
 1. **What is this address?** Network, ASN, prefix, country, and category: hosting, VPN, Tor, mobile, residential, bogon.
 2. **What has it done recently?** Brute force, spam, scanning, credential stuffing, C2.
-3. **Why do we think so?** Every conclusion is backed by signals, each with its source and age.
+3. **Why do we think so?** Every conclusion is backed by signals, each with its code, age and contribution.
 
-> Status: **pre-alpha**. Stage 1 (core) is implemented: a local, explainable `lookup(ip)` over seven licence-checked feeds. There is no public API or snapshot yet.
+> Status: **pre-alpha**. Stage 1 (core) and stage 2 (distribution) are implemented: an explainable `lookup(ip)` over eight licence-checked feeds, signed MMDB snapshots of the customer verdict, and a `/verify` forward-auth service with policies. There is no public API yet.
 
 ## Quick start
 
@@ -15,8 +15,8 @@ bun install
 docker compose up -d db
 cp .env.example .env                      # DATABASE_URL, DATABASE_URL_TEST
 bun run foxtrust db migrate
-bun run foxtrust config activate config/scoring/2026-09-24.1.json
-bun run foxtrust ingest                   # downloads the 7 feeds (licence-gated)
+bun run foxtrust config activate config/scoring/2026-09-30.1.json
+bun run foxtrust ingest                   # downloads the 8 feeds (licence-gated)
 bun run foxtrust lookup 185.220.101.5     # add --json for the machine-readable verdict
 bun run foxtrust feeds status
 bun run foxtrust schedule                 # long-running: per-feed schedules + nightly retention
@@ -33,18 +33,76 @@ docker compose logs -f scheduler          # one line per feed run
 At start the container:
 
 1. applies migrations;
-2. activates `config/scoring/2026-09-24.1.json`, but only if no config is active yet;
+2. activates `config/scoring/2026-09-30.1.json`, but only if no config is active yet;
 3. runs the scheduler.
 
 Docker restarts the container if it exits (`restart: unless-stopped`). Fetched artifacts live in the `feed-artifacts` volume. The licence pages from `docs/wiki/entities/` are copied into the image, so rebuild after editing them. Running `ingest` by hand at the same time is safe: per-feed advisory locks prevent overlapping runs.
 
-Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json]`, `config check <file>`. `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
+Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json]`, `config check <file>`, `snapshot list|at|verify|retention run`, `policy check <file>`. `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
+
+## Snapshots and forward-auth
+
+The scheduler also publishes the **customer verdict** as signed MMDB snapshots: a full file every day at 04:50 UTC and a cumulative delta every hour. Standard MaxMind DB readers can open them. Only shippable data goes in (feeds whose licence allows redistribution), and reasons carry a code, a time and a contribution, but no source.
+
+1. **Create the signing key** (once) and publish its public half:
+
+   ```sh
+   bun run foxtrust keys generate --out var/keys          # signing.key.pem stays secret; never commit it
+   bun run foxtrust keys add var/keys/<keyId>.pub        # lists it in <publication>/v1/keys.json
+   ```
+
+   `docker-compose.yml` mounts `var/keys/signing.key.pem` (or `FOXTRUST_SIGNING_KEY_FILE`) into the scheduler as a Docker secret. Without the key the scheduler only ingests. Publishing also needs `FOXTRUST_DISPUTE_URL`, the public copy of [docs/dispute.md](docs/dispute.md).
+
+2. **Publish and serve.** `docker compose up -d --build scheduler publication`. The `publication` service serves `/v1/` read-only on port 8081 (put your TLS proxy in front). To build right away: `docker compose exec scheduler bun run src/cli/main.ts snapshot build --full`. A build that fails validation is not published; one whose accuracy report shows a regression is held until `snapshot publish <version> --release-note "<why>"`.
+
+3. **Run `/verify`** next to your reverse proxy: `docker compose up -d verify` (port 8080). It needs `FOXTRUST_PUBLICATION_URL`, `FOXTRUST_TRUSTED_KEYS` and a policy file (`config/policies/example.yaml`: Tor on `/login*` → challenge, `high` → block, default allow). It answers from memory and checks the publication every 5 minutes. `GET /status` shows the data version, its age and the last error.
+
+**Keys.** There is no public FoxTrust publication yet, so there is no FoxTrust public key to publish here. Pin the key of the publication you run: `FOXTRUST_TRUSTED_KEYS` takes the base64 value from `var/keys/<keyId>.pub`. `v1/keys.json` is informational, and `/verify` trusts only pinned keys. To verify a file without FoxTrust tools: `openssl pkeyutl -verify -pubin -inkey <keyId>.pub.pem -rawin -in f20261001.mmdb -sigfile f20261001.mmdb.sig`.
+
+**Proxies.** `/verify?proxy=nginx|traefik|caddy`. On `challenge` it redirects to `FOXTRUST_CHALLENGE_URL` with `?return=<original URL>` (nginx: `401` plus `X-FoxTrust-Challenge-Location`). Without a challenge URL it applies `FOXTRUST_CHALLENGE_FALLBACK` (default `allow`) and logs it. Every answer carries `X-FoxTrust-Action`, `-Rule`, `-Reason` and `-Snapshot`.
+
+```nginx
+location / {
+    auth_request /foxtrust-verify;
+    auth_request_set $foxtrust_challenge $upstream_http_x_foxtrust_challenge_location;
+    error_page 401 = @foxtrust_challenge;
+    proxy_pass http://app;
+}
+location = /foxtrust-verify {
+    internal;
+    proxy_pass http://foxtrust-verify:8080/verify?proxy=nginx;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Original-URI $request_uri;
+    proxy_set_header X-Original-Method $request_method;
+}
+location @foxtrust_challenge { return 302 $foxtrust_challenge; }
+```
+
+```yaml
+# Traefik (dynamic configuration)
+http:
+  middlewares:
+    foxtrust:
+      forwardAuth:
+        address: "http://foxtrust-verify:8080/verify?proxy=traefik"
+        trustForwardHeader: true
+```
+
+```caddyfile
+forward_auth foxtrust-verify:8080 {
+    uri /verify?proxy=caddy
+}
+```
+
+Set `FOXTRUST_TRUSTED_PROXIES` to your proxy's address range: `X-Forwarded-For` is honoured only from there.
 
 ## Principles
 
 - **"What it is" is separate from "what it did".** Categories (facts about the network) change slowly and are not dangerous on their own: an AWS IP is hosting, not an attacker. Behavior signals decay over time.
 - **A decision is a policy on top of both layers.** The score alone blocks nothing. Example: "Tor on the login page → challenge; hosting + brute force in the last 24 h → block".
-- **Explainability is the core differentiator.** Every response includes `reasons[]`: signal code, source, `lastSeen`, and contribution to the final risk. The delisting process builds on this: the owner of an address sees why it was flagged and can dispute it.
+- **Explainability is the core differentiator.** There are two verdict views. The **internal** verdict (operators, delisting, evaluation) gives every reason with its signal code, source, matched prefix, `lastSeen` and contribution. The **customer** verdict (snapshots, `/verify`, later the SDK and public API) is computed from shippable signals only, and its reasons say what the address was seen doing: code, `lastSeen` and contribution, without the source. The owner of a listed address can see why and dispute it ([docs/dispute.md](docs/dispute.md)).
 - **Feed licences are checked before a feed is added.** Commercial use and redistribution are not allowed everywhere (Spamhaus, some FireHOL lists). Shipping a snapshot inside the SDK counts as redistribution.
 
 ## Model
@@ -115,7 +173,7 @@ The formula is monotonic, easy to explain ("this signal contributes 40%"), and n
 |-------|---------|
 | Network, ASN, prefixes | RIR delegated stats, RouteViews, RIPE RIS, PeeringDB |
 | Cloud and hosting | Published ranges of AWS, GCP, Azure, Oracle, Cloudflare, DigitalOcean |
-| Bogon | Team Cymru |
+| Bogon | IANA special-purpose and address-space registries (Team Cymru fullbogons: internal only) |
 | Anonymization | Tor exit nodes, Mullvad and Proton server lists, VPN provider ASNs |
 | Abuse | Spamhaus DROP, abuse.ch (Feodo, ThreatFox), blocklist.de, DShield, CINS, FireHOL |
 | First-party | Honeypots (SSH/HTTP) across several providers, opt-in foxauth telemetry |
@@ -125,9 +183,9 @@ Residential proxies are out of scope for the MVP. Later they can be detected thr
 ## Roadmap
 
 - [x] **1. Core.** Postgres schema, 5–7 reliable feeds, signal model, explainable scoring. Outcome: a working local `lookup(ip)`.
-- [ ] **2. Distribution.** MMDB snapshot, TS SDK (Bun/Node), foxauth middleware, `/verify` for forward-auth.
-- [ ] **3. Public.** `GET /v1/ip/{ip}` with a free tier, IP/ASN pages, "my IP" page, delisting process.
-- [ ] **4. First-party data.** Honeypots, opt-in foxauth telemetry.
+- [x] **2. Distribution.** Signed MMDB snapshots (daily full, hourly cumulative deltas, one-year archive, release reports), policies and `/verify` for forward-auth.
+- [ ] **3. Public.** `GET /v1/ip/{ip}` with a free tier, TS SDK (Bun/Node: local lookup, auto-update, API fallback), IP/ASN pages, "my IP" page, delisting process.
+- [ ] **4. First-party data.** Honeypots, opt-in foxauth telemetry, foxauth middleware.
 - [ ] **5. Quality.** Labelled set of known-good and known-bad addresses, false-positive rate tracked for every snapshot release.
 
 ## Stack
@@ -140,6 +198,7 @@ Residential proxies are out of scope for the MVP. Later they can be detected thr
 |------|-------|
 | Instructions for AI agents | [AGENTS.md](AGENTS.md) |
 | Knowledge base (feeds, licences, decisions) | [docs/wiki/index.md](docs/wiki/index.md), conventions in [docs/wiki/SCHEMA.md](docs/wiki/SCHEMA.md) |
+| Disputing a listing | [docs/dispute.md](docs/dispute.md) (published as `FOXTRUST_DISPUTE_URL`) |
 | Feature specs (spec-kit) | `specs/` |
 | Project principles | [.specify/memory/constitution.md](.specify/memory/constitution.md) |
 

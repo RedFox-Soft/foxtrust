@@ -14,7 +14,8 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
   - `docker compose up -d --build scheduler` runs scheduled ingestion in a container. Docker restarts it; the healthcheck watches its heartbeat. Rebuild after changing licence pages.
   - `bun test` runs the acceptance and security tests and needs `DATABASE_URL_TEST`.
   - `bun run typecheck`; `bun run bench` (success-criteria measurements, on demand).
-  - `bun run foxtrust <command>`: `db migrate`, `config check|activate`, `ingest`, `schedule`, `feeds status|confirm`, `lookup`, `retention run`, `eval`.
+  - `bun run foxtrust <command>`: `db migrate`, `config check|activate`, `ingest`, `schedule`, `feeds status|confirm`, `lookup`, `retention run`, `eval`, `keys generate|add`, `snapshot build|publish|list|at|verify|retention run`, `publication serve`, `verify serve`, `policy check`.
+  - `docker-compose.yml` services: `db`, `scheduler` (ingestion + snapshot jobs; the only holder of the signing key secret), `publication` (read-only `/v1/` files, port 8081), `verify` (forward-auth, no database, port 8080).
 - No runtime dependencies: use Bun built-ins (`Bun.sql`, `Bun.cron`, `Bun.YAML`). Justify any new dependency in the feature plan.
 
 ## Domain Rules
@@ -25,6 +26,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Block/allow is a **policy** over verdicts, not part of scoring.
 - Before adding a feed, record its licence (commercial use, redistribution) in `docs/wiki/entities/`. Unknown licence = do not ship in snapshots.
 - Snapshot format is MMDB; it must stay readable by standard MaxMind readers.
+- Never commit the snapshot signing key; it is a Docker secret (`FOXTRUST_SIGNING_KEY`).
 
 ## Workflow
 - Feature specs: spec-kit skills (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`). Output goes to `specs/NNN-name/`.
