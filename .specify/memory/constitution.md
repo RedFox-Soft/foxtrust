@@ -1,19 +1,21 @@
 <!--
 Sync Impact Report
-- Version change: 2.0.0 → 2.1.0 (MINOR: Principle V expanded)
-  (previous: 1.0.0 → 2.0.0, MAJOR: Principle V redefined)
+- Version change: 2.1.0 → 3.0.0 (MAJOR: Principle II redefined)
+  (previous: 2.0.0 → 2.1.0 MINOR, Principle V expanded; 1.0.0 → 2.0.0 MAJOR, Principle V)
 - Modified principles:
-  V. Tests for User Cases and Security Only: added test naming (`USn-m:` / `SEC:`) and the
-     rule that success-criteria measurements are not tests (allowed, run on demand)
+  II. Explainable Verdicts: the reasons[] rule now has two views. Internal verdicts keep
+      code, source, prefix, lastSeen and contribution; customer-facing verdicts carry code,
+      lastSeen and contribution only, are computed from shippable signals only, and never
+      show the source or prefix (which stay stored for operators and delisting).
 - Added sections: none
 - Removed sections: none
 - Templates: .specify/templates/*.md read the constitution at runtime; no edits required.
 - Dependent artifacts:
-  ⚠ specs/001-core-ip-lookup/tasks.md still lists unit tests for internal modules
-    (IP, scoring, config, parsers, guards, schedule); regenerate with /speckit-tasks.
-  ⚠ specs/001-core-ip-lookup/plan.md Constitution Check row V and research.md R11 describe
-    the old rule; update on the next /speckit-plan run.
-  ✅ AGENTS.md updated with the new testing rule.
+  ✅ AGENTS.md Domain Rules updated (reasons[] rule).
+  ✅ specs/002-snapshot-distribution/spec.md FR-001–FR-003 already follow the new rule.
+  ✅ Stage 1 code produces the internal verdict only; it stays compliant.
+  ⚠ README.md "Principles" describes reasons[] with source for every response; update when
+    the stage 2 customer verdict is implemented.
 - Deferred TODOs: none
 -->
 
@@ -36,8 +38,17 @@ existing IP reputation services.
 
 ### II. Explainable Verdicts
 
-- Every verdict MUST include `reasons[]`, each with signal code, source, `lastSeen` and
-  numeric contribution to the final risk.
+- There are two verdict views of the same data:
+  - **Internal verdicts** (operators, delisting, evaluation) MUST include `reasons[]`. Each
+    reason has a signal code, source, matched prefix, `lastSeen` and a numeric contribution to
+    the final risk.
+  - **Customer-facing verdicts** (snapshots, SDK, `/verify`, middleware, public API) MUST
+    include `reasons[]`. Each reason has a signal code, `lastSeen` and a contribution: it states
+    what the address was seen doing, not who reported it.
+- Source and matched prefix MUST NOT appear in customer-facing outputs. They MUST stay stored
+  and available to operators and the delisting process.
+- Customer-facing verdicts MUST be computed from shippable signals only. A signal whose licence
+  forbids redistribution MUST NOT change any customer-facing risk, level, category or reason.
 - Scoring MUST be deterministic and reproducible from stored signals and a snapshot version.
 - The risk model MUST stay monotonic and decomposable (noisy-OR:
   `risk = 1 − Π(1 − w·c·decay)`); any replacement model MUST preserve per-signal
@@ -45,6 +56,8 @@ existing IP reputation services.
 - A listed address MUST have a documented path to dispute and delisting.
 
 Rationale: explanations are the product's core differentiator and the basis of delisting.
+Customers need to know what an address did. Where the evidence came from is our business, and
+some sources forbid being named or redistributed.
 
 ### III. Licence-Clean, Traceable Data
 
@@ -140,4 +153,4 @@ Rationale: open formats drive adoption without our SDK; fewer moving parts keep 
 - Compliance is checked in every `/speckit-plan` Constitution Check and `/speckit-analyze` run;
   unresolved violations block implementation.
 
-**Version**: 2.1.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-24
+**Version**: 3.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-30

@@ -20,14 +20,15 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 ## Domain Rules
 - Keep network **categories** (hosting, vpn, tor, bogon…) separate from **behavior** signals (bruteforce, spam, scan…). Never collapse them into one flag.
 - Behavior signals decay (`halfLifeHours`); categories decay slowly or not at all.
-- Risk is noisy-OR: `1 − Π(1 − w·c·decay)`. Every `Verdict` must carry `reasons[]` with `source`, `lastSeen`, `contribution`.
+- Risk is noisy-OR: `1 − Π(1 − w·c·decay)`.
+- Two verdict views. Internal verdicts carry `reasons[]` with code, `source`, prefix, `lastSeen`, `contribution`. Customer-facing verdicts (snapshots, SDK, `/verify`, middleware, API) carry code, `lastSeen`, `contribution` only, never the source or prefix, and are computed from shippable signals only.
 - Block/allow is a **policy** over verdicts, not part of scoring.
 - Before adding a feed, record its licence (commercial use, redistribution) in `docs/wiki/entities/`. Unknown licence = do not ship in snapshots.
 - Snapshot format is MMDB; it must stay readable by standard MaxMind readers.
 
 ## Workflow
 - Feature specs: spec-kit skills (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`). Output goes to `specs/NNN-name/`.
-- Principles: `.specify/memory/constitution.md` (v2.1.0). It overrides this file on conflict; amend via `/speckit-constitution`.
+- Principles: `.specify/memory/constitution.md` (v3.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
 
 ## Tests
 - Write tests **only** for user cases (acceptance scenarios of the user stories in `specs/NNN-name/spec.md`) and for security issues.
