@@ -18,6 +18,7 @@ Real feed files, recorded on **2026-09-24** and trimmed to keep the repository s
 | `feodo-tracker/ipblocklist.json` | https://feodotracker.abuse.ch/downloads/ipblocklist.json | as recorded (the live list was not empty) |
 | `blocklist-de/ssh.txt`, `bruteforcelogin.txt` | https://lists.blocklist.de/lists/ | first 1,000 IPv4 lines + all IPv6 lines |
 | `blocklist-de/ssh.v2.txt` | derived | `ssh.txt` without its first 100 lines (US2-7) |
+| `iana-address-space/ipv4-address-space.csv`, `ipv6-unicast-address-assignments.csv` | https://www.iana.org/assignments/ (recorded 2026-09-30) | as recorded |
 | `_security/gzip-bomb.gz` | generated | `1.2.3.4\n` repeated to 1.1 GB, gzip -9 (≈ 1.6 MB); `SEC:` tests |
 
 ## Cloud ranges (SC-003 measurement data only)

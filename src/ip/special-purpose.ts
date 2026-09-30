@@ -96,3 +96,19 @@ export function isSpecialPurposeBogon(ip: IpValue): SpecialPurposeEntry | null {
   const entry = specialPurpose(ip);
   return entry !== null && !entry.globallyReachable ? entry : null;
 }
+
+/** True when some non-globally-reachable registry entry contains the whole block `cidr`. */
+export function coveredBySpecialPurposeBogon(cidr: Cidr): boolean {
+  return PARSED.some(
+    ({ entry, cidr: e }) =>
+      !entry.globallyReachable &&
+      e.family === cidr.family &&
+      e.length <= cidr.length &&
+      contains(e, { family: cidr.family, value: cidr.network }),
+  );
+}
+
+/** All registry entries (bogon and globally reachable), for building snapshots. */
+export function specialPurposeEntries(): readonly SpecialPurposeEntry[] {
+  return ENTRIES;
+}

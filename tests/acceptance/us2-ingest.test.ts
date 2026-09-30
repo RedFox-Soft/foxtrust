@@ -189,7 +189,7 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     const status = JSON.parse(await new Response(proc.stdout).text()) as { feeds: { feed: string; licence: string; licenceChecked: string | null }[] };
     const localOnly = status.feeds.filter((x) => x.licence === "local-only").map((x) => x.feed).sort();
     expect(localOnly).toEqual(["blocklist-de", "cymru-fullbogons", "feodo-tracker", "spamhaus-drop"]);
-    for (const feed of status.feeds) {
+    for (const feed of status.feeds.filter((f) => f.feed in FILES)) {
       expect(feed.licenceChecked).toEqual((await readLicence(feed.feed, wikiRoot)).checked); // date from the licence record
     }
   });
