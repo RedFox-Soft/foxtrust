@@ -6,9 +6,12 @@ import { dbMigrate } from "./commands/db";
 import { evalCommand } from "./commands/eval";
 import { feedsConfirm, feedsStatus } from "./commands/feeds";
 import { ingestCommand } from "./commands/ingest";
+import { keysAdd, keysGenerate } from "./commands/keys";
 import { lookupCommand } from "./commands/lookup";
+import { publicationServe } from "./commands/publication";
 import { retentionRun } from "./commands/retention";
 import { scheduleCommand } from "./commands/schedule";
+import { snapshotAt, snapshotBuild, snapshotList, snapshotPublish, snapshotRetention, snapshotVerify } from "./commands/snapshot";
 import { EXIT, takeFlag, UsageError, warn, type Command } from "./util";
 
 extraConfigChecks.push((config) => checkSources(FEEDS, config));
@@ -22,6 +25,15 @@ export const COMMANDS: Record<string, Command> = {
   "feeds status": feedsStatus,
   "feeds confirm": feedsConfirm,
   "retention run": retentionRun,
+  "keys generate": keysGenerate,
+  "keys add": keysAdd,
+  "publication serve": publicationServe,
+  "snapshot build": snapshotBuild,
+  "snapshot publish": snapshotPublish,
+  "snapshot list": snapshotList,
+  "snapshot verify": snapshotVerify,
+  "snapshot at": snapshotAt,
+  "snapshot retention": snapshotRetention,
   "db migrate": dbMigrate,
   "config check": configCheck,
   "config activate": configActivate,

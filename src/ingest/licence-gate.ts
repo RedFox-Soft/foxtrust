@@ -9,6 +9,10 @@ export type Licence = {
   status: LicenceStatus;
   checked: string | null;
   updateIntervalMinutes: number | null;
+  /** Licence name, whether it requires attribution, and the notice text to keep (FR-008a). */
+  name: string | null;
+  attribution: boolean;
+  notice: string | null;
   problems: string[];
 };
 
@@ -49,6 +53,9 @@ export async function readLicence(feedId: string, wikiRoot: string = DEFAULT_WIK
     status: "missing",
     checked: null,
     updateIntervalMinutes: null,
+    name: null,
+    attribution: false,
+    notice: null,
     problems: [problem],
   });
 
@@ -73,8 +80,12 @@ export async function readLicence(feedId: string, wikiRoot: string = DEFAULT_WIK
   if (typeof fm.url !== "string" || fm.url.trim() === "") problems.push("url is missing");
   if (checked === null) problems.push("license_checked must be a YYYY-MM-DD date");
   if (fm.update_interval !== undefined && interval === null) problems.push("update_interval must look like 30m, 1h or 1d");
+  const name = typeof fm.license === "string" && fm.license.trim() !== "" ? fm.license.trim() : null;
+  const attribution = parseTerm(fm.attribution) === "yes";
+  const notice = typeof fm.notice === "string" && fm.notice.trim() !== "" ? fm.notice.trim() : null;
+  const extra = { name, attribution, notice };
 
-  if (problems.length > 0) return { status: "missing", checked, updateIntervalMinutes: interval, problems };
+  if (problems.length > 0) return { status: "missing", checked, updateIntervalMinutes: interval, ...extra, problems };
   const status: LicenceStatus = commercial === "yes" && redistribution === "yes" ? "shippable" : "local-only";
-  return { status, checked, updateIntervalMinutes: interval, problems };
+  return { status, checked, updateIntervalMinutes: interval, ...extra, problems };
 }

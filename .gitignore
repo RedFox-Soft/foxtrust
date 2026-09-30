@@ -9,3 +9,5 @@ var/
 *.log
 .DS_Store
 Thumbs.db
+# Snapshot signing keys must never be committed.
+*.key.pem

@@ -3,10 +3,15 @@ import type { FeedDefinition } from "../feeds/types";
 import { BUILTIN_BOGON_SOURCE } from "../lookup/signals";
 import type { ScoringConfig } from "../model/types";
 import { runRetention } from "../retention/retention";
+import { ARCHIVE_RETENTION_SCHEDULE, runSnapshotRetention } from "../snapshot/archive";
+import { buildAndRelease, withSnapshotLock, type ReleaseOptions } from "../snapshot/publish";
 import { readLicence, type Licence } from "./licence-gate";
 import { runFeed } from "./run";
 
 export const RETENTION_SCHEDULE = "30 3 * * *";
+/** Research R10: after the daily hosting refresh at 04:20, and hourly deltas. */
+export const FULL_SNAPSHOT_SCHEDULE = "50 4 * * *";
+export const DELTA_SNAPSHOT_SCHEDULE = "50 * * * *";
 
 function expandField(field: string, min: number, max: number): Set<number> {
   const out = new Set<number>();
@@ -92,7 +97,7 @@ export function startScheduler(
   sql: Db,
   feeds: FeedDefinition[],
   log: (line: string) => void,
-  opts: { heartbeatPath?: string } = {},
+  opts: { heartbeatPath?: string; snapshot?: ReleaseOptions } = {},
 ): () => void {
   const beat = async () => {
     if (opts.heartbeatPath) await Bun.write(opts.heartbeatPath, `${new Date().toISOString()}\n`);
@@ -126,6 +131,42 @@ export function startScheduler(
       { tz: "UTC" },
     ),
   );
+  const release = opts.snapshot;
+  if (release) {
+    for (const [kind, schedule] of [["full", FULL_SNAPSHOT_SCHEDULE], ["delta", DELTA_SNAPSHOT_SCHEDULE]] as const) {
+      jobs.push(
+        Bun.cron(
+          schedule,
+          async () => {
+            const stamp = () => new Date().toISOString();
+            try {
+              const r = await withSnapshotLock(sql, () => buildAndRelease(sql, kind, release), { wait: kind === "full" });
+              if (r === null) log(`${stamp()} snapshot ${kind}: skipped (another build holds the lock)`);
+              else if (r.status === "skipped") log(`${stamp()} snapshot ${kind}: skipped (${r.reason})`);
+              else log(`${stamp()} snapshot ${r.version}: ${r.status}${r.problems.length ? ` (${r.problems.join("; ")})` : ""}`);
+            } catch (error) {
+              log(`${stamp()} snapshot ${kind}: error ${(error as Error).message}`);
+            }
+          },
+          { tz: "UTC" },
+        ),
+      );
+    }
+    jobs.push(
+      Bun.cron(
+        ARCHIVE_RETENTION_SCHEDULE,
+        async () => {
+          try {
+            const r = await withSnapshotLock(sql, () => runSnapshotRetention(sql, release));
+            log(`${new Date().toISOString()} snapshot retention: ${r === null ? "skipped (lock held)" : JSON.stringify(r)}`);
+          } catch (error) {
+            log(`${new Date().toISOString()} snapshot retention: error ${(error as Error).message}`);
+          }
+        },
+        { tz: "UTC" },
+      ),
+    );
+  }
   if (opts.heartbeatPath) jobs.push(Bun.cron("* * * * *", beat, { tz: "UTC" }));
   return () => {
     for (const job of jobs) job.stop();
