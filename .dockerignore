@@ -1,0 +1,14 @@
+.git
+.claude
+.specify
+.env
+.env.*
+node_modules
+var
+specs
+tests
+data
+schemas
+docs/raw
+docs/wiki/.wiki-cache
+*.log

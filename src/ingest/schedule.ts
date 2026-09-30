@@ -83,8 +83,21 @@ export async function readLicences(feeds: FeedDefinition[], wikiRoot?: string): 
   return out;
 }
 
-/** Registers one Bun.cron job per feed plus nightly retention. Returns a stop function. */
-export function startScheduler(sql: Db, feeds: FeedDefinition[], log: (line: string) => void): () => void {
+/**
+ * Registers one Bun.cron job per feed plus nightly retention. Returns a stop function.
+ * With `heartbeatPath`, the current time is written there at start and every minute, so a
+ * container healthcheck can tell a live scheduler from a hung one.
+ */
+export function startScheduler(
+  sql: Db,
+  feeds: FeedDefinition[],
+  log: (line: string) => void,
+  opts: { heartbeatPath?: string } = {},
+): () => void {
+  const beat = async () => {
+    if (opts.heartbeatPath) await Bun.write(opts.heartbeatPath, `${new Date().toISOString()}\n`);
+  };
+  void beat();
   const jobs = feeds.map((def) =>
     Bun.cron(
       def.schedule,
@@ -113,6 +126,7 @@ export function startScheduler(sql: Db, feeds: FeedDefinition[], log: (line: str
       { tz: "UTC" },
     ),
   );
+  if (opts.heartbeatPath) jobs.push(Bun.cron("* * * * *", beat, { tz: "UTC" }));
   return () => {
     for (const job of jobs) job.stop();
   };

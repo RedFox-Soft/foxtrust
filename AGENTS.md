@@ -11,6 +11,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Database: **PostgreSQL**. Store IPs and ranges as `inet`/`cidr` and index them with GiST; do not store IPs as text or integers.
 - Commands:
   - `bun install`; `docker compose up -d db` (PostgreSQL 18); copy `.env.example` to `.env`.
+  - `docker compose up -d --build scheduler` runs scheduled ingestion in a container. Docker restarts it; the healthcheck watches its heartbeat. Rebuild after changing licence pages.
   - `bun test` runs the acceptance and security tests and needs `DATABASE_URL_TEST`.
   - `bun run typecheck`; `bun run bench` (success-criteria measurements, on demand).
   - `bun run foxtrust <command>`: `db migrate`, `config check|activate`, `ingest`, `schedule`, `feeds status|confirm`, `lookup`, `retention run`, `eval`.

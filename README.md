@@ -22,6 +22,22 @@ bun run foxtrust feeds status
 bun run foxtrust schedule                 # long-running: per-feed schedules + nightly retention
 ```
 
+To keep ingestion running unattended, run the scheduler container:
+
+```sh
+docker compose up -d --build scheduler
+docker compose ps                         # "healthy" while the scheduler heartbeat is fresh
+docker compose logs -f scheduler          # one line per feed run
+```
+
+At start the container:
+
+1. applies migrations;
+2. activates `config/scoring/2026-09-24.1.json`, but only if no config is active yet;
+3. runs the scheduler.
+
+Docker restarts the container if it exits (`restart: unless-stopped`). Fetched artifacts live in the `feed-artifacts` volume. The licence pages from `docs/wiki/entities/` are copied into the image, so rebuild after editing them. Running `ingest` by hand at the same time is safe: per-feed advisory locks prevent overlapping runs.
+
 Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json]`, `config check <file>`. `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
 
 ## Principles

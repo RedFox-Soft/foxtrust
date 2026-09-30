@@ -15,5 +15,25 @@ services:
       timeout: 3s
       retries: 30
 
+  # Feed ingestion on a schedule plus nightly retention. Docker restarts it if it exits;
+  # `docker compose ps` shows "unhealthy" when its heartbeat is older than 3 minutes.
+  scheduler:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://foxtrust:foxtrust@db:5432/foxtrust
+    volumes:
+      - feed-artifacts:/app/var
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
 volumes:
   pgdata:
+  feed-artifacts:

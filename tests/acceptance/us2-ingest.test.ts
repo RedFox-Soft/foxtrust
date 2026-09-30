@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { activateConfig } from "../../src/db/versions";
+import { readLicence } from "../../src/ingest/licence-gate";
 import { runFeed, confirmHeldRun, type RunOptions, type RunReport } from "../../src/ingest/run";
 import { runRetention } from "../../src/retention/retention";
 import { createIpTrust } from "../../src/lookup/lookup";
@@ -185,10 +186,12 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
       env: { ...Bun.env, DATABASE_URL: db.url }, stdout: "pipe", stderr: "pipe",
     });
     expect(await proc.exited).toBe(0);
-    const status = JSON.parse(await new Response(proc.stdout).text()) as { feeds: { feed: string; licence: string; licenceChecked: string }[] };
+    const status = JSON.parse(await new Response(proc.stdout).text()) as { feeds: { feed: string; licence: string; licenceChecked: string | null }[] };
     const localOnly = status.feeds.filter((x) => x.licence === "local-only").map((x) => x.feed).sort();
     expect(localOnly).toEqual(["blocklist-de", "cymru-fullbogons", "feodo-tracker", "spamhaus-drop"]);
-    expect(status.feeds.every((x) => x.licenceChecked === "2026-09-24")).toBe(true);
+    for (const feed of status.feeds) {
+      expect(feed.licenceChecked).toEqual((await readLicence(feed.feed, wikiRoot)).checked); // date from the licence record
+    }
   });
 
   test("US2-3: signals from local-only feeds are not shippable and the report lists them (IPv6)", async () => {
