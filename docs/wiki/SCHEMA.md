@@ -126,7 +126,7 @@ Generation is reproducible from markdown via `scripts/wiki_graph_extract.py`. Th
 
 ## Workflow customizations
 
-- **Feed licences are facts with a date.** Every `feed` page states commercial-use and redistribution terms with a link to the licence text and `license_checked: YYYY-MM-DD`. Unknown = `unknown`, never assumed permissive. Aggregators (FireHOL) inherit the strictest upstream licence.
+- **Feed licences are facts with a date.** Every `feed` page states commercial-use and redistribution terms with a link to the licence text and `license_checked: YYYY-MM-DD`. Unknown = `unknown`, never assumed permissive. Aggregators (FireHOL) inherit the strictest upstream licence. A page with `attribution: yes` also records `notice:`, the text the licence requires to be kept; snapshot manifests copy it, and publishing fails without it.
 - **Category vs behaviour.** Keep network facts (`category`) and observed activity (`signal` with `signal_kind: behavior`) on separate pages; never merge them into one score page.
 - **Decisions go to ADRs.** When a design choice is made (e.g. PostgreSQL over MongoDB), file a `synthesis` page with `kind: decision` and link it from affected component pages.
 - **Code wins over wiki for implemented behaviour.** Once a component exists, the wiki records *why*; the repository records *what*. Link `path:` instead of copying code.
