@@ -8,6 +8,9 @@ import { shippedConfig } from "../helpers/seed";
 import { measureCategoryCap } from "./category-cap.measure";
 import { measureIngest } from "./ingest.bench";
 import { measureLookup } from "./lookup.bench";
+import { measureSecondReader } from "./second-reader.measure";
+import { measureSnapshot } from "./snapshot.bench";
+import { measureVerify } from "./verify.bench";
 import { tempDb, type Measurement } from "./util";
 
 const FIX = join(import.meta.dir, "..", "fixtures", "feeds");
@@ -19,6 +22,7 @@ const FIXTURE_FILES: Record<string, string[]> = {
   "tor-exit": ["exit-list.txt"],
   "feodo-tracker": ["ipblocklist.json"],
   iptoasn: ["ip2asn-combined.tsv.gz"],
+  "iana-address-space": ["ipv4-address-space.csv", "ipv6-unicast-address-assignments.csv"],
 };
 
 /** SC-007: FP rate at `high` on the known-good set, against the fixture dataset. */
@@ -51,6 +55,9 @@ for (const [name, fn] of [
   ["SC-007", measureAccuracy],
   ["SC-001", measureLookup],
   ["SC-004", measureIngest],
+  ["stage 2 SC-001", measureSecondReader],
+  ["stage 2 SC-004/SC-005", measureVerify],
+  ["stage 2 SC-006/SC-007", measureSnapshot],
 ] as const) {
   console.error(`measuring ${name}…`);
   measurements.push(...(await fn()));
