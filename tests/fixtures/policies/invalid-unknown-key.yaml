@@ -1,0 +1,8 @@
+version: 1
+default: allow
+rules:
+  - name: tor-anywhere
+    when:
+      categories: [tor]
+      country: [XX]
+    action: block

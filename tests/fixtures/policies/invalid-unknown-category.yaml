@@ -1,0 +1,7 @@
+version: 1
+default: allow
+rules:
+  - name: residential
+    when:
+      categories: [residential]
+    action: block

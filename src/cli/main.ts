@@ -8,10 +8,12 @@ import { feedsConfirm, feedsStatus } from "./commands/feeds";
 import { ingestCommand } from "./commands/ingest";
 import { keysAdd, keysGenerate } from "./commands/keys";
 import { lookupCommand } from "./commands/lookup";
+import { policyCheck } from "./commands/policy";
 import { publicationServe } from "./commands/publication";
 import { retentionRun } from "./commands/retention";
 import { scheduleCommand } from "./commands/schedule";
 import { snapshotAt, snapshotBuild, snapshotList, snapshotPublish, snapshotRetention, snapshotVerify } from "./commands/snapshot";
+import { verifyServe } from "./commands/verify";
 import { EXIT, takeFlag, UsageError, warn, type Command } from "./util";
 
 extraConfigChecks.push((config) => checkSources(FEEDS, config));
@@ -34,6 +36,8 @@ export const COMMANDS: Record<string, Command> = {
   "snapshot verify": snapshotVerify,
   "snapshot at": snapshotAt,
   "snapshot retention": snapshotRetention,
+  "verify serve": verifyServe,
+  "policy check": policyCheck,
   "db migrate": dbMigrate,
   "config check": configCheck,
   "config activate": configActivate,

@@ -1,0 +1,13 @@
+# Example /verify policy (contracts/policy.schema.json). Rules run in order; the first match wins.
+version: 1
+default: allow
+rules:
+  - name: tor-on-login
+    when:
+      categories: [tor]
+      path: "/login*"
+    action: challenge
+  - name: high-risk
+    when:
+      levelAtLeast: high
+    action: block

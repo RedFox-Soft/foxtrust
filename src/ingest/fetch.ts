@@ -42,7 +42,7 @@ export function matchLocalFiles(def: FeedDefinition, paths: string[]): { name: s
 }
 
 /** Reads a stream fully, failing as soon as it exceeds `maxBytes`. */
-async function readBounded(stream: ReadableStream<Uint8Array>, maxBytes: number, what: string): Promise<Uint8Array> {
+export async function readBounded(stream: ReadableStream<Uint8Array>, maxBytes: number, what: string): Promise<Uint8Array> {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -79,19 +79,41 @@ async function gunzipBounded(bytes: Uint8Array, maxBytes: number, what: string):
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-/** https only; plain http is allowed for loopback hosts when a test asks for it. */
-function isAllowed(url: URL, allowLoopbackHttp: boolean): boolean {
-  return url.protocol === "https:" || (allowLoopbackHttp && url.protocol === "http:" && LOOPBACK.has(url.hostname));
+export type FetchOptions = {
+  /** Plain http to loopback hosts (tests with a local server only). */
+  allowLoopbackHttp?: boolean;
+  /**
+   * Plain http to any host. Only for our own signed publication, where integrity comes from
+   * the signatures (spec 002 research R5); third-party feeds stay https-only.
+   */
+  allowHttp?: boolean;
+  headers?: Record<string, string>;
+};
+
+/** https only, unless the caller allows plain http. */
+function isAllowed(url: URL, opts: FetchOptions): boolean {
+  if (url.protocol === "https:") return true;
+  if (url.protocol !== "http:") return false;
+  return opts.allowHttp === true || (opts.allowLoopbackHttp === true && LOOPBACK.has(url.hostname));
 }
 
-async function fetchBounded(
+async function fetchBounded(url: string, limits: FeedLimits, signal: AbortSignal, allowLoopbackHttp = false): Promise<Uint8Array> {
+  const response = await fetchBoundedResponse(url, limits, signal, { allowLoopbackHttp });
+  return response.body!;
+}
+
+/**
+ * A bounded GET with manual, protocol-checked redirects. `304 Not Modified` (for conditional
+ * `headers`) returns `body: null`; other non-2xx statuses throw.
+ */
+export async function fetchBoundedResponse(
   url: string,
-  limits: FeedLimits,
+  limits: Pick<FeedLimits, "maxCompressedBytes" | "maxRedirects">,
   signal: AbortSignal,
-  allowLoopbackHttp = false,
-): Promise<Uint8Array> {
+  opts: FetchOptions = {},
+): Promise<{ status: number; headers: Headers; body: Uint8Array | null }> {
   let current = new URL(url);
-  if (!isAllowed(current, allowLoopbackHttp)) {
+  if (!isAllowed(current, opts)) {
     throw new FeedFetchError("insecure_redirect", `refusing non-https URL ${url}`);
   }
   for (let redirects = 0; ; redirects++) {
@@ -100,7 +122,7 @@ async function fetchBounded(
       response = await fetch(current, {
         redirect: "manual",
         signal,
-        headers: { "User-Agent": USER_AGENT, "Accept-Encoding": "identity" },
+        headers: { "User-Agent": USER_AGENT, "Accept-Encoding": "identity", ...opts.headers },
       });
     } catch (error) {
       if (signal.aborted) throw new FeedFetchError("timeout", `timed out fetching ${current}`);
@@ -111,19 +133,24 @@ async function fetchBounded(
       await response.body?.cancel();
       if (!location) throw new FeedFetchError("http_error", `redirect without Location from ${current}`);
       const next = new URL(location, current);
-      if (!isAllowed(next, allowLoopbackHttp)) {
+      if (!isAllowed(next, opts)) {
         throw new FeedFetchError("insecure_redirect", `redirect to non-https ${next}`);
       }
       if (redirects + 1 > limits.maxRedirects) throw new FeedFetchError("http_error", `too many redirects from ${url}`);
       current = next;
       continue;
     }
+    if (response.status === 304) {
+      await response.body?.cancel();
+      return { status: 304, headers: response.headers, body: null };
+    }
     if (!response.ok || !response.body) {
       await response.body?.cancel();
       throw new FeedFetchError("http_error", `HTTP ${response.status} from ${current}`);
     }
     try {
-      return await readBounded(response.body, limits.maxCompressedBytes, `response from ${current}`);
+      const body = await readBounded(response.body, limits.maxCompressedBytes, `response from ${current}`);
+      return { status: response.status, headers: response.headers, body };
     } catch (error) {
       if (signal.aborted) throw new FeedFetchError("timeout", `timed out reading ${current}`);
       throw error;
