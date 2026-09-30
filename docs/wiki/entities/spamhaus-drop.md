@@ -31,12 +31,6 @@ Netblocks that are hijacked or controlled by criminals, as NDJSON (`cidr`, `sbli
 
 ## Open question
 
-Before stage 2 snapshots, get Spamhaus's written answers to three questions:
-
-1. May signals derived from DROP be redistributed in snapshots and API responses?
-2. May verdicts name the source?
-3. If not, which commercial terms apply?
-
-A request draft was prepared on 2026-09-30.
+Decided on 2026-09-30 ([[adr-customer-facing-behavior-data]]): no permission request is sent for now. DROP stays local-only and must not influence customer-facing verdicts, snapshots or API responses. It is reopened if Spamhaus's terms change or a commercial licence is bought.
 
 Source: [[2026-09-24-feed-licence-review]].

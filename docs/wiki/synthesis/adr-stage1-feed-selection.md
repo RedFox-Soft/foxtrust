@@ -4,7 +4,7 @@ kind: decision
 title: "ADR: stage 1 feed selection"
 tags: [data, license, open-question]
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-30
 sources: [2026-09-24-feed-licence-review]
 status: accepted
 decided: 2026-09-24
@@ -38,10 +38,6 @@ Seven feeds, plus a built-in bogon source:
 
 ## Consequences and open questions
 
-- **Stage 2 risk:** almost no behavior data can be redistributed commercially. Snapshots may carry little behavior data until one of these happens:
-  - Spamhaus confirms in writing that DROP may be redistributed;
-  - abuse.ch confirms that Feodo Tracker is still CC0 under the 2025-11-04 terms;
-  - paid licences are bought;
-  - first-party honeypots (stage 4) produce data.
+- **Stage 2 risk:** almost no behavior data can be redistributed commercially. Resolved on 2026-09-30 by [[adr-customer-facing-behavior-data]]: no permission requests are sent. The three behavior feeds stay internal, and customer-facing behavior signals will come from first-party honeypots (stage 4) or from a future feed with a clean licence.
 - **Measured accuracy:** on the fixture data, leave-one-source-out evaluation gives an FN rate of 100 %, because no known-bad address appears in two independent feeds. The FN rate means little until sources overlap.
 - **Possible hosting upgrade:** brianhama/bad-asn-list (MIT) joined with ipverse/as-ip-blocks (CC0).

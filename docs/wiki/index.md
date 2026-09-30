@@ -41,3 +41,4 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-log-share-contributions]] — ADR: log-share split of noisy-OR risk into reasons that add up exactly
 - [[adr-category-only-cap]] — ADR: cap the category part at 69 so categories alone never reach high
 - [[adr-stage1-feed-selection]] — ADR: the 7 stage 1 feeds, rejected feeds, stage 2 behavior-licence risk
+- [[adr-customer-facing-behavior-data]] — ADR: no licence requests; DROP/Feodo/blocklist.de stay internal; customer behavior signals from first-party data only

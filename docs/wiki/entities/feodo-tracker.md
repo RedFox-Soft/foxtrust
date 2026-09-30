@@ -33,6 +33,8 @@ Until abuse.ch confirms CC0 in writing, the feed is **local-only**.
 Re-checked on 2026-09-30:
 
 - The terms name Spamhaus Technology Limited as "the primary licensee of the abuse.ch datasets".
-- Questions go to https://www.spamhaus.com/abuse-ch/#contact-us, because abuse.ch/contact/ returns 404. The confirmation request therefore goes to Spamhaus; a draft was prepared on the same day.
+- Questions go to https://www.spamhaus.com/abuse-ch/#contact-us, because abuse.ch/contact/ returns 404.
+
+Decided on 2026-09-30 ([[adr-customer-facing-behavior-data]]): no confirmation request is sent for now. Feodo Tracker stays local-only and must not influence customer-facing verdicts.
 
 Source: [[2026-09-24-feed-licence-review]].

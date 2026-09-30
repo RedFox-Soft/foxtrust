@@ -20,3 +20,5 @@ Operations:
 ## [2026-09-24] ingest | Stage 1 design decisions → 4 ADRs (synthesis) and 9 signal-code concept pages from specs/001-core-ip-lookup research
 
 ## [2026-09-30] ingest | Licence re-check (docs/raw/2026-09-30-licence-recheck.md): Spamhaus DROP terms moved, product-credit statement gone, §3.2 name ban; abuse.ch questions go via Spamhaus → spamhaus-drop, feodo-tracker updated
+
+## [2026-09-30] query | Decision: no licence requests to Spamhaus/abuse.ch; behavior feeds stay internal; customer-facing behavior from first-party data → adr-customer-facing-behavior-data (new); spamhaus-drop, feodo-tracker, blocklist-de, adr-stage1-feed-selection updated
