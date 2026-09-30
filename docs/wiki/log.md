@@ -18,3 +18,5 @@ Operations:
 ## [2026-09-24] ingest | Feed licence review 2026-09-24 → 1 source page, 8 feed entity pages (stage 1 core feeds)
 
 ## [2026-09-24] ingest | Stage 1 design decisions → 4 ADRs (synthesis) and 9 signal-code concept pages from specs/001-core-ip-lookup research
+
+## [2026-09-30] ingest | Licence re-check (docs/raw/2026-09-30-licence-recheck.md): Spamhaus DROP terms moved, product-credit statement gone, §3.2 name ban; abuse.ch questions go via Spamhaus → spamhaus-drop, feodo-tracker updated

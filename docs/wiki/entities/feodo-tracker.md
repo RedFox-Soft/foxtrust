@@ -4,7 +4,7 @@ kind: feed
 title: abuse.ch Feodo Tracker
 tags: [data, license, contested, open-question]
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-30
 sources: [2026-09-24-feed-licence-review]
 url: https://feodotracker.abuse.ch/downloads/ipblocklist.json
 license: dataset page says CC0; platform terms of 2025-11-04 restrict commercial use
@@ -29,5 +29,10 @@ Botnet command-and-control servers, IPv4. Entries carry `first_seen`, `dst_ip`, 
 - **Platform terms of 2025-11-04:** commercial use "may require a paid subscription, which will be managed by Spamhaus" (§4), and derivative works are not allowed "without the express consent" (§7).
 
 Until abuse.ch confirms CC0 in writing, the feed is **local-only**.
+
+Re-checked on 2026-09-30:
+
+- The terms name Spamhaus Technology Limited as "the primary licensee of the abuse.ch datasets".
+- Questions go to https://www.spamhaus.com/abuse-ch/#contact-us, because abuse.ch/contact/ returns 404. The confirmation request therefore goes to Spamhaus; a draft was prepared on the same day.
 
 Source: [[2026-09-24-feed-licence-review]].
