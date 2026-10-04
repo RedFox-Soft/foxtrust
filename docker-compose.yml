@@ -27,7 +27,6 @@ services:
     environment:
       DATABASE_URL: postgres://foxtrust:foxtrust@db:5432/foxtrust
       FOXTRUST_SIGNING_KEY: /run/secrets/signing_key
-      FOXTRUST_PUBLICATION_DIR: /app/var/publication
       FOXTRUST_DISPUTE_URL: ${FOXTRUST_DISPUTE_URL:-}
     secrets:
       - signing_key
@@ -45,7 +44,7 @@ services:
   publication:
     build: .
     restart: unless-stopped
-    command: ["bun", "run", "src/cli/main.ts", "publication", "serve", "--dir", "/app/var/publication", "--port", "8081"]
+    command: ["bun", "run", "src/cli/main.ts", "publication", "serve"]  # var/publication, port 8081
     volumes:
       - publication:/app/var/publication:ro
     ports:
@@ -70,7 +69,6 @@ services:
       FOXTRUST_TRUSTED_PROXIES: 172.16.0.0/12
       FOXTRUST_CHALLENGE_URL: ${FOXTRUST_CHALLENGE_URL:-}
       FOXTRUST_CHALLENGE_SECRET: ${FOXTRUST_CHALLENGE_SECRET:-}
-      PORT: "8080"
     ports:
       - "8080:8080"
     healthcheck:
