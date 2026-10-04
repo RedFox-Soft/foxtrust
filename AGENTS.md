@@ -30,7 +30,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 
 ## Workflow
 - Feature specs: spec-kit skills (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`). Output goes to `specs/NNN-name/`.
-- Principles: `.specify/memory/constitution.md` (v3.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
+- Principles: `.specify/memory/constitution.md` (v4.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
 
 ## Tests
 - Write tests **only** for user cases (acceptance scenarios of the user stories in `specs/NNN-name/spec.md`) and for security issues.
