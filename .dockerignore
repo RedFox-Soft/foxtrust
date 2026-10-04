@@ -8,6 +8,7 @@ var
 specs
 tests
 data
+!data/labelled
 schemas
 docs/raw
 docs/wiki/.wiki-cache
