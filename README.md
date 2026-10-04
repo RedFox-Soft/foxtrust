@@ -38,7 +38,7 @@ At start the container:
 
 Docker restarts the container if it exits (`restart: unless-stopped`). Fetched artifacts live in the `feed-artifacts` volume. The licence pages from `docs/wiki/entities/` are copied into the image, so rebuild after editing them. Running `ingest` by hand at the same time is safe: per-feed advisory locks prevent overlapping runs.
 
-Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json]`, `config check <file>`, `snapshot list|at|verify|retention run`, `policy check <file>`. `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
+Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json] [--window <days>] [--sample <n>] [--contribution]`, `config check <file>`, `snapshot list|at|verify|retention run`, `policy check <file>`. `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
 
 ## Snapshots and forward-auth
 
@@ -53,7 +53,9 @@ The scheduler also publishes the **customer verdict** as signed MMDB snapshots: 
 
    `docker-compose.yml` mounts `var/keys/signing.key.pem` (or `FOXTRUST_SIGNING_KEY_FILE`) into the scheduler as a Docker secret. Without the key the scheduler only ingests. Publishing also needs `FOXTRUST_DISPUTE_URL`, the public copy of [docs/dispute.md](docs/dispute.md).
 
-2. **Publish and serve.** `docker compose up -d --build scheduler publication`. The `publication` service serves `/v1/` read-only on port 8081 (put your TLS proxy in front). To build right away: `docker compose exec scheduler bun run src/cli/main.ts snapshot build --full`. A build that fails validation is not published; one whose accuracy report shows a regression is held until `snapshot publish <version> --release-note "<why>"`.
+2. **Publish and serve.** `docker compose up -d --build scheduler publication`. The `publication` service serves `/v1/` read-only on port 8081 (put your TLS proxy in front). To build right away: `docker compose exec scheduler bun run src/cli/main.ts snapshot build --full`. A build that fails validation is not published; one whose accuracy report shows a regression is held until `snapshot publish <version> --release-note "<why>"`. The accuracy report (`/v1/reports/<version>.json`) checks the known-good reference `config/accuracy/known-good.csv` (or `FOXTRUST_KNOWN_GOOD`): resolvers, root servers, mirrors and CDNs that must never be blocked. A release that newly rates more of them `medium` or `high` (by more than 0.5 percentage points) is a regression. The report also shows early detection for an earlier full release once shippable behavior data exists, and names no feed.
+
+`foxtrust eval` measures the same reference, plus false negatives on a fresh sample of addresses that the behavior feeds reported in the last 7 days (each scored without the feed it came from) and early detection per feed; `--contribution` shows what each feed adds.
 
 3. **Run `/verify`** next to your reverse proxy: `docker compose up -d verify` (port 8080). It needs `FOXTRUST_PUBLICATION_URL`, `FOXTRUST_TRUSTED_KEYS` and a policy file (`config/policies/example.yaml`: Tor on `/login*` → challenge, `high` → block, default allow). It answers from memory and checks the publication every 5 minutes. `GET /status` shows the data version, its age and the last error.
 
@@ -186,7 +188,7 @@ Residential proxies are out of scope for the MVP. Later they can be detected thr
 - [x] **2. Distribution.** Signed MMDB snapshots (daily full, hourly cumulative deltas, one-year archive, release reports), policies and `/verify` for forward-auth.
 - [ ] **3. Public.** `GET /v1/ip/{ip}` with a free tier, TS SDK (Bun/Node: local lookup, auto-update, API fallback), IP/ASN pages, "my IP" page, delisting process.
 - [ ] **4. First-party data.** Honeypots, opt-in foxauth telemetry, foxauth middleware.
-- [ ] **5. Quality.** Labelled set of known-good and known-bad addresses, false-positive rate tracked for every snapshot release.
+- [ ] **5. Quality.** Known-good false-positive gate on every release, fresh known-bad samples and early detection (done, spec 003); independent known-bad labels from first-party data.
 
 ## Stack
 

@@ -23,4 +23,4 @@ Address is reserved, special-purpose or unallocated and should not appear as a p
 
 A category is a fact about the network, not about behavior; category signals alone can never make an address `high` ([[adr-category-only-cap]]).
 
-Values are from `config/scoring/2026-09-24.1.json`; change them only with an evaluation against the labelled set (constitution Principle VI).
+Values are from `config/scoring/2026-09-24.1.json`; change them only with an accuracy evaluation (`foxtrust eval --compare`, constitution Principle VI, [[adr-accuracy-measures]]).

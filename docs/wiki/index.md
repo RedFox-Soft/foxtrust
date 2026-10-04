@@ -45,3 +45,4 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-customer-facing-behavior-data]] — ADR: no licence requests; DROP/Feodo/blocklist.de stay internal; customer behavior signals from first-party data only
 - [[adr-publication-topology]] — ADR: own publication server, three containers from one image, signing key as a Docker secret, verifiers pin keys
 - [[adr-snapshot-format]] — ADR: flattened customer records in MMDB, cumulative deltas with tombstones, detached Ed25519 signatures, `/v1/` layout
+- [[adr-accuracy-measures]] — ADR: known-good false-positive gate (medium and high), fresh leave-one-source-out known-bad samples, early detection; no fixed labelled set

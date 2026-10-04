@@ -23,4 +23,4 @@ Address was seen brute-forcing web or application logins.
 
 Behavior signals decay from their last sighting as `0.5 ^ (age / half-life)`; the half-life passes the retention check of [[adr-history-and-retention]].
 
-Values are from `config/scoring/2026-09-24.1.json`; change them only with an evaluation against the labelled set (constitution Principle VI).
+Values are from `config/scoring/2026-09-24.1.json`; change them only with an accuracy evaluation (`foxtrust eval --compare`, constitution Principle VI, [[adr-accuracy-measures]]).
