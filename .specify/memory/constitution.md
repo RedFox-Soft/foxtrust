@@ -1,21 +1,26 @@
 <!--
 Sync Impact Report
-- Version change: 2.1.0 → 3.0.0 (MAJOR: Principle II redefined)
-  (previous: 2.0.0 → 2.1.0 MINOR, Principle V expanded; 1.0.0 → 2.0.0 MAJOR, Principle V)
+- Version change: 3.0.0 → 4.0.0 (MAJOR: Principle VI redefined)
+  (previous: 2.1.0 → 3.0.0 MAJOR, Principle II; 2.0.0 → 2.1.0 MINOR, Principle V;
+  1.0.0 → 2.0.0 MAJOR, Principle V)
 - Modified principles:
-  II. Explainable Verdicts: the reasons[] rule now has two views. Internal verdicts keep
-      code, source, prefix, lastSeen and contribution; customer-facing verdicts carry code,
-      lastSeen and contribution only, are computed from shippable signals only, and never
-      show the source or prefix (which stay stored for operators and delisting).
+  VI. Measured Accuracy: the fixed labelled set of known-good and known-bad addresses is replaced
+      by a known-good reference (release-gate configuration, false-positive gate on every
+      release), fresh leave-one-source-out samples of recent threat and behavior observations
+      for known-bad evaluation, and early-detection reporting that does not gate publication.
+      The per-release false-negative rate is dropped: non-shippable sources cannot appear in
+      the customer view, so the rate could not move.
+  V. Tests for User Cases and Security Only: "labelled-set evaluation" reworded to "accuracy
+      evaluation" (wording only).
 - Added sections: none
 - Removed sections: none
 - Templates: .specify/templates/*.md read the constitution at runtime; no edits required.
 - Dependent artifacts:
-  ✅ AGENTS.md Domain Rules updated (reasons[] rule).
-  ✅ specs/002-snapshot-distribution/spec.md FR-001–FR-003 already follow the new rule.
-  ✅ Stage 1 code produces the internal verdict only; it stays compliant.
-  ⚠ README.md "Principles" describes reasons[] with source for every response; update when
-    the stage 2 customer verdict is implemented.
+  ⚠ AGENTS.md points to constitution v3.0.0; update the version reference.
+  ⚠ specs/001-core-ip-lookup FR-024/FR-025 and specs/002-snapshot-distribution FR-012/SC-009
+    describe the fixed labelled set; superseded by specs/003-accuracy-measures.
+  ⚠ Code: the release report still computes false-negative rates and reads
+    data/labelled/seed.csv; changed by the 003 implementation.
 - Deferred TODOs: none
 -->
 
@@ -94,7 +99,7 @@ Rationale: first-party signals are a competitive advantage only if integrators c
 - Plans and task lists MUST NOT add test tasks outside these two categories.
 - Every user-case test name MUST start with its scenario id (e.g. `US1-3: …`), and every
   security test name with `SEC: …`, so coverage is traceable without the spec files.
-- Measurements of success criteria are not tests: benchmarks, labelled-set evaluation and
+- Measurements of success criteria are not tests: benchmarks, accuracy evaluation and
   sampling checks. They are allowed, they live in `tests/perf/` or the evaluation tooling, and
   they run on demand, not in the default `bun test` run.
 
@@ -103,12 +108,24 @@ free to change without rewriting a layer of tests.
 
 ### VI. Measured Accuracy
 
-- The project MUST maintain a labelled set of known-good and known-bad addresses.
-- Every snapshot release MUST report its false-positive and false-negative rates against that
-  set; a regression MUST be explained in the release notes before publishing.
-- Changes to weights, half-lives or policies MUST be evaluated against the labelled set.
+- The project MUST maintain a known-good reference: a versioned list of addresses that must never
+  be rated `high`, each with a documented public source, kept with the release-gate
+  configuration.
+- Every snapshot release MUST report the false-positive rate of its customer view on the
+  known-good reference, compared with the previous release of the same kind; a regression MUST
+  be explained in the release notes before publishing.
+- Known-bad accuracy MUST be measured on fresh, reproducible samples of recent threat and
+  behavior observations, each address scored with the feed it was sampled from left out. A fixed
+  list of known-bad addresses MUST NOT stand in for these samples.
+- Evaluations MUST report early detection: the share of addresses later reported by threat or
+  behavior feeds that the verdict had already flagged. Release reports MUST include it for an
+  earlier release once its window has passed, and it MUST NOT gate publication.
+- Release reports MUST NOT include rates over sources that cannot appear in the customer view.
+- Changes to weights, half-lives, feeds or policies MUST be evaluated with these measures before
+  they ship.
 
-Rationale: without a measured baseline, "better scoring" is an opinion.
+Rationale: without a measured baseline, "better scoring" is an opinion, and a measure is only a
+baseline if it moves when the thing it measures changes.
 
 ### VII. Open Formats and Simplicity
 
@@ -153,4 +170,4 @@ Rationale: open formats drive adoption without our SDK; fewer moving parts keep 
 - Compliance is checked in every `/speckit-plan` Constitution Check and `/speckit-analyze` run;
   unresolved violations block implementation.
 
-**Version**: 3.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-30
+**Version**: 4.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-10-04
