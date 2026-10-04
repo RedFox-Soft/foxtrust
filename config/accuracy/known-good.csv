@@ -1,0 +1,169 @@
+ip,reason,source,added
+1.0.0.1,public DNS resolver one.one.one.one,public:dns:one.one.one.one,2026-09-24
+1.1.1.1,public DNS resolver one.one.one.one,public:dns:one.one.one.one,2026-09-24
+104.16.123.96,public mirror or website www.cloudflare.com,public:dns:www.cloudflare.com,2026-09-24
+104.16.124.96,public mirror or website www.cloudflare.com,public:dns:www.cloudflare.com,2026-09-24
+104.16.44.99,public mirror or website www.ietf.org,public:dns:www.ietf.org,2026-09-24
+104.16.45.99,public mirror or website www.ietf.org,public:dns:www.ietf.org,2026-09-24
+104.18.24.232,public mirror or website www.iana.org,public:dns:www.iana.org,2026-09-24
+104.18.25.232,public mirror or website www.iana.org,public:dns:www.iana.org,2026-09-24
+104.94.100.169,public mirror or website www.akamai.com,public:dns:www.akamai.com,2026-09-24
+104.94.100.176,public mirror or website www.akamai.com,public:dns:www.akamai.com,2026-09-24
+109.202.202.202,public mirror or website mirror.init7.net,public:dns:mirror.init7.net,2026-09-24
+128.112.18.21,public mirror or website mirror.math.princeton.edu,public:dns:mirror.math.princeton.edu,2026-09-24
+128.31.0.62,public mirror or website www.debian.org,public:dns:www.debian.org,2026-09-24
+129.69.0.41,public mirror or website ftp.uni-stuttgart.de,public:dns:ftp.uni-stuttgart.de,2026-09-24
+129.69.0.42,public mirror or website ftp.uni-stuttgart.de,public:dns:ftp.uni-stuttgart.de,2026-09-24
+131.188.12.211,public mirror or website ftp.fau.de,public:dns:ftp.fau.de,2026-09-24
+137.226.34.46,public mirror or website ftp.halifax.rwth-aachen.de,public:dns:ftp.halifax.rwth-aachen.de,2026-09-24
+140.211.166.200,public mirror or website www.debian.org,public:dns:www.debian.org,2026-09-24
+142.0.200.124,public mirror or website mirrors.kernel.org,public:dns:mirrors.kernel.org,2026-09-24
+149.112.112.112,public DNS resolver dns.quad9.net,public:dns:dns.quad9.net,2026-09-24
+150.65.7.130,public mirror or website ftp.jaist.ac.jp,public:dns:ftp.jaist.ac.jp,2026-09-24
+151.101.0.223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+151.101.1.55,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+151.101.1.57,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+151.101.128.223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+151.101.129.55,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+151.101.129.57,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+151.101.192.223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+151.101.193.55,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+151.101.193.57,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+151.101.64.223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+151.101.65.55,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+151.101.65.57,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+162.159.200.1,public NTP server time.cloudflare.com,public:dns:time.cloudflare.com,2026-09-24
+162.159.200.123,public NTP server time.cloudflare.com,public:dns:time.cloudflare.com,2026-09-24
+169.229.200.70,public mirror or website mirrors.ocf.berkeley.edu,public:dns:mirrors.ocf.berkeley.edu,2026-09-24
+170.247.170.2,DNS root/TLD server b.root-servers.net,public:dns:b.root-servers.net,2026-09-24
+18.7.29.125,public mirror or website mirrors.mit.edu,public:dns:mirrors.mit.edu,2026-09-24
+185.15.59.224,public mirror or website www.wikipedia.org,public:dns:www.wikipedia.org,2026-09-24
+192.112.36.4,DNS root/TLD server g.root-servers.net,public:dns:g.root-servers.net,2026-09-24
+192.12.94.30,DNS root/TLD server e.gtld-servers.net,public:dns:e.gtld-servers.net,2026-09-24
+192.203.230.10,DNS root/TLD server e.root-servers.net,public:dns:e.root-servers.net,2026-09-24
+192.26.92.30,DNS root/TLD server c.gtld-servers.net,public:dns:c.gtld-servers.net,2026-09-24
+192.31.80.30,DNS root/TLD server d.gtld-servers.net,public:dns:d.gtld-servers.net,2026-09-24
+192.33.14.30,DNS root/TLD server b.gtld-servers.net,public:dns:b.gtld-servers.net,2026-09-24
+192.33.4.12,DNS root/TLD server c.root-servers.net,public:dns:c.root-servers.net,2026-09-24
+192.35.51.30,DNS root/TLD server f.gtld-servers.net,public:dns:f.gtld-servers.net,2026-09-24
+192.36.148.17,DNS root/TLD server i.root-servers.net,public:dns:i.root-servers.net,2026-09-24
+192.41.162.30,DNS root/TLD server l.gtld-servers.net,public:dns:l.gtld-servers.net,2026-09-24
+192.42.93.30,DNS root/TLD server g.gtld-servers.net,public:dns:g.gtld-servers.net,2026-09-24
+192.43.172.30,DNS root/TLD server i.gtld-servers.net,public:dns:i.gtld-servers.net,2026-09-24
+192.48.79.30,DNS root/TLD server j.gtld-servers.net,public:dns:j.gtld-servers.net,2026-09-24
+192.5.5.241,DNS root/TLD server f.root-servers.net,public:dns:f.root-servers.net,2026-09-24
+192.5.6.30,DNS root/TLD server a.gtld-servers.net,public:dns:a.gtld-servers.net,2026-09-24
+192.52.178.30,DNS root/TLD server k.gtld-servers.net,public:dns:k.gtld-servers.net,2026-09-24
+192.53.103.104,public NTP server ntp2.ptb.de,public:dns:ntp2.ptb.de,2026-09-24
+192.53.103.108,public NTP server ntp1.ptb.de,public:dns:ntp1.ptb.de,2026-09-24
+192.54.112.30,DNS root/TLD server h.gtld-servers.net,public:dns:h.gtld-servers.net,2026-09-24
+192.55.83.30,DNS root/TLD server m.gtld-servers.net,public:dns:m.gtld-servers.net,2026-09-24
+192.58.128.30,DNS root/TLD server j.root-servers.net,public:dns:j.root-servers.net,2026-09-24
+193.0.14.129,DNS root/TLD server k.root-servers.net,public:dns:k.root-servers.net,2026-09-24
+194.71.11.163,public mirror or website ftp.acc.umu.se,public:dns:ftp.acc.umu.se,2026-09-24
+194.71.11.165,public mirror or website ftp.acc.umu.se,public:dns:ftp.acc.umu.se,2026-09-24
+194.71.11.173,public mirror or website ftp.acc.umu.se,public:dns:ftp.acc.umu.se,2026-09-24
+198.41.0.4,DNS root/TLD server a.root-servers.net,public:dns:a.root-servers.net,2026-09-24
+198.97.190.53,DNS root/TLD server h.root-servers.net,public:dns:h.root-servers.net,2026-09-24
+199.185.178.80,public mirror or website www.openbsd.org,public:dns:www.openbsd.org,2026-09-24
+199.7.83.42,DNS root/TLD server l.root-servers.net,public:dns:l.root-servers.net,2026-09-24
+199.7.91.13,DNS root/TLD server d.root-servers.net,public:dns:d.root-servers.net,2026-09-24
+2001:1620::1620,public mirror or website mirror.init7.net,public:dns:mirror.init7.net,2026-09-24
+2001:19f0:b800:1ddf:5400:4ff:fe4e:2aad,public DNS resolver dns.nextdns.io,public:dns:dns.nextdns.io,2026-09-24
+2001:388:30bc:cafe::beef,public mirror or website mirror.aarnet.edu.au,public:dns:mirror.aarnet.edu.au,2026-09-24
+2001:470:142:3::b,public mirror or website ftp.gnu.org,public:dns:ftp.gnu.org,2026-09-24
+2001:4860:4806:4::,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+2001:4860:4806:8::,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+2001:4860:4806::,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+2001:4860:4806:c::,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+2001:4860:4860::8844,public DNS resolver dns.google,public:dns:dns.google,2026-09-24
+2001:4860:4860::8888,public DNS resolver dns.google,public:dns:dns.google,2026-09-24
+2001:500:12::d0d,DNS root/TLD server g.root-servers.net,public:dns:g.root-servers.net,2026-09-24
+2001:500:1::53,DNS root/TLD server h.root-servers.net,public:dns:h.root-servers.net,2026-09-24
+2001:500:2::c,DNS root/TLD server c.root-servers.net,public:dns:c.root-servers.net,2026-09-24
+2001:500:2d::d,DNS root/TLD server d.root-servers.net,public:dns:d.root-servers.net,2026-09-24
+2001:500:2f::f,DNS root/TLD server f.root-servers.net,public:dns:f.root-servers.net,2026-09-24
+2001:500:856e::30,DNS root/TLD server d.gtld-servers.net,public:dns:d.gtld-servers.net,2026-09-24
+2001:500:9f::42,DNS root/TLD server l.root-servers.net,public:dns:l.root-servers.net,2026-09-24
+2001:500:a8::e,DNS root/TLD server e.root-servers.net,public:dns:e.root-servers.net,2026-09-24
+2001:500:d937::30,DNS root/TLD server l.gtld-servers.net,public:dns:l.gtld-servers.net,2026-09-24
+2001:501:b1f9::30,DNS root/TLD server m.gtld-servers.net,public:dns:m.gtld-servers.net,2026-09-24
+2001:502:1ca1::30,DNS root/TLD server e.gtld-servers.net,public:dns:e.gtld-servers.net,2026-09-24
+2001:502:7094::30,DNS root/TLD server j.gtld-servers.net,public:dns:j.gtld-servers.net,2026-09-24
+2001:502:8cc::30,DNS root/TLD server h.gtld-servers.net,public:dns:h.gtld-servers.net,2026-09-24
+2001:503:231d::2:30,DNS root/TLD server b.gtld-servers.net,public:dns:b.gtld-servers.net,2026-09-24
+2001:503:39c1::30,DNS root/TLD server i.gtld-servers.net,public:dns:i.gtld-servers.net,2026-09-24
+2001:503:83eb::30,DNS root/TLD server c.gtld-servers.net,public:dns:c.gtld-servers.net,2026-09-24
+2001:503:a83e::2:30,DNS root/TLD server a.gtld-servers.net,public:dns:a.gtld-servers.net,2026-09-24
+2001:503:ba3e::2:30,DNS root/TLD server a.root-servers.net,public:dns:a.root-servers.net,2026-09-24
+2001:503:c27::2:30,DNS root/TLD server j.root-servers.net,public:dns:j.root-servers.net,2026-09-24
+2001:503:d2d::30,DNS root/TLD server k.gtld-servers.net,public:dns:k.gtld-servers.net,2026-09-24
+2001:503:d414::30,DNS root/TLD server f.gtld-servers.net,public:dns:f.gtld-servers.net,2026-09-24
+2001:503:eea3::30,DNS root/TLD server g.gtld-servers.net,public:dns:g.gtld-servers.net,2026-09-24
+2001:638:610:be01::104,public NTP server ntp2.ptb.de,public:dns:ntp2.ptb.de,2026-09-24
+2001:638:610:be01::108,public NTP server ntp1.ptb.de,public:dns:ntp1.ptb.de,2026-09-24
+2001:638:a000:1021:21::1,public mirror or website ftp.fau.de,public:dns:ftp.fau.de,2026-09-24
+2001:6b0:19::163,public mirror or website ftp.acc.umu.se,public:dns:ftp.acc.umu.se,2026-09-24
+2001:6b0:19::165,public mirror or website ftp.acc.umu.se,public:dns:ftp.acc.umu.se,2026-09-24
+2001:6b0:19::173,public mirror or website ftp.acc.umu.se,public:dns:ftp.acc.umu.se,2026-09-24
+2001:7c0:2041:48::41,public mirror or website ftp.uni-stuttgart.de,public:dns:ftp.uni-stuttgart.de,2026-09-24
+2001:7c0:2041:48::42,public mirror or website ftp.uni-stuttgart.de,public:dns:ftp.uni-stuttgart.de,2026-09-24
+2001:7fd::1,DNS root/TLD server k.root-servers.net,public:dns:k.root-servers.net,2026-09-24
+2001:7fe::53,DNS root/TLD server i.root-servers.net,public:dns:i.root-servers.net,2026-09-24
+2001:dc3::35,DNS root/TLD server m.root-servers.net,public:dns:m.root-servers.net,2026-09-24
+2001:df0:2ed:feed::feed,public mirror or website ftp.jaist.ac.jp,public:dns:ftp.jaist.ac.jp,2026-09-24
+202.12.27.33,DNS root/TLD server m.root-servers.net,public:dns:m.root-servers.net,2026-09-24
+202.158.214.106,public mirror or website mirror.aarnet.edu.au,public:dns:mirror.aarnet.edu.au,2026-09-24
+208.67.220.220,public DNS resolver resolver2.opendns.com,public:dns:resolver2.opendns.com,2026-09-24
+208.67.222.222,public DNS resolver resolver1.opendns.com,public:dns:resolver1.opendns.com,2026-09-24
+209.51.188.20,public mirror or website ftp.gnu.org,public:dns:ftp.gnu.org,2026-09-24
+216.238.105.217,public DNS resolver dns.nextdns.io,public:dns:dns.nextdns.io,2026-09-24
+216.239.35.0,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+216.239.35.12,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+216.239.35.4,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+216.239.35.8,public NTP server time.google.com,public:dns:time.google.com,2026-09-24
+2603:400a:ffff:bb8::801f:3e,public mirror or website www.debian.org,public:dns:www.debian.org,2026-09-24
+2605:bc80:3010:b00:0:deb:166:200,public mirror or website www.debian.org,public:dns:www.debian.org,2026-09-24
+2605:f480:58:1:0:1994:3:14,public mirror or website mirrors.kernel.org,public:dns:mirrors.kernel.org,2026-09-24
+2606:4700:4700::1001,public DNS resolver one.one.one.one,public:dns:one.one.one.one,2026-09-24
+2606:4700:4700::1111,public DNS resolver one.one.one.one,public:dns:one.one.one.one,2026-09-24
+2606:4700::6810:2c63,public mirror or website www.ietf.org,public:dns:www.ietf.org,2026-09-24
+2606:4700::6810:2d63,public mirror or website www.ietf.org,public:dns:www.ietf.org,2026-09-24
+2606:4700::6810:7b60,public mirror or website www.cloudflare.com,public:dns:www.cloudflare.com,2026-09-24
+2606:4700::6810:7c60,public mirror or website www.cloudflare.com,public:dns:www.cloudflare.com,2026-09-24
+2606:4700::6812:18e8,public mirror or website www.iana.org,public:dns:www.iana.org,2026-09-24
+2606:4700::6812:19e8,public mirror or website www.iana.org,public:dns:www.iana.org,2026-09-24
+2606:4700:f1::1,public NTP server time.cloudflare.com,public:dns:time.cloudflare.com,2026-09-24
+2606:4700:f1::123,public NTP server time.cloudflare.com,public:dns:time.cloudflare.com,2026-09-24
+2607:f140:0:32::70,public mirror or website mirrors.ocf.berkeley.edu,public:dns:mirrors.ocf.berkeley.edu,2026-09-24
+2620:119:35::35,public DNS resolver resolver1.opendns.com,public:dns:resolver1.opendns.com,2026-09-24
+2620:119:53::53,public DNS resolver resolver2.opendns.com,public:dns:resolver2.opendns.com,2026-09-24
+2620:3d:c000:178::80,public mirror or website www.openbsd.org,public:dns:www.openbsd.org,2026-09-24
+2620:fe::9,public DNS resolver dns.quad9.net,public:dns:dns.quad9.net,2026-09-24
+2620:fe::fe,public DNS resolver dns.quad9.net,public:dns:dns.quad9.net,2026-09-24
+2801:1b8:10::b,DNS root/TLD server b.root-servers.net,public:dns:b.root-servers.net,2026-09-24
+2a00:8a60:e012:a00::21,public mirror or website ftp.halifax.rwth-aachen.de,public:dns:ftp.halifax.rwth-aachen.de,2026-09-24
+2a02:26f0:d8::6851:3c92,public mirror or website www.akamai.com,public:dns:www.akamai.com,2026-09-24
+2a02:26f0:d8::6851:3ca8,public mirror or website www.akamai.com,public:dns:www.akamai.com,2026-09-24
+2a02:ec80:300:ed1a::1,public mirror or website www.wikipedia.org,public:dns:www.wikipedia.org,2026-09-24
+2a04:4e42:200::223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+2a04:4e42:200::311,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+2a04:4e42:200::313,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+2a04:4e42:400::223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+2a04:4e42:400::311,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+2a04:4e42:400::313,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+2a04:4e42:600::223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+2a04:4e42:600::311,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+2a04:4e42:600::313,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+2a04:4e42::223,public mirror or website www.python.org,public:dns:www.python.org,2026-09-24
+2a04:4e42::311,public mirror or website www.kernel.org,public:dns:www.kernel.org,2026-09-24
+2a04:4e42::313,public mirror or website www.fastly.com,public:dns:www.fastly.com,2026-09-24
+2a0b:4341:1500:101:5054:ff:fe0d:daf8,public DNS resolver dns.nextdns.io,public:dns:dns.nextdns.io,2026-09-24
+2a10:50c0::ad1:ff,public DNS resolver dns.adguard-dns.com,public:dns:dns.adguard-dns.com,2026-09-24
+2a10:50c0::ad2:ff,public DNS resolver dns.adguard-dns.com,public:dns:dns.adguard-dns.com,2026-09-24
+45.11.105.129,public DNS resolver dns.nextdns.io,public:dns:dns.nextdns.io,2026-09-24
+8.8.4.4,public DNS resolver dns.google,public:dns:dns.google,2026-09-24
+8.8.8.8,public DNS resolver dns.google,public:dns:dns.google,2026-09-24
+9.9.9.9,public DNS resolver dns.quad9.net,public:dns:dns.quad9.net,2026-09-24
+94.140.14.14,public DNS resolver dns.adguard-dns.com,public:dns:dns.adguard-dns.com,2026-09-24
+94.140.15.15,public DNS resolver dns.adguard-dns.com,public:dns:dns.adguard-dns.com,2026-09-24

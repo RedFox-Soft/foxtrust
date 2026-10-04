@@ -7,6 +7,7 @@ import { DEFAULT_WIKI_ENTITIES, readLicence } from "../ingest/licence-gate";
 import type { ScoringConfig } from "../model/types";
 import { configSha256 } from "../scoring/config";
 import { buildDelta, buildFull, deltaVersion, fullVersion, validateBuild, type Build } from "./build";
+import { DEFAULT_KNOWN_GOOD, loadKnownGood } from "../eval/known-good";
 import { releaseReport, type ReleaseReport } from "./report";
 import { loadSigningKey, readKeysFile, sign, writeKeysFile, type PublicKeyInfo, type SigningKey } from "./sign";
 
@@ -30,8 +31,8 @@ export type ReleaseOptions = {
   releaseNote?: string | null;
   wikiRoot?: string;
   sample?: number;
-  /** Labelled set for the release report (default data/labelled/seed.csv). */
-  labelsFile?: string;
+  /** Known-good reference for the release report and gate (default config/accuracy/known-good.csv). */
+  knownGoodFile?: string;
 };
 
 export type ReleaseResult = {
@@ -177,6 +178,8 @@ export async function currentFull(sql: SQL): Promise<{ version: string; filePath
  */
 export async function release(sql: Db, build: Build, opts: ReleaseOptions): Promise<ReleaseResult> {
   if (!opts.disputeUrl) throw new Error("FOXTRUST_DISPUTE_URL is required to publish a snapshot (FR-008c)");
+  // An invalid reference stops the release before anything is recorded (spec 003 FR-003).
+  const knownGood = await loadKnownGood(opts.knownGoodFile ?? DEFAULT_KNOWN_GOOD);
   await assertNotPublished(sql, build.version);
   const result = (status: ReleaseStatus, problems: string[], path: string | null = null, reportPath: string | null = null): ReleaseResult => ({
     version: build.version, kind: build.kind, status, problems, path, reportPath,
@@ -198,7 +201,7 @@ export async function release(sql: Db, build: Build, opts: ReleaseOptions): Prom
   }
 
   // Principle VI: every release gets a report; a regression waits for a release note.
-  const report = await releaseReport(sql, build, { dir: opts.dir, baseBytes, ...(opts.labelsFile ? { labelsFile: opts.labelsFile } : {}) });
+  const report = await releaseReport(sql, build, { dir: opts.dir, baseBytes, knownGood, ...(opts.now ? { now: opts.now } : {}) });
   const stagedReport = join(opts.workDir, `${build.version}.report.json`);
   await writeAtomic(stagedReport, json(report));
   if (report.regressions.length > 0 && !opts.releaseNote) {
@@ -399,6 +402,6 @@ export async function releaseOptionsFromEnv(): Promise<ReleaseOptions> {
     workDir: workDir(),
     key: await loadSigningKey(keyPath),
     disputeUrl: Bun.env.FOXTRUST_DISPUTE_URL?.trim() || null,
-    ...(Bun.env.FOXTRUST_RELEASE_LABELS?.trim() ? { labelsFile: Bun.env.FOXTRUST_RELEASE_LABELS.trim() } : {}),
+    ...(Bun.env.FOXTRUST_KNOWN_GOOD?.trim() ? { knownGoodFile: Bun.env.FOXTRUST_KNOWN_GOOD.trim() } : {}),
   };
 }

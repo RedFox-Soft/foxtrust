@@ -1,10 +1,11 @@
 import { join } from "node:path";
 import { activateConfig } from "../../src/db/versions";
 import { evaluate } from "../../src/eval/evaluate";
-import { loadLabels } from "../../src/eval/labels";
+import { loadKnownGood } from "../../src/eval/known-good";
 import { FEEDS } from "../../src/feeds/registry";
 import { runFeed } from "../../src/ingest/run";
 import { shippedConfig } from "../helpers/seed";
+import { measureAccuracyEvaluation } from "./accuracy.bench";
 import { measureCategoryCap } from "./category-cap.measure";
 import { measureIngest } from "./ingest.bench";
 import { measureLookup } from "./lookup.bench";
@@ -33,14 +34,15 @@ async function measureAccuracy(): Promise<Measurement[]> {
     for (const def of FEEDS) {
       await runFeed(db.sql, def.id, { fromFiles: FIXTURE_FILES[def.id]!.map((n) => join(FIX, def.id, n)) });
     }
-    const report = await evaluate(db.sql, { labels: await loadLabels() });
-    const high = report.configs[0]!.rates.high;
-    const medium = report.configs[0]!.rates.medium;
+    const report = await evaluate(db.sql, { knownGood: await loadKnownGood() });
+    const high = report.configs[0]!.falsePositives.high;
+    const fnHigh = report.configs[0]!.knownBad.rates.high;
+    const fnMedium = report.configs[0]!.knownBad.rates.medium;
     return [
       {
         criterion: "SC-007 FP rate at high on known-good (fixture data)",
         target: "≤ 2 %",
-        measured: `${(high.fpRate * 100).toFixed(1)} % (${high.falsePositives}/${high.goodTotal}); FN at high ${(high.fnRate * 100).toFixed(1)} %, at medium ${(medium.fnRate * 100).toFixed(1)} %`,
+        measured: `${(high.fpRate * 100).toFixed(1)} % (${high.falsePositives}/${high.goodTotal}); FN on the fresh sample at high ${(fnHigh.fnRate * 100).toFixed(1)} %, at medium ${(fnMedium.fnRate * 100).toFixed(1)} %`,
         pass: high.fpRate <= 0.02,
       },
     ];
@@ -58,6 +60,7 @@ for (const [name, fn] of [
   ["stage 2 SC-001", measureSecondReader],
   ["stage 2 SC-004/SC-005", measureVerify],
   ["stage 2 SC-006/SC-007", measureSnapshot],
+  ["spec 003 SC-006", measureAccuracyEvaluation],
 ] as const) {
   console.error(`measuring ${name}…`);
   measurements.push(...(await fn()));

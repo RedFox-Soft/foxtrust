@@ -1,71 +1,73 @@
 import type { Level } from "../model/types";
 
-export type LabelResult = { ip: string; label: "good" | "bad"; labelSource: string; level: Level; risk: number };
+// Spec 003: false positives on the known-good reference, false negatives on the fresh sample.
 
-export type Rates = {
-  goodTotal: number;
-  badTotal: number;
-  falsePositives: number;
-  falseNegatives: number;
-  fpRate: number;
-  fnRate: number;
-};
+export type Scored = { ip: string; level: Level; risk: number };
+export type FpRates = { goodTotal: number; falsePositives: number; fpRate: number };
+export type FnRates = { badTotal: number; falseNegatives: number; fnRate: number };
+export type ByLevel<T> = { medium: T; high: T };
+export type Changed = { ip: string; from: Level; to: Level; riskFrom: number; riskTo: number };
 
 const RANK: Record<Level, number> = { low: 0, medium: 1, high: 2 };
 const atLeast = (level: Level, threshold: Level) => RANK[level] >= RANK[threshold];
 const ratio = (n: number, total: number) => (total === 0 ? 0 : n / total);
 
-/** FP = good rows at or above `threshold` ÷ good rows; FN = bad rows below it ÷ bad rows. */
-export function rates(results: LabelResult[], threshold: "medium" | "high"): Rates {
-  const good = results.filter((r) => r.label === "good");
-  const bad = results.filter((r) => r.label === "bad");
-  const falsePositives = good.filter((r) => atLeast(r.level, threshold)).length;
-  const falseNegatives = bad.filter((r) => !atLeast(r.level, threshold)).length;
-  return {
-    goodTotal: good.length,
-    badTotal: bad.length,
-    falsePositives,
-    falseNegatives,
-    fpRate: ratio(falsePositives, good.length),
-    fnRate: ratio(falseNegatives, bad.length),
-  };
+/** FP = known-good addresses at or above `threshold` ÷ known-good addresses. */
+export function fpRates(results: Scored[], threshold: "medium" | "high"): FpRates {
+  const falsePositives = results.filter((r) => atLeast(r.level, threshold)).length;
+  return { goodTotal: results.length, falsePositives, fpRate: ratio(falsePositives, results.length) };
 }
 
-export type LevelRates = { medium: Rates; high: Rates };
+/** FN = known-bad addresses below `threshold` ÷ known-bad addresses. */
+export function fnRates(results: Scored[], threshold: "medium" | "high"): FnRates {
+  const falseNegatives = results.filter((r) => !atLeast(r.level, threshold)).length;
+  return { badTotal: results.length, falseNegatives, fnRate: ratio(falseNegatives, results.length) };
+}
 
-export const levelRates = (results: LabelResult[]): LevelRates => ({
-  medium: rates(results, "medium"),
-  high: rates(results, "high"),
+export const fpLevelRates = (results: Scored[]): ByLevel<FpRates> => ({
+  medium: fpRates(results, "medium"),
+  high: fpRates(results, "high"),
 });
 
-export type Comparison = {
-  deltas: Record<"medium" | "high", { fpRate: number; fnRate: number }>;
-  changed: { ip: string; label: "good" | "bad"; from: Level; to: Level; riskFrom: number; riskTo: number }[];
-};
+export const fnLevelRates = (results: Scored[]): ByLevel<FnRates> => ({
+  medium: fnRates(results, "medium"),
+  high: fnRates(results, "high"),
+});
 
-/** Rate deltas (b − a) and every address whose level changed. */
-export function compare(a: LabelResult[], b: LabelResult[]): Comparison {
-  const ra = levelRates(a);
-  const rb = levelRates(b);
+/** Addresses of `a` whose level differs in `b` (matched by ip). */
+export function changedLevels(a: Scored[], b: Scored[]): Changed[] {
   const byIp = new Map(b.map((r) => [r.ip, r]));
-  const changed = a.flatMap((x) => {
+  return a.flatMap((x) => {
     const y = byIp.get(x.ip);
-    return y && y.level !== x.level
-      ? [{ ip: x.ip, label: x.label, from: x.level, to: y.level, riskFrom: x.risk, riskTo: y.risk }]
-      : [];
+    return y && y.level !== x.level ? [{ ip: x.ip, from: x.level, to: y.level, riskFrom: x.risk, riskTo: y.risk }] : [];
   });
+}
+
+/** FP rate deltas (b − a) and the known-good addresses whose level changed. */
+export function compareFp(a: Scored[], b: Scored[]): { deltas: ByLevel<{ fpRate: number }>; changed: Changed[] } {
+  const ra = fpLevelRates(a);
+  const rb = fpLevelRates(b);
   return {
-    deltas: {
-      medium: { fpRate: rb.medium.fpRate - ra.medium.fpRate, fnRate: rb.medium.fnRate - ra.medium.fnRate },
-      high: { fpRate: rb.high.fpRate - ra.high.fpRate, fnRate: rb.high.fnRate - ra.high.fnRate },
-    },
-    changed,
+    deltas: { medium: { fpRate: rb.medium.fpRate - ra.medium.fpRate }, high: { fpRate: rb.high.fpRate - ra.high.fpRate } },
+    changed: changedLevels(a, b),
   };
 }
 
-/** How many addresses each label source contributed (FR-025a). */
-export function sourceCounts(results: { labelSource: string }[]): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const r of results) out[r.labelSource] = (out[r.labelSource] ?? 0) + 1;
-  return Object.fromEntries(Object.entries(out).sort(([x], [y]) => x.localeCompare(y)));
+/** FN rate deltas (b − a) and the sampled addresses whose level changed. */
+export function compareFn(a: Scored[], b: Scored[]): { deltas: ByLevel<{ fnRate: number }>; changed: Changed[] } {
+  const ra = fnLevelRates(a);
+  const rb = fnLevelRates(b);
+  return {
+    deltas: { medium: { fnRate: rb.medium.fnRate - ra.medium.fnRate }, high: { fnRate: rb.high.fnRate - ra.high.fnRate } },
+    changed: changedLevels(a, b),
+  };
+}
+
+/** Count and share of `results` at or above each level. */
+export function levelShares(results: Scored[]): ByLevel<{ count: number; share: number }> {
+  const at = (t: Level) => {
+    const count = results.filter((r) => atLeast(r.level, t)).length;
+    return { count, share: ratio(count, results.length) };
+  };
+  return { medium: at("medium"), high: at("high") };
 }

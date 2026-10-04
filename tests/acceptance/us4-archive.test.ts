@@ -4,14 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { main } from "../../src/cli/main";
 import { activateConfig } from "../../src/db/versions";
-import { DEFAULT_LABELS } from "../../src/eval/labels";
 import { loadConfig } from "../../src/scoring/config";
 import { runSnapshotRetention, snapshotAt } from "../../src/snapshot/archive";
 import { buildAndRelease, type ReleaseOptions } from "../../src/snapshot/publish";
 import type { ReleaseReport } from "../../src/snapshot/report";
 import { importTrustedKeys, loadSigningKey, verify } from "../../src/snapshot/sign";
+import { knownGoodFile } from "../helpers/accuracy";
 import { describeDb, withTestDb } from "../helpers/db";
-import { fixturePath, loadFixtureDataset, STAGE2_CONFIG } from "../helpers/fixture-data";
+import { loadFixtureDataset, STAGE2_CONFIG } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 
 const HOUR = 3_600_000;
@@ -45,7 +45,7 @@ describeDb("US4: snapshot archive and release quality", () => {
       FOXTRUST_PUBLICATION_DIR: pub.dir,
       FOXTRUST_SNAPSHOT_WORK_DIR: opts.workDir,
       FOXTRUST_DISPUTE_URL: opts.disputeUrl!,
-      FOXTRUST_RELEASE_LABELS: opts.labelsFile!,
+      FOXTRUST_KNOWN_GOOD: opts.knownGoodFile!,
     });
     try {
       return await main(args);
@@ -60,24 +60,10 @@ describeDb("US4: snapshot archive and release quality", () => {
     await loadFixtureDataset(db.sql);
     t0 = new Date();
 
-    // Labelled set for the gate: the seed's good rows, Tor exits as bad (the fixture's customer
-    // view has no shippable behaviour data, so the seed's bad rows are never detected).
-    const seed = (await Bun.file(DEFAULT_LABELS).text()).split(/\r?\n/);
-    const exits = [...new Set((await Bun.file(fixturePath("tor-exit", "exit-list.txt")).text())
-      .split(/\r?\n/).filter((l) => l.startsWith("ExitAddress")).map((l) => l.split(/\s+/)[1]!))];
-    const labels = [
-      seed[0],
-      ...seed.filter((l) => l.includes(",good,")),
-      ...exits.map((ip) => `${ip},bad,Tor exit in the fixture,tor-exit,2026-09-30`),
-      "2001:418:1401:4::1,bad,hosting in the fixture,x4bnet-datacenter,2026-09-30",
-    ];
-    const labelsFile = join(tmp, "labels.csv");
-    await Bun.write(labelsFile, `${labels.join("\n")}\n`);
-
     pub = await createTestPublication();
     opts = {
       dir: pub.dir, workDir: join(tmp, "work"), key: await loadSigningKey(pub.signingKeyPath),
-      disputeUrl: "https://foxtrust.example/dispute", sample: 150, labelsFile,
+      disputeUrl: "https://foxtrust.example/dispute", sample: 150, knownGoodFile: await knownGoodFile(tmp),
     };
     // Three simulated days: a full snapshot and two hourly deltas each.
     for (let day = 0; day < 3; day++) {
@@ -119,9 +105,10 @@ describeDb("US4: snapshot archive and release quality", () => {
   });
 
   test("US4-2: a regression holds full and delta releases until a release note explains it", async () => {
-    // A variant config that weakens Tor: Tor exits drop below medium (FN at medium rises).
+    // A variant config that weighs hosting more: the known-good address in a fixture hosting range
+    // (2001:19f0:b800:1ddf:5400:4ff:fe4e:2aad) rises to medium, so FP at medium rises (spec 003).
     const base = await loadConfig(STAGE2_CONFIG);
-    const variant = { ...base, version: "2026-09-30.99", codes: { ...base.codes, tor_exit: { ...base.codes.tor_exit!, weight: 0.1 } } };
+    const variant = { ...base, version: "2026-09-30.99", codes: { ...base.codes, hosting: { ...base.codes.hosting!, weight: 0.5 } } };
     const variantFile = join(tmp, "variant.json");
     await Bun.write(variantFile, JSON.stringify(variant));
     await activateConfig(db.sql, await loadConfig(variantFile));
@@ -134,14 +121,14 @@ describeDb("US4: snapshot archive and release quality", () => {
     const rows = await db.sql`SELECT version, kind, status, report_path FROM snapshot_release WHERE status = 'held' ORDER BY id`;
     expect(rows.map((r: { kind: string }) => r.kind)).toEqual(["full", "delta"]);
     const heldReport = (await Bun.file(rows[1].report_path).json()) as ReleaseReport;
-    expect(heldReport.regressions.join(" ")).toContain("FN rate at medium rose");
+    expect(heldReport.regressions.join(" ")).toContain("FP rate at medium rose");
     const manifestBefore = await Bun.file(join(pub.dir, "v1", "manifest.json")).json();
     expect(manifestBefore.delta.version).toBe(published[8]!.version);
 
     // Without a note it stays held; with one it is published, and the note is kept.
     const delta = rows[1].version as string;
     expect(await cli(["snapshot", "publish", delta])).toBe(1);
-    const note = "Tor weight lowered on purpose for this test";
+    const note = "Hosting weight raised on purpose for this test";
     expect(await cli(["snapshot", "publish", delta, "--release-note", note])).toBe(0);
     const report = (await Bun.file(join(pub.dir, "v1", "reports", `${delta}.json`)).json()) as ReleaseReport;
     expect(report.releaseNote).toBe(note);

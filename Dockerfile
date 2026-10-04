@@ -15,8 +15,6 @@ COPY db ./db
 COPY config ./config
 # Licence records are the input of the ingestion licence gate (FR-014). Rebuild after editing them.
 COPY docs/wiki/entities ./docs/wiki/entities
-# The labelled set for snapshot release reports and the regression gate (research R11).
-COPY data/labelled ./data/labelled
 
 # New named volumes take the owner of these directories, so the scheduler can write to them.
 RUN mkdir -p /app/var/publication /app/var/snapshots && chown -R bun:bun /app/var

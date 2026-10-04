@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import type { Db } from "../db/client";
-import { DEFAULT_LABELS, loadLabels, type LabelledAddress } from "../eval/labels";
-import { compare, levelRates, sourceCounts, type LabelResult, type LevelRates } from "../eval/metrics";
+import { findNewAddresses } from "../eval/early-detection";
+import type { KnownGood, KnownGoodEntry, ReferenceVersion } from "../eval/known-good";
+import { compareFp, fpLevelRates, levelShares, type ByLevel, type Changed, type FpRates, type Scored } from "../eval/metrics";
 import { toIpValue, type IpValue } from "../ip/parse";
 import type { Level } from "../model/types";
 import { openMmdb, overlay } from "../mmdb/reader";
@@ -10,16 +11,32 @@ import { configSha256 } from "../scoring/config";
 import type { Build } from "./build";
 
 /**
- * Release report and regression gate (research R11, constitution Principle VI). The labelled
- * set is looked up in the file customers get (base + delta for a delta), and compared with the
- * previous release of the same kind; the first delta of a day is compared with its full snapshot.
+ * Release report v2 and regression gate (spec 003, research R6; constitution Principle VI). The
+ * known-good reference is looked up in the file customers get (base + delta for a delta), and
+ * compared with the previous release of the same kind; the first delta of a day is compared with
+ * its full snapshot. The report is public: it names no feed or source.
  */
 
-/** A regression: FP at `high` up by more than 0.5 pp, or FN at `medium`/`high` up by more than 2 pp. */
+/** A regression: the FP rate on the known-good reference at `medium` or `high` up by more than 0.5 pp. */
+export const MAX_FP_INCREASE_MEDIUM = 0.005;
 export const MAX_FP_INCREASE_HIGH = 0.005;
-export const MAX_FN_INCREASE = 0.02;
+/** Days after a full release in which newly reported addresses count for its early detection. */
+export const EARLY_DETECTION_WINDOW_DAYS = 7;
+
+export type EarlyDetectionSummary =
+  | {
+      available: true;
+      release: string;
+      moment: string;
+      windowDays: number;
+      found: number;
+      medium: { count: number; share: number };
+      high: { count: number; share: number };
+    }
+  | { available: false; reason: string };
 
 export type ReleaseReport = {
+  reportVersion: 2;
   version: string;
   kind: "full" | "delta";
   base: string | null;
@@ -28,24 +45,26 @@ export type ReleaseReport = {
   algorithm: string;
   configSha256: string;
   method: string;
-  labels: { file: string; count: number; sources: Record<string, number> };
-  rates: LevelRates;
-  previous: { version: string; rates: LevelRates } | null;
-  deltas: Record<"medium" | "high", { fpRate: number; fnRate: number }> | null;
-  changed: { ip: string; label: "good" | "bad"; from: Level; to: Level; riskFrom: number; riskTo: number }[];
+  knownGood: ReferenceVersion;
+  rates: ByLevel<FpRates>;
+  previous: { version: string; rates: ByLevel<FpRates> } | null;
+  deltas: ByLevel<{ fpRate: number }> | null;
+  changed: Changed[];
   regressions: string[];
+  earlyDetection: EarlyDetectionSummary;
   releaseNote: string | null;
 };
 
 type Get = (ip: IpValue) => MmdbValue | null;
 
-function results(get: Get, labels: LabelledAddress[]): LabelResult[] {
-  return labels.map((label) => {
-    const ip = toIpValue(label.ip);
-    if ("error" in ip) throw new Error(`labelled address ${label.ip}: ${ip.error}`);
+/** Level and risk of each address in a customer view; an address the view does not list is `low`. */
+export function customerResults(get: Get, entries: { ip: string }[]): Scored[] {
+  return entries.map((entry) => {
+    const ip = toIpValue(entry.ip);
+    if ("error" in ip) throw new Error(`address ${entry.ip}: ${ip.error}`);
     const record = get(ip) as { level?: MmdbValue; risk?: MmdbValue } | null;
     const level = (typeof record?.level === "string" ? record.level : "low") as Level;
-    return { ip: label.ip, label: label.label, labelSource: label.labelSource, level, risk: Number(record?.risk ?? 0) };
+    return { ip: entry.ip, level, risk: Number(record?.risk ?? 0) };
   });
 }
 
@@ -69,29 +88,57 @@ async function previousRelease(sql: Db, dir: string, build: Build): Promise<{ ve
   return { version: delta.version, get: overlay(base, await read(delta.file_path)) };
 }
 
+/**
+ * Early detection of the latest published full release whose window is over, on the customer view
+ * it published, over shippable behavior sightings only (research R4, Principle III). Aggregate only:
+ * a public report names no feed. It never adds a regression (FR-007).
+ */
+async function releaseEarlyDetection(sql: Db, dir: string, now: Date): Promise<EarlyDetectionSummary> {
+  const windowDays = EARLY_DETECTION_WINDOW_DAYS;
+  const cutoff = new Date(now.getTime() - windowDays * 86_400_000);
+  const [row] = await sql`
+    SELECT version, file_path, valid_from FROM snapshot_release
+    WHERE kind = 'full' AND status = 'published' AND valid_from <= ${cutoff}
+    ORDER BY valid_from DESC LIMIT 1`;
+  if (!row) return { available: false, reason: `no published full release is ${windowDays} days old yet` };
+  const moment = new Date(row.valid_from);
+  const found = await findNewAddresses(sql, { moment, windowDays, shippableOnly: true });
+  if (found.length === 0) {
+    return { available: false, reason: `no shippable behavior address was first reported in the ${windowDays} days after ${row.version}` };
+  }
+  const view = openMmdb(new Uint8Array(await Bun.file(join(dir, row.file_path)).arrayBuffer()));
+  return {
+    available: true,
+    release: row.version,
+    moment: moment.toISOString(),
+    windowDays,
+    found: found.length,
+    ...levelShares(customerResults(view.get, found)),
+  };
+}
+
 export async function releaseReport(
   sql: Db,
   build: Build,
-  opts: { dir: string; baseBytes?: Uint8Array | undefined; labelsFile?: string },
+  opts: { dir: string; baseBytes?: Uint8Array | undefined; knownGood: KnownGood; now?: Date },
 ): Promise<ReleaseReport> {
-  const labelsFile = opts.labelsFile ?? DEFAULT_LABELS;
-  const labels = await loadLabels(labelsFile);
+  const entries: KnownGoodEntry[] = opts.knownGood.entries;
   const file = openMmdb(build.bytes);
   const get: Get = build.kind === "delta" ? overlay(openMmdb(opts.baseBytes!), file) : file.get;
-  const current = results(get, labels);
+  const current = customerResults(get, entries);
   const prev = await previousRelease(sql, opts.dir, build);
-  const prevResults = prev ? results(prev.get, labels) : null;
-  const comparison = prevResults ? compare(prevResults, current) : null;
+  const prevResults = prev ? customerResults(prev.get, entries) : null;
+  const comparison = prevResults ? compareFp(prevResults, current) : null;
 
   const regressions: string[] = [];
   if (comparison) {
     const { medium, high } = comparison.deltas;
+    if (medium.fpRate > MAX_FP_INCREASE_MEDIUM) regressions.push(`FP rate at medium rose by ${pp(medium.fpRate)} (limit ${pp(MAX_FP_INCREASE_MEDIUM)})`);
     if (high.fpRate > MAX_FP_INCREASE_HIGH) regressions.push(`FP rate at high rose by ${pp(high.fpRate)} (limit ${pp(MAX_FP_INCREASE_HIGH)})`);
-    if (medium.fnRate > MAX_FN_INCREASE) regressions.push(`FN rate at medium rose by ${pp(medium.fnRate)} (limit ${pp(MAX_FN_INCREASE)})`);
-    if (high.fnRate > MAX_FN_INCREASE) regressions.push(`FN rate at high rose by ${pp(high.fnRate)} (limit ${pp(MAX_FN_INCREASE)})`);
   }
   const config = build.dataVersion.config;
   return {
+    reportVersion: 2,
     version: build.version,
     kind: build.kind,
     base: build.base,
@@ -100,14 +147,15 @@ export async function releaseReport(
     algorithm: config.algorithm,
     configSha256: configSha256(config),
     method:
-      "Each labelled address is looked up in the published customer view (base + delta for a delta). " +
-      "Unlike `foxtrust eval`, a label's own feed is not left out, so rates are for comparing releases, not absolute accuracy.",
-    labels: { file: labelsFile.replaceAll("\\", "/").split("/").slice(-3).join("/"), count: labels.length, sources: sourceCounts(labels) },
-    rates: levelRates(current),
-    previous: prev && prevResults ? { version: prev.version, rates: levelRates(prevResults) } : null,
+      "Known-good addresses are looked up in the published customer view (base + delta for a delta) " +
+      "and compared with the previous release of the same kind.",
+    knownGood: opts.knownGood.reference,
+    rates: fpLevelRates(current),
+    previous: prev && prevResults ? { version: prev.version, rates: fpLevelRates(prevResults) } : null,
     deltas: comparison?.deltas ?? null,
     changed: comparison?.changed ?? [],
     regressions,
+    earlyDetection: await releaseEarlyDetection(sql, opts.dir, opts.now ?? new Date()),
     releaseNote: null,
   };
 }
