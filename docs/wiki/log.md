@@ -28,3 +28,5 @@ Operations:
 ## [2026-09-30] ingest | x4bnet-datacenter: licence text found in the repository README (no LICENSE file); copyright notice recorded for snapshot manifests
 
 ## [2026-09-30] query | Stage 2 decisions filed: adr-publication-topology (new), adr-snapshot-format (new); SCHEMA.md gains the `notice:` field for feeds whose licence requires attribution
+
+## [2026-10-04] query | Decision: tor-exit can be read through a CC0 mirror (Cloudflare Worker, deploy/tor-mirror) where the ISP blocks torproject.org; FOXTRUST_TOR_EXIT_URL selects it → tor-exit updated

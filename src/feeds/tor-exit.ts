@@ -2,7 +2,8 @@ import { formatCidr, hostCidr } from "../ip/cidr";
 import { toIpValue } from "../ip/parse";
 import { decodeText, FeedParseError, type CategoryEntry, type FeedDefinition } from "./types";
 
-const INDEX = "https://collector.torproject.org/recent/exit-lists/";
+// A mirror with the same paths (deploy/tor-mirror) serves hosts whose ISP blocks torproject.org.
+const INDEX = Bun.env.FOXTRUST_TOR_EXIT_URL?.trim() || "https://collector.torproject.org/recent/exit-lists/";
 const FILE_NAME = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 const KEYWORDS = new Set(["@type", "ExitNode", "Published", "LastStatus", "ExitAddress"]);
 
