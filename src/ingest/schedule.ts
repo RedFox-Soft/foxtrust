@@ -78,7 +78,6 @@ export function checkSources(feeds: FeedDefinition[], config: ScoringConfig): st
   const problems: string[] = [];
   const known = new Set([...feeds.map((f) => f.id), BUILTIN_BOGON_SOURCE]);
   for (const def of feeds) {
-    if (config.sourceConfidence[def.id] === undefined) problems.push(`sourceConfidence has no entry for feed ${def.id}`);
     for (const code of def.codes) {
       if (!config.codes[code]) problems.push(`feed ${def.id} produces code ${code}, which is not in codes`);
     }
@@ -87,6 +86,16 @@ export function checkSources(feeds: FeedDefinition[], config: ScoringConfig): st
     if (!known.has(source)) problems.push(`sourceConfidence names unknown source ${source}`);
   }
   return problems;
+}
+
+/**
+ * Spec 005 research R3: a feed the config gives no confidence is ingested but not scored by it.
+ * Not an error, so a new feed can run and be evaluated before the config that enables it.
+ */
+export function disabledFeeds(feeds: FeedDefinition[], config: ScoringConfig): string[] {
+  return feeds
+    .filter((def) => config.sourceConfidence[def.id] === undefined)
+    .map((def) => `feed ${def.id} is not enabled by config ${config.version}`);
 }
 
 export async function readLicences(feeds: FeedDefinition[], wikiRoot?: string): Promise<Map<string, Licence>> {

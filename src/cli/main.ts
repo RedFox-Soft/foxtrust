@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { FEEDS } from "../feeds/registry";
-import { checkSources } from "../ingest/schedule";
+import { checkSources, disabledFeeds } from "../ingest/schedule";
 import { alertsList, alertsTest } from "./commands/alerts";
-import { configActivate, configCheck, extraConfigChecks } from "./commands/config";
+import { configActivate, configCheck, extraConfigChecks, extraConfigNotices } from "./commands/config";
 import { dbMigrate } from "./commands/db";
 import { evalCommand } from "./commands/eval";
 import { feedsConfirm, feedsStatus } from "./commands/feeds";
@@ -18,6 +18,7 @@ import { verifyServe } from "./commands/verify";
 import { EXIT, takeFlag, UsageError, warn, type Command } from "./util";
 
 extraConfigChecks.push((config) => checkSources(FEEDS, config));
+extraConfigNotices.push((config) => disabledFeeds(FEEDS, config));
 
 /** Command table: "group sub" or single-word commands. */
 export const COMMANDS: Record<string, Command> = {

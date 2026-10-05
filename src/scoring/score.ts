@@ -58,16 +58,17 @@ function levelOf(risk: number, config: ScoringConfig): Level {
  * Noisy-OR with a capped category part (research R5) and log-share contributions (research R4).
  * Pure and deterministic: the same signals, config, `at` and `now` give the same result.
  * `now` only matters for `behaviorHistoryIncomplete`.
+ * A config scores only the sources it lists in `sourceConfidence` (spec 005 research R3): signals
+ * of other sources add no term, reason or category, so a new feed can be ingested and evaluated
+ * before the config that enables it is activated.
  */
 export function score(signals: Signal[], config: ScoringConfig, at: Date, now: Date = new Date()): ScoreResult {
-  const terms: Term[] = dedupe(signals).map((signal) => {
+  const enabled = signals.filter((s) => config.sourceConfidence[s.source] !== undefined);
+  const terms: Term[] = dedupe(enabled).map((signal) => {
     const def = config.codes[signal.code];
     if (!def) throw new Error(`signal code "${signal.code}" is not in scoring config ${config.version}`);
     if (def.kind !== signal.kind) throw new Error(`signal code "${signal.code}" is a ${def.kind} code, not ${signal.kind}`);
-    const confidence = signal.confidence ?? config.sourceConfidence[signal.source];
-    if (confidence === undefined) {
-      throw new Error(`source "${signal.source}" has no confidence in scoring config ${config.version}`);
-    }
+    const confidence = signal.confidence ?? config.sourceConfidence[signal.source]!;
     const lastSeen = signal.lastSeen > at ? at : signal.lastSeen;
     const firstSeen = signal.firstSeen > lastSeen ? lastSeen : signal.firstSeen;
     const d = def.kind === "behavior" ? decay(lastSeen, at, def.halfLifeHours) : 1;

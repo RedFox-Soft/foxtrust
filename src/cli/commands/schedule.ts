@@ -5,7 +5,7 @@ import { openDb } from "../../db/client";
 import { activateConfig, resolveVersionAt } from "../../db/versions";
 import { FEEDS } from "../../feeds/registry";
 import {
-  checkSchedules, checkSources, DELTA_SNAPSHOT_SCHEDULE, FULL_SNAPSHOT_SCHEDULE, readLicences, startScheduler,
+  checkSchedules, checkSources, DELTA_SNAPSHOT_SCHEDULE, disabledFeeds, FULL_SNAPSHOT_SCHEDULE, readLicences, startScheduler,
 } from "../../ingest/schedule";
 import { ConfigError, loadConfig } from "../../scoring/config";
 import { releaseOptionsFromEnv, type ReleaseOptions } from "../../snapshot/publish";
@@ -47,6 +47,7 @@ export async function scheduleCommand(args: string[], _ctx: Context): Promise<nu
     await sql.close();
     return EXIT.usage;
   }
+  for (const notice of disabledFeeds(FEEDS, version.config)) warn(`notice: ${notice}`);
 
   // Snapshot jobs run only where the signing key is available (the scheduler container).
   let snapshot: ReleaseOptions | undefined;

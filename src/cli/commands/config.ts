@@ -6,8 +6,10 @@ import { EXIT, printJson, printLine, rejectUnknown, UsageError, warn, type Conte
 
 /** Extra checks a command can register (e.g. feed registry ↔ sourceConfidence, added with ingestion). */
 export const extraConfigChecks: ((config: ScoringConfig) => string[])[] = [];
+/** Facts worth showing that are not errors (e.g. feeds a config does not enable, spec 005). */
+export const extraConfigNotices: ((config: ScoringConfig) => string[])[] = [];
 
-async function readConfig(args: string[]): Promise<{ file: string; config: ScoringConfig; problems: string[] }> {
+async function readConfig(args: string[]): Promise<{ file: string; config: ScoringConfig; problems: string[]; notices: string[] }> {
   rejectUnknown(args);
   const file = args[0];
   if (!file || args.length > 1) throw new UsageError("expected exactly one config file");
@@ -18,28 +20,32 @@ async function readConfig(args: string[]): Promise<{ file: string; config: Scori
     throw new UsageError(`cannot read ${file}: ${(error as Error).message}`);
   }
   const problems = validateConfig(raw);
+  const notices: string[] = [];
   if (problems.length === 0) {
     for (const check of extraConfigChecks) problems.push(...check(raw as ScoringConfig));
+    for (const notice of extraConfigNotices) notices.push(...notice(raw as ScoringConfig));
   }
-  return { file, config: raw as ScoringConfig, problems };
+  return { file, config: raw as ScoringConfig, problems, notices };
 }
 
-function report(file: string, problems: string[], ctx: Context): void {
-  if (ctx.json) printJson({ file, ok: problems.length === 0, problems });
-  else if (problems.length === 0) printLine(`${file}: OK`);
-  else for (const p of problems) warn(`${file}: ${p}`);
+function report(file: string, problems: string[], notices: string[], ctx: Context): void {
+  if (ctx.json) printJson({ file, ok: problems.length === 0, problems, notices });
+  else if (problems.length === 0) {
+    printLine(`${file}: OK`);
+    for (const n of notices) printLine(`notice: ${n}`);
+  } else for (const p of problems) warn(`${file}: ${p}`);
 }
 
 export async function configCheck(args: string[], ctx: Context): Promise<number> {
-  const { file, problems } = await readConfig(args);
-  report(file, problems, ctx);
+  const { file, problems, notices } = await readConfig(args);
+  report(file, problems, notices, ctx);
   return problems.length === 0 ? EXIT.ok : EXIT.usage;
 }
 
 export async function configActivate(args: string[], ctx: Context): Promise<number> {
-  const { file, config, problems } = await readConfig(args);
+  const { file, config, problems, notices } = await readConfig(args);
   if (problems.length > 0) {
-    report(file, problems, ctx);
+    report(file, problems, notices, ctx);
     return EXIT.usage;
   }
   const sql = openDb();
