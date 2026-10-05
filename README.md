@@ -109,7 +109,7 @@ The scheduler can tell the operator in Telegram when something needs attention, 
 - a snapshot release held by the regression gate (with the `snapshot publish <version> --release-note` command) or rejected by validation;
 - a scheduled job that failed with an error, including the database being unreachable.
 
-A message goes out when a problem opens or closes, plus one reminder a day while it stays open. Changes found in the same minute arrive together. If Telegram is unreachable, ingestion and publishing carry on, and the pending changes are sent in order once it answers again. Problem state lives in the database (`alert_problem`), so a restart repeats nothing.
+A message goes out when a problem opens or closes, plus one reminder a day while it stays open. How problems are detected and delivered: [ADR operator alerts](docs/wiki/synthesis/adr-operator-alerts.md).
 
 Set `FOXTRUST_TELEGRAM_BOT_TOKEN` (or `FOXTRUST_TELEGRAM_BOT_TOKEN_FILE`) and `FOXTRUST_TELEGRAM_CHAT_ID` in `.env`; `docker-compose.yml` passes them to the scheduler. Without them alerts are off and the scheduler logs `alerts: disabled`. The token never appears in logs, messages or the database. `bun run foxtrust alerts test` sends a test message; `alerts list` shows open problems and those closed in the last 24 hours. The chat is an operator channel: messages name feeds, runs and versions.
 
@@ -122,35 +122,7 @@ Set `FOXTRUST_TELEGRAM_BOT_TOKEN` (or `FOXTRUST_TELEGRAM_BOT_TOKEN_FILE`) and `F
 
 ## Model
 
-```ts
-type Signal = {
-  kind: "category" | "behavior";
-  code: string;            // "tor_exit", "ssh_bruteforce", "hosting"
-  source: string;          // feed id: "tor-exit", "blocklist-de"
-  prefix: string;          // matched prefix, CIDR
-  confidence: number | null; // feed-provided, else per-source default
-  firstSeen: Date;
-  lastSeen: Date;
-  shippable: boolean;      // false when the feed may not reach customers (licence or `ship: no`)
-};                         // weight and halfLifeHours come from the scoring config, per code
-
-type Verdict = {
-  ip: string;                  // canonical form
-  risk: number;                // 0..100, one decimal
-  level: "low" | "medium" | "high";
-  categories: string[];        // ["hosting", "tor"]
-  reasons: {
-    code: string; kind: "category" | "behavior"; source: string; prefix: string;
-    firstSeen: string; lastSeen: string; contribution: number; shippable: boolean;
-  }[];                         // contributions add up to risk
-  network: { asn: number | null; org: string | null; prefix: string | null; country: string | null };
-  dataVersion: string;         // data state + scoring algorithm + config, e.g. "dv42.noisy-or/1.3f9a2b1c"
-  evaluatedAt: string;         // lookups accept a past evaluation time and reproduce old verdicts
-  behaviorHistoryIncomplete: boolean;
-};
-```
-
-The JSON Schema is in `schemas/verdict.schema.json`.
+A **signal** is one feed's statement about a prefix: kind (category or behavior), code, source, prefix, confidence, `firstSeen`, `lastSeen` and whether it may reach customers. A **verdict** gives risk (0–100), level, categories, reasons whose contributions add up to the risk, network info, and the data version it was computed from. Lookups accept a past evaluation time and reproduce old verdicts. The format is defined in [schemas/verdict.schema.json](schemas/verdict.schema.json) (types: `src/model/types.ts`).
 
 A scoring config scores only the sources listed in its `sourceConfidence`. A feed the active config leaves out is still ingested, but adds nothing to verdicts. `config check` and the scheduler report it as "not enabled", so a new feed can be evaluated with `eval --compare` before the config that enables it is activated.
 
@@ -181,21 +153,11 @@ The formula is monotonic, easy to explain ("this signal contributes 40%"), and n
  SEO pages          TS SDK: local lookup, auto-update, API fallback
 ```
 
-- **PostgreSQL**, not MongoDB: native `inet`/`cidr` types and GiST indexes answer "which prefixes contain this IP" directly.
-- **MMDB** as the snapshot format: readers exist for every popular language, so the data is usable even without our SDK.
+Why these choices: [PostgreSQL](docs/wiki/synthesis/adr-postgresql-storage.md), [MMDB snapshots](docs/wiki/synthesis/adr-snapshot-format.md).
 
 ## Data sources
 
-| Layer | Sources |
-|-------|---------|
-| Network, ASN, prefixes | RIR delegated stats, RouteViews, RIPE RIS, PeeringDB |
-| Cloud and hosting | Hosting: X4BNet datacenter list. Cloud: the public-cloud ASNs of `config/cloud/asns.csv` (AWS, Google Cloud, Azure, Oracle, Alibaba, DigitalOcean, Hetzner, OVHcloud and others; resolver and CDN ASNs excluded) with their BGP prefixes from ipverse/as-ip-blocks (CC0). The providers' own range files are not used: they state no licence |
-| Bogon | IANA special-purpose and address-space registries (Team Cymru fullbogons: internal only) |
-| Anonymization | Tor exit nodes, Mullvad and Proton server lists, VPN provider ASNs |
-| Abuse | Spamhaus DROP, abuse.ch (Feodo, ThreatFox), blocklist.de, DShield, CINS, FireHOL |
-| First-party | Honeypots (SSH/HTTP) across several providers, opt-in foxauth telemetry |
-
-Residential proxies are out of scope for the MVP. Later they can be detected through indirect signals: many accounts from one IP, a JA4 fingerprint that does not match the claimed browser, a time zone mismatch.
+The ingested feeds and their licences are listed in the [wiki index](docs/wiki/index.md) (Entities). Sources that may come later, by layer, are in [candidate data sources](docs/wiki/synthesis/candidate-data-sources.md).
 
 ## Roadmap
 
@@ -215,6 +177,7 @@ Residential proxies are out of scope for the MVP. Later they can be detected thr
 |------|-------|
 | Instructions for AI agents | [AGENTS.md](AGENTS.md) |
 | Knowledge base (feeds, licences, decisions) | [docs/wiki/index.md](docs/wiki/index.md), conventions in [docs/wiki/SCHEMA.md](docs/wiki/SCHEMA.md) |
+| Production (home server, deploy, reviews) | [ADR production hosting](docs/wiki/synthesis/adr-production-hosting.md) |
 | Disputing a listing | [docs/dispute.md](docs/dispute.md) (published as `FOXTRUST_DISPUTE_URL`) |
 | Feature specs (spec-kit) | `specs/` |
 | Project principles | [.specify/memory/constitution.md](.specify/memory/constitution.md) |
