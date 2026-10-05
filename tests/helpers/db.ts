@@ -49,5 +49,5 @@ export function withTestDb(): TestDb {
 /** Empties every data table (between scenarios in one file) but keeps the schema. */
 export async function resetData(sql: SQL): Promise<void> {
   await sql.unsafe(`TRUNCATE behavior_daily, behavior_sighting, category_interval, network_interval,
-    data_version, feed_run, feed, scoring_config RESTART IDENTITY CASCADE`);
+    data_version, feed_run, feed, scoring_config, alert_problem RESTART IDENTITY CASCADE`);
 }

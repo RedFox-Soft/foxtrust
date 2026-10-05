@@ -38,7 +38,7 @@ At start the container:
 
 Docker restarts the container if it exits (`restart: unless-stopped`). Fetched artifacts live in the `feed-artifacts` volume. The licence pages from `docs/wiki/entities/` are copied into the image, so rebuild after editing them. Running `ingest` by hand at the same time is safe: per-feed advisory locks prevent overlapping runs.
 
-Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json] [--window <days>] [--sample <n>] [--contribution]`, `config check <file>`, `snapshot list|at|verify|retention run`, `policy check <file>`. `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
+Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json b.json] [--window <days>] [--sample <n>] [--contribution]`, `config check <file>`, `snapshot list|at|verify|retention run`, `policy check <file>`, `alerts test|list` (see [Alerts](#alerts)). `bun test` runs the acceptance and security tests (needs `DATABASE_URL_TEST`). `bun run bench` measures the success criteria.
 
 ## Snapshots and forward-auth
 
@@ -99,6 +99,19 @@ forward_auth foxtrust-verify:8080 {
 ```
 
 Set `FOXTRUST_TRUSTED_PROXIES` to your proxy's address range: `X-Forwarded-For` is honoured only from there.
+
+## Alerts
+
+The scheduler can tell the operator in Telegram when something needs attention, so problems don't sit unnoticed in logs:
+
+- a feed run held by the shrink guard (with the `feeds confirm <run>` command to run);
+- a feed with no successful run for more than twice its schedule interval (2 h for hourly feeds, 48 h for daily ones), whatever the cause;
+- a snapshot release held by the regression gate (with the `snapshot publish <version> --release-note` command) or rejected by validation;
+- a scheduled job that failed with an error, including the database being unreachable.
+
+A message goes out when a problem opens or closes, plus one reminder a day while it stays open. Changes found in the same minute arrive together. If Telegram is unreachable, ingestion and publishing carry on, and the pending changes are sent in order once it answers again. Problem state lives in the database (`alert_problem`), so a restart repeats nothing.
+
+Set `FOXTRUST_TELEGRAM_BOT_TOKEN` (or `FOXTRUST_TELEGRAM_BOT_TOKEN_FILE`) and `FOXTRUST_TELEGRAM_CHAT_ID` in `.env`; `docker-compose.yml` passes them to the scheduler. Without them alerts are off and the scheduler logs `alerts: disabled`. The token never appears in logs, messages or the database. `bun run foxtrust alerts test` sends a test message; `alerts list` shows open problems and those closed in the last 24 hours. The chat is an operator channel: messages name feeds, runs and versions.
 
 ## Principles
 

@@ -46,4 +46,5 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-publication-topology]] — ADR: own publication server, three containers from one image, signing key as a Docker secret, verifiers pin keys
 - [[adr-snapshot-format]] — ADR: flattened customer records in MMDB, cumulative deltas with tombstones, detached Ed25519 signatures, `/v1/` layout
 - [[adr-accuracy-measures]] — ADR: known-good false-positive gate (medium and high), fresh leave-one-source-out known-bad samples, early detection; no fixed labelled set
+- [[adr-operator-alerts]] — ADR: Telegram operator alerts; a minute tick reconciles feed/release state into `alert_problem`; no outbox; token redacted
 - [[adr-ship-behavior-feeds-unnamed]] — ADR: DROP/Feodo/blocklist.de ship to customers without their source (`ship: yes`); `ship: no` withdraws a feed

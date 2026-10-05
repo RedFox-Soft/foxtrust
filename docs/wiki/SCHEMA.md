@@ -46,6 +46,7 @@ Keep this list small. Add a tag here before using it.
 - `storage` — PostgreSQL schema, `inet`/`cidr`, GiST indexes, aggregates.
 - `distribution` — MMDB snapshots, deltas, signing, SDK, API.
 - `first-party` — honeypots and opt-in foxauth telemetry.
+- `operations` — running the pipeline: scheduling, monitoring, operator alerts.
 - `competitor` — other IP reputation / geo-IP services.
 - `open-question` — pages or sections that flag unresolved questions.
 - `contested` — pages where sources contradict.

@@ -28,6 +28,9 @@ services:
       DATABASE_URL: postgres://foxtrust:foxtrust@db:5432/foxtrust
       FOXTRUST_SIGNING_KEY: /run/secrets/signing_key
       FOXTRUST_DISPUTE_URL: ${FOXTRUST_DISPUTE_URL:-}
+      # Operator alerts in Telegram (spec 004); empty values turn them off.
+      FOXTRUST_TELEGRAM_BOT_TOKEN: ${FOXTRUST_TELEGRAM_BOT_TOKEN:-}
+      FOXTRUST_TELEGRAM_CHAT_ID: ${FOXTRUST_TELEGRAM_CHAT_ID:-}
     secrets:
       - signing_key
     volumes:

@@ -14,8 +14,8 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
   - `docker compose up -d --build scheduler` runs scheduled ingestion in a container. Docker restarts it; the healthcheck watches its heartbeat. Rebuild after changing licence pages.
   - `bun test` runs the acceptance and security tests and needs `DATABASE_URL_TEST`.
   - `bun run typecheck` (TypeScript 7, installed as `@typescript/native`); `bun run lint` (ESLint with typescript-eslint, which reads the TS 6 API: the `typescript` package is aliased to `@typescript/typescript6` until typescript-eslint supports TS 7); `bun run bench` (success-criteria measurements, on demand).
-  - `bun run foxtrust <command>`: `db migrate`, `config check|activate`, `ingest`, `schedule`, `feeds status|confirm`, `lookup`, `retention run`, `eval`, `keys generate|add`, `snapshot build|publish|list|at|verify|retention run`, `publication serve`, `verify serve`, `policy check`.
-  - `docker-compose.yml` services: `db`, `scheduler` (ingestion + snapshot jobs; the only holder of the signing key secret), `publication` (read-only `/v1/` files, port 8081), `verify` (forward-auth, no database, port 8080).
+  - `bun run foxtrust <command>`: `db migrate`, `config check|activate`, `ingest`, `schedule`, `feeds status|confirm`, `lookup`, `retention run`, `eval`, `keys generate|add`, `snapshot build|publish|list|at|verify|retention run`, `publication serve`, `verify serve`, `policy check`, `alerts test|list`.
+  - `docker-compose.yml` services: `db`, `scheduler` (ingestion + snapshot jobs + Telegram operator alerts; the only holder of the signing key secret), `publication` (read-only `/v1/` files, port 8081), `verify` (forward-auth, no database, port 8080).
 - No runtime dependencies: use Bun built-ins (`Bun.sql`, `Bun.cron`, `Bun.YAML`). Justify any new dependency in the feature plan.
 
 ## Domain Rules

@@ -33,6 +33,7 @@ export default defineConfig(
     files: [
       "src/feeds/**/*.ts", "src/verify/**/*.ts", "src/policy/**/*.ts", "src/mmdb/**/*.ts", "src/decision/**/*.ts",
       "src/ip/**/*.ts", "src/ingest/fetch.ts", "src/ingest/licence-gate.ts", "src/scoring/config.ts",
+      "src/alerts/telegram.ts", "src/alerts/settings.ts", "src/alerts/redact.ts", "src/alerts/message.ts",
     ],
     rules: {
       "@typescript-eslint/no-unsafe-argument": "error",

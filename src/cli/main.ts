@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { FEEDS } from "../feeds/registry";
 import { checkSources } from "../ingest/schedule";
+import { alertsList, alertsTest } from "./commands/alerts";
 import { configActivate, configCheck, extraConfigChecks } from "./commands/config";
 import { dbMigrate } from "./commands/db";
 import { evalCommand } from "./commands/eval";
@@ -38,6 +39,8 @@ export const COMMANDS: Record<string, Command> = {
   "snapshot retention": snapshotRetention,
   "verify serve": verifyServe,
   "policy check": policyCheck,
+  "alerts test": alertsTest,
+  "alerts list": alertsList,
   "db migrate": dbMigrate,
   "config check": configCheck,
   "config activate": configActivate,

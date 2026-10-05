@@ -34,3 +34,5 @@ Operations:
 ## [2026-10-04] query | Decision: accuracy measures (spec 003, constitution v4.0.0) → adr-accuracy-measures (new); 9 code-* concept pages point at it instead of the labelled set
 
 ## [2026-10-05] query | Decision: behavior feeds ship to customers without their source (constitution v5.0.0) → adr-ship-behavior-feeds-unnamed (new) supersedes adr-customer-facing-behavior-data; spamhaus-drop, feodo-tracker, blocklist-de get `ship: yes`; SCHEMA.md gains the `ship` field; adr-stage1-feed-selection, adr-accuracy-measures updated
+
+## [2026-10-05] query | Decision: operator alerts (spec 004) → adr-operator-alerts (new); SCHEMA.md gains the `operations` tag

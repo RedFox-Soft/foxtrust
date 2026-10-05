@@ -1,5 +1,6 @@
 import { mkdir, stat } from "node:fs/promises";
 import { dirname } from "node:path";
+import { readAlertSettings } from "../../alerts/settings";
 import { openDb } from "../../db/client";
 import { activateConfig, resolveVersionAt } from "../../db/versions";
 import { FEEDS } from "../../feeds/registry";
@@ -69,7 +70,11 @@ export async function scheduleCommand(args: string[], _ctx: Context): Promise<nu
   }
 
   if (heartbeatPath) await mkdir(dirname(heartbeatPath), { recursive: true });
-  const stop = startScheduler(sql, FEEDS, warn, { ...(heartbeatPath ? { heartbeatPath } : {}), ...(snapshot ? { snapshot } : {}) });
+  // Spec 004: invalid alert settings disable alerts but never stop the scheduler (FR-009, FR-013).
+  const alerts = await readAlertSettings();
+  const stop = startScheduler(sql, FEEDS, warn, {
+    ...(heartbeatPath ? { heartbeatPath } : {}), ...(snapshot ? { snapshot } : {}), alerts,
+  });
   printLine(`Scheduler running for ${FEEDS.length} feeds and nightly retention (config ${version.config.version}).`);
   printLine(
     snapshot
