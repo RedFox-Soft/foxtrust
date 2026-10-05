@@ -30,10 +30,11 @@ export function withTestDb(): TestDb {
   let admin: SQL | undefined;
 
   beforeAll(async () => {
-    admin = new SQL(TEST_DB_URL!);
+    admin = new SQL(TEST_DB_URL!, { max: 1 });
     await admin.unsafe(`CREATE DATABASE ${name}`);
     db.url = withDatabase(TEST_DB_URL!, name);
-    db.sql = new SQL(db.url);
+    // Small pools: test files run in parallel workers against one server (max_connections 100).
+    db.sql = new SQL(db.url, { max: 4 });
     await migrate(db.sql);
   });
 

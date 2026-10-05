@@ -8,7 +8,7 @@
   },
   "scripts": {
     "foxtrust": "bun run src/cli/main.ts",
-    "test": "bun test tests/acceptance tests/security",
+    "test": "bun test --parallel=8 tests/acceptance tests/security",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "bench": "bun run tests/perf/run.ts"
