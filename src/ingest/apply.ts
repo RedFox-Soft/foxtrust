@@ -2,7 +2,7 @@ import type { SQL } from "bun";
 import { createDataVersion, type DataVersion } from "../db/versions";
 import type { BehaviorEntry, FeedDefinition, NetworkEntry, ParsedEntry } from "../feeds/types";
 
-const BATCH = 5_000;
+const BATCH = 20_000;
 
 export type ApplyCounts = { opened: number; closed: number; refreshed: number };
 
@@ -36,9 +36,18 @@ async function loadIncoming(tx: SQL, entries: ParsedEntry[]): Promise<void> {
     observed_at timestamptz, confidence real
   ) ON COMMIT DROP`;
   // Values are bound parameters; feed text never becomes SQL (research R14).
+  // Each batch is one JSON parameter, so the statement text never changes with the batch size:
+  // Bun keeps one named prepared statement per distinct text on every pooled connection, and a
+  // `VALUES` list per size piled up gigabytes of cached plans in the long-running scheduler.
+  // `::text` first: a `::jsonb` parameter makes Bun encode the string as a JSON string literal.
   for (let i = 0; i < entries.length; i += BATCH) {
-    const rows = entries.slice(i, i + BATCH).map(toRow);
-    await tx`INSERT INTO incoming ${tx(rows)}`;
+    const rows = JSON.stringify(entries.slice(i, i + BATCH).map(toRow));
+    await tx`
+      INSERT INTO incoming (prefix, code, asn, org, country, observed_at, confidence)
+      SELECT prefix, code, asn, org, country, observed_at, confidence
+      FROM jsonb_to_recordset(${rows}::text::jsonb) AS r (
+        prefix cidr, code text, asn bigint, org text, country char(2),
+        observed_at timestamptz, confidence real)`;
   }
   await tx`CREATE INDEX ON incoming (prefix, code)`;
   await tx`ANALYZE incoming`;
