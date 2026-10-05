@@ -44,3 +44,5 @@ Operations:
 ## [2026-10-05] query | Docs moved out of README/AGENTS: adr-postgresql-storage (new), adr-production-hosting (new), 2026-10-05-production-database-review (new), candidate-data-sources (new)
 
 ## [2026-10-05] query | 2026-10-05-production-database-review: unchanged runs skip the apply; content_sha256 hashes parsed entries (follow-ups closed)
+
+## [2026-10-05] query | adr-postgresql-storage: per-row run foreign keys dropped (migration 0005)
