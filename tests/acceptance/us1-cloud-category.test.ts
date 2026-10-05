@@ -6,7 +6,7 @@ import type { Verdict } from "../../src/model/types";
 import { loadConfig } from "../../src/scoring/config";
 import { buildFull } from "../../src/snapshot/build";
 import { describeDb, withTestDb } from "../helpers/db";
-import { CLOUD_CONFIG, ingestCloudFixture, loadFixtureDataset } from "../helpers/fixture-data";
+import { CLOUD_CONFIG, ingestCloudFixture, loadFixtureFeeds } from "../helpers/fixture-data";
 
 type SnapshotRecord = { categories: string[]; reasons: Record<string, unknown>[] };
 
@@ -28,7 +28,7 @@ describeDb("US1 (spec 005): cloud addresses carry the cloud category", () => {
   };
 
   beforeAll(async () => {
-    await loadFixtureDataset(db.sql);
+    await loadFixtureFeeds(db.sql, ["x4bnet-datacenter"]); // hosting for US1-4
     await ingestCloudFixture(db.sql);
     await activateConfig(db.sql, await loadConfig(CLOUD_CONFIG));
   }, 120_000);

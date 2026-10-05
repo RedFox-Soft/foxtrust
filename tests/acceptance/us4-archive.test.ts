@@ -11,7 +11,7 @@ import type { ReleaseReport } from "../../src/snapshot/report";
 import { importTrustedKeys, loadSigningKey, verify } from "../../src/snapshot/sign";
 import { knownGoodFile } from "../helpers/accuracy";
 import { describeDb, withTestDb } from "../helpers/db";
-import { loadFixtureDataset, STAGE2_CONFIG } from "../helpers/fixture-data";
+import { loadFixtureFeeds, STAGE2_CONFIG } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 
 const HOUR = 3_600_000;
@@ -57,7 +57,9 @@ describeDb("US4: snapshot archive and release quality", () => {
 
   beforeAll(async () => {
     tmp = await mkdtemp(join(tmpdir(), "foxtrust-us4-"));
-    await loadFixtureDataset(db.sql);
+    // Archive behaviour needs releases, not much data: X4BNet holds the known-good address that the
+    // variant in US4-2 pushes to medium.
+    await loadFixtureFeeds(db.sql, ["x4bnet-datacenter"]);
     t0 = new Date();
 
     pub = await createTestPublication();

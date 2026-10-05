@@ -11,7 +11,7 @@ import type { ReleaseReport } from "../../src/snapshot/report";
 import { loadSigningKey } from "../../src/snapshot/sign";
 import { behaviorSighting, category, isoDaysAgo, knownGoodFile } from "../helpers/accuracy";
 import { describeDb, resetData, withTestDb } from "../helpers/db";
-import { fixturePath, loadFixtureDataset, STAGE2_CONFIG } from "../helpers/fixture-data";
+import { fixturePath, loadFixtureFeeds, STAGE2_CONFIG } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 import { seedRows } from "../helpers/seed";
 
@@ -106,7 +106,8 @@ describeDb("US3 (spec 003): early detection in release reports", () => {
 
   beforeAll(async () => {
     tmp = await mkdtemp(join(tmpdir(), "foxtrust-003-us3-"));
-    await loadFixtureDataset(db.sql);
+    // The Tor exit in US3-2 needs its category; the tests seed the sightings they measure.
+    await loadFixtureFeeds(db.sql, ["tor-exit"]);
     t0 = new Date();
     pub = await createTestPublication();
     opts = {

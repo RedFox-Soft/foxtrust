@@ -13,7 +13,7 @@ import { buildAndRelease, type ReleaseOptions } from "../../src/snapshot/publish
 import type { ReleaseReport } from "../../src/snapshot/report";
 import { loadSigningKey } from "../../src/snapshot/sign";
 import { describeDb, withTestDb } from "../helpers/db";
-import { CLOUD_CONFIG, ingestCloudFixture, loadFixtureDataset, STAGE2_CONFIG } from "../helpers/fixture-data";
+import { CLOUD_CONFIG, ingestCloudFixture, loadFixtureFeeds, STAGE2_CONFIG } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 
 const DAY = 86_400_000;
@@ -40,7 +40,7 @@ describeDb("US4 (spec 005): enabling the cloud category is measured before it sh
 
   beforeAll(async () => {
     tmp = await mkdtemp(join(tmpdir(), "foxtrust-005-us4-"));
-    await loadFixtureDataset(db.sql); // config 2026-09-30.1 stays active
+    await loadFixtureFeeds(db.sql, ["x4bnet-datacenter"]); // hosting next to cloud; config 2026-09-30.1 stays active
     await ingestCloudFixture(db.sql);
     knownGood = await loadKnownGood();
     current = await loadConfig(STAGE2_CONFIG);

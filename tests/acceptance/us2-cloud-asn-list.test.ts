@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { cloudFeed } from "../../src/feeds/ipverse-cloud";
 import { runFeed } from "../../src/ingest/run";
 import { describeDb, withTestDb } from "../helpers/db";
-import { CLOUD_FILES, CLOUD_LIST, loadFixtureDataset } from "../helpers/fixture-data";
+import { CLOUD_FILES, CLOUD_LIST, loadFixtureFeeds } from "../helpers/fixture-data";
 
 const HEADER = "asn,provider,status,source,added,reason";
 const row = (asn: string, status = "include", source = `https://www.peeringdb.com/asn/${asn}`, reason = "") =>
@@ -30,7 +30,7 @@ describeDb("US2 (spec 005): the cloud list is reviewed data with sources", () =>
 
   beforeAll(async () => {
     artifacts = await mkdtemp(join(tmpdir(), "foxtrust-005-us2-"));
-    await loadFixtureDataset(db.sql);
+    await loadFixtureFeeds(db.sql, []); // config only: these tests look at the cloud feed alone
   }, 120_000);
 
   test("US2-1: the included ASNs' prefixes are ingested with code cloud; excluded ASNs contribute nothing", async () => {

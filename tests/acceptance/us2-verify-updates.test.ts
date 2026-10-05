@@ -12,7 +12,7 @@ import { createLoader, type Loader } from "../../src/verify/loader";
 import { createPolicyHolder } from "../../src/verify/policy-file";
 import { startVerifyServer } from "../../src/verify/server";
 import { describeDb, withTestDb } from "../helpers/db";
-import { fixturePath, loadFixtureDataset, STAGE2_CONFIG } from "../helpers/fixture-data";
+import { fixturePath, loadFixtureFeeds, STAGE2_CONFIG } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 
 const POLICY = join(import.meta.dir, "..", "fixtures", "policies", "example.yaml");
@@ -74,7 +74,8 @@ describeDb("US2: /verify keeps its snapshot current", () => {
 
   beforeAll(async () => {
     tmp = await mkdtemp(join(tmpdir(), "foxtrust-us2-"));
-    await loadFixtureDataset(db.sql);
+    // The moving Tor exit and the IPv6 hosting address are all the snapshots need.
+    await loadFixtureFeeds(db.sql, ["tor-exit", "x4bnet-datacenter"]);
     t0 = new Date();
     tor = (await Bun.file(fixturePath("tor-exit", "exit-list.txt")).text()).split("\n").find((l) => l.startsWith("ExitAddress"))!.split(/\s+/)[1]!;
     pub = await createTestPublication();

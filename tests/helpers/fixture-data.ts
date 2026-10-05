@@ -44,13 +44,20 @@ export async function ingestCloudFixture(sql: SQL, opts: { listText?: string; fi
 }
 
 /** Activates config 2026-09-30.1 and ingests all 8 fixture feeds (overrides per feed allowed). */
-export async function loadFixtureDataset(
-  sql: SQL,
-  overrides: Record<string, string[]> = {},
-): Promise<void> {
+export function loadFixtureDataset(sql: SQL, overrides: Record<string, string[]> = {}): Promise<void> {
+  return loadFixtureFeeds(sql, Object.keys(FIXTURE_FILES), overrides);
+}
+
+/**
+ * Activates config 2026-09-30.1 and ingests only `feeds` from the fixtures: tests that need some
+ * data, not all of it, stay fast (a full dataset costs about 1.3 s).
+ */
+export async function loadFixtureFeeds(sql: SQL, feeds: string[], overrides: Record<string, string[]> = {}): Promise<void> {
   await activateConfig(sql, await loadConfig(STAGE2_CONFIG));
   const artifactRoot = await mkdtemp(join(tmpdir(), "foxtrust-fixture-artifacts-"));
-  for (const [feed, names] of Object.entries(FIXTURE_FILES)) {
+  for (const feed of feeds) {
+    const names = FIXTURE_FILES[feed];
+    if (!names) throw new Error(`no fixture for feed ${feed}`);
     const fromFiles = overrides[feed] ?? names.map((n) => fixturePath(feed, n));
     const report = await runFeed(sql, feed, { fromFiles, wikiRoot: WIKI, artifactRoot });
     if (report.status !== "applied" && report.status !== "unchanged") {

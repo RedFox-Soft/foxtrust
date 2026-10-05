@@ -9,7 +9,7 @@ import type { ReleaseReport } from "../../src/snapshot/report";
 import { loadSigningKey } from "../../src/snapshot/sign";
 import { behaviorSighting, category, knownGoodFile } from "../helpers/accuracy";
 import { describeDb, withTestDb } from "../helpers/db";
-import { loadFixtureDataset } from "../helpers/fixture-data";
+import { loadFixtureFeeds } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 import { seedRows } from "../helpers/seed";
 
@@ -29,7 +29,8 @@ describeDb("US1 (spec 003): release gate on the known-good reference", () => {
 
   beforeAll(async () => {
     tmp = await mkdtemp(join(tmpdir(), "foxtrust-003-us1-"));
-    await loadFixtureDataset(db.sql);
+    // The gate needs a published release to compare with; US1-2 seeds the rows that change it.
+    await loadFixtureFeeds(db.sql, ["x4bnet-datacenter"]);
     t0 = new Date();
     pub = await createTestPublication();
     opts = {
