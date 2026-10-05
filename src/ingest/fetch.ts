@@ -14,7 +14,7 @@ export class FeedFetchError extends Error {
   }
 }
 
-export type FetchedFeed = { files: FeedFile[]; sha256: string };
+export type FetchedFeed = { files: FeedFile[] };
 
 const USER_AGENT = "FoxTrust-ingest/0.1";
 
@@ -164,12 +164,6 @@ async function decode(raw: Uint8Array, limits: FeedLimits, what: string): Promis
   return isGzip(raw) ? gunzipBounded(raw, limits.maxDecompressedBytes, what) : raw;
 }
 
-function hashFiles(files: FeedFile[]): string {
-  const hasher = new Bun.CryptoHasher("sha256");
-  for (const file of files) hasher.update(file.name).update("\u0000").update(file.body).update("\u0000");
-  return hasher.digest("hex");
-}
-
 /**
  * Downloads (or reads locally) every file of a feed within the limits of research R14.
  * Local files go through the same limits as downloads.
@@ -196,7 +190,7 @@ export async function fetchFeed(
       const raw = await readBounded(file.stream(), limits.maxCompressedBytes, path);
       files.push({ name, body: await decode(raw, limits, path) });
     }
-    return { files, sha256: hashFiles(files) };
+    return { files };
   }
 
   const signal = AbortSignal.timeout(limits.timeoutMs);
@@ -210,7 +204,7 @@ export async function fetchFeed(
     const raw = await fetchBounded(spec.url, limits, signal, opts.allowLoopbackHttp);
     files.push({ name: spec.name, body: await decode(raw, limits, spec.url) });
   }
-  return { files, sha256: hashFiles(files) };
+  return { files };
 }
 
 /** Saves the fetched files gzipped under `<root>/<feed>/<runId>/` for held-run confirmation. */

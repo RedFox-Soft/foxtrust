@@ -2,7 +2,7 @@ import { join } from "node:path";
 import type { Db } from "../db/client";
 import { getFeed } from "../feeds/registry";
 import { FeedParseError, type FeedDefinition, type FeedFile, type ParseResult } from "../feeds/types";
-import { applyEntries, setShippable } from "./apply";
+import { applyEntries, entriesSha256, setShippable } from "./apply";
 import { FeedFetchError, fetchFeed, limitsFor, loadArtifacts, saveArtifacts } from "./fetch";
 import { shrinkGuard } from "./guards";
 import { readLicence, type LicenceStatus } from "./licence-gate";
@@ -69,7 +69,7 @@ async function commitRun(
   extra: { sha: string | null; previousEntryCount: number | null; artifact: string | null; confirm?: boolean },
 ): Promise<string> {
   return sql.begin<string>(async (tx) => {
-    const { version } = await applyEntries(tx, def, runId, parsed.entries, shippable);
+    const { version } = await applyEntries(tx, def, runId, parsed.entries, shippable, status === "unchanged");
     await tx`
       UPDATE feed_run SET status = ${status}, finished_at = now(), committed_at = now(),
         data_version_id = ${version.id}, entry_count = ${parsed.entries.length},
@@ -132,12 +132,13 @@ export async function runFeed(sql: Db, feedId: string, opts: RunOptions = {}): P
       let sha: string;
       let parsed: ParseResult;
       try {
-        ({ files, sha256: sha } = await fetchFeed(def, {
+        ({ files } = await fetchFeed(def, {
           ...(opts.fromFiles ? { fromFiles: opts.fromFiles } : {}),
           ...(opts.urls ? { urls: opts.urls } : {}),
           ...(opts.allowLoopbackHttp ? { allowLoopbackHttp: true } : {}),
         }));
         parsed = def.parse(files, new Date());
+        sha = entriesSha256(parsed.entries);
         const { maxEntries } = limitsFor(def);
         if (parsed.entries.length > maxEntries) {
           throw Object.assign(new Error(`${parsed.entries.length} entries exceed the limit of ${maxEntries}`), {

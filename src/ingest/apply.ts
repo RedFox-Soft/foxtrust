@@ -180,8 +180,21 @@ export async function setShippable(tx: SQL, def: FeedDefinition, runId: number, 
 }
 
 /**
+ * Identifies a feed version by its parsed entries in feed order, so a file that only changes its
+ * header, comments or formatting is `unchanged`, and a parser change applies even to an old file.
+ */
+export function entriesSha256(entries: ParsedEntry[]): string {
+  const hasher = new Bun.CryptoHasher("sha256");
+  for (const entry of entries) hasher.update(JSON.stringify(toRow(entry))).update("\n");
+  return hasher.digest("hex");
+}
+
+/**
  * Applies one feed version inside the caller's transaction and creates its data version.
  * Every bound written here is the transaction timestamp (research R7).
+ * An `unchanged` version writes nothing but the data version, except for listing episodes, which
+ * record the run as a sighting: intervals and feed-time rows already hold exactly these entries,
+ * and a category's lastSeen follows from the run itself.
  */
 export async function applyEntries(
   tx: SQL,
@@ -189,7 +202,13 @@ export async function applyEntries(
   runId: number,
   entries: ParsedEntry[],
   shippable: boolean,
+  unchanged = false,
 ): Promise<{ version: DataVersion; counts: ApplyCounts }> {
+  const listingEpisodes = def.kind === "behavior" && def.timestamps === "run";
+  if (unchanged && !listingEpisodes) {
+    const version = await createDataVersion(tx, { cause: "feed_run", feedRunId: runId });
+    return { version, counts: { opened: 0, closed: 0, refreshed: 0 } };
+  }
   await loadIncoming(tx, entries);
   let counts: ApplyCounts;
   if (def.kind === "network") counts = await applyNetwork(tx, def.id, runId);
