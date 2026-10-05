@@ -50,3 +50,7 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-cloud-category]] — ADR: own public-cloud ASN list (exclusions for resolvers/CDN) × ipverse prefixes; configs enable sources; confidence 0.9
 - [[adr-operator-alerts]] — ADR: Telegram operator alerts; a minute tick reconciles feed/release state into `alert_problem`; no outbox; token redacted
 - [[adr-ship-behavior-feeds-unnamed]] — ADR: DROP/Feodo/blocklist.de ship to customers without their source (`ship: yes`); `ship: no` withdraws a feed
+- [[adr-postgresql-storage]] — ADR: PostgreSQL with `inet`/`cidr` + `tstzrange` in GiST indexes, `Bun.sql`, no ORM
+- [[adr-production-hosting]] — ADR: production on the home server `geekom`; images built on the PC; one-command deploy/rollback in the homeserver repo
+- [[2026-10-05-production-database-review]] — first production review: cached-plan memory leak, `last_seen` rewrite churn, history kept, Postgres tuning, follow-ups
+- [[candidate-data-sources]] — sources not yet ingested, by layer (network, anonymization, abuse, first-party); residential proxies out of scope

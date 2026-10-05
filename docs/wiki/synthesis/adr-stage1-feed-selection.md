@@ -41,3 +41,4 @@ Seven feeds, plus a built-in bogon source:
 - **Stage 2 risk:** almost no behavior data can be redistributed commercially. Resolved on 2026-09-30 by [[adr-customer-facing-behavior-data]]: no permission requests are sent. The three behavior feeds stay internal, and customer-facing behavior signals will come from first-party honeypots (stage 4) or from a future feed with a clean licence. Superseded on 2026-10-05 by [[adr-ship-behavior-feeds-unnamed]]: the three behavior feeds ship to customers without their source.
 - **Measured accuracy:** on the fixture data, leave-one-source-out evaluation gives an FN rate of 100 %, because no known-bad address appears in two independent feeds. The FN rate means little until sources overlap.
 - **Possible hosting upgrade:** brianhama/bad-asn-list (MIT) joined with ipverse/as-ip-blocks (CC0).
+- **Later sources:** candidates by layer are tracked in [[candidate-data-sources]].
