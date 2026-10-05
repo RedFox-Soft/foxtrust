@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Reader } from "mmdb-lib";
 import { resolveVersionAt } from "../../src/db/versions";
+import { DEFAULT_WIKI_ENTITIES } from "../../src/ingest/licence-gate";
 import { runFeed } from "../../src/ingest/run";
 import { formatIp, toIpValue, type IpValue } from "../../src/ip/parse";
 import { gatherSignals } from "../../src/lookup/signals";
@@ -12,7 +13,7 @@ import { buildAndRelease, stagedRangeTable, type ReleaseOptions } from "../../sr
 import { customerRecord, deserializeRanges, type Range } from "../../src/snapshot/ranges";
 import { importTrustedKeys, loadSigningKey, verify } from "../../src/snapshot/sign";
 import { describeDb, withTestDb } from "../helpers/db";
-import { fixturePath, loadFixtureDataset } from "../helpers/fixture-data";
+import { FIXTURE_FILES, fixturePath, loadFixtureDataset } from "../helpers/fixture-data";
 import { createTestPublication, type TestPublication } from "../helpers/publication";
 
 type SnapshotRecord = {
@@ -38,7 +39,7 @@ const readerOf = (bytes: Uint8Array) => {
 };
 const fileBytes = async (path: string) => new Uint8Array(await Bun.file(path).arrayBuffer());
 
-// Addresses inside X4BNet hosting prefixes that we also list in a local-only blocklist-de file.
+// Addresses inside X4BNet hosting prefixes that we also list in the blocklist-de file.
 const HOSTING_AND_SSH = { 4: "1.12.0.9", 6: "2001:310::9" } as const;
 // The first Tor exit moves into a hosting prefix in the "Tor change" of US1-4.
 const TOR_MOVED_TO = "1.12.0.5";
@@ -49,6 +50,7 @@ describeDb("US1: signed snapshot readable by any MMDB reader", () => {
   let pub: TestPublication;
   let opts: ReleaseOptions;
   let full: { version: string; path: string; builtAt: Date; bytes: Uint8Array };
+  let behaviorFiles: Record<string, string[]>;
   let samples: {
     tor: string;
     x4v6: string;
@@ -69,7 +71,12 @@ describeDb("US1: signed snapshot readable by any MMDB reader", () => {
     const ssh = fixturePath("blocklist-de", "ssh.txt");
     const sshPlus = join(tmp, "ssh.txt");
     await Bun.write(sshPlus, `${await Bun.file(ssh).text()}\n${HOSTING_AND_SSH[4]}\n${HOSTING_AND_SSH[6]}\n`);
-    await loadFixtureDataset(db.sql, { "blocklist-de": [sshPlus, fixturePath("blocklist-de", "bruteforcelogin.txt")] });
+    behaviorFiles = {
+      "blocklist-de": [sshPlus, fixturePath("blocklist-de", "bruteforcelogin.txt")],
+      "feodo-tracker": FIXTURE_FILES["feodo-tracker"]!.map((n) => fixturePath("feodo-tracker", n)),
+      "spamhaus-drop": FIXTURE_FILES["spamhaus-drop"]!.map((n) => fixturePath("spamhaus-drop", n)),
+    };
+    await loadFixtureDataset(db.sql, { "blocklist-de": behaviorFiles["blocklist-de"]! });
 
     const torLines = await lines(fixturePath("tor-exit", "exit-list.txt"));
     const sshLines = await lines(ssh);
@@ -224,14 +231,27 @@ describeDb("US1: signed snapshot readable by any MMDB reader", () => {
     expect(mismatches).toEqual([]);
   }, 120_000);
 
-  // Last: it deletes the local-only rows from the database.
+  // Last: it withdraws the behavior feeds and deletes the local-only rows from the database.
   test("US1-3: local-only feeds do not change any customer record (IPv4/IPv6)", async () => {
-    const reader = readerOf(full.bytes);
+    // The behavior feeds ship by decision (`ship: yes`); `ship: no` withdraws them, and their
+    // next run marks every stored signal local-only (constitution v5.0.0).
+    const wiki = join(tmp, "wiki-withdrawn");
+    for await (const name of new Bun.Glob("*.md").scan({ cwd: DEFAULT_WIKI_ENTITIES })) {
+      const text = await Bun.file(join(DEFAULT_WIKI_ENTITIES, name)).text();
+      await Bun.write(join(wiki, name), text.replace(/^ship: yes$/m, "ship: no"));
+    }
+    for (const [feed, fromFiles] of Object.entries(behaviorFiles)) {
+      const report = await runFeed(db.sql, feed, { fromFiles, wikiRoot: wiki, artifactRoot: join(tmp, "artifacts") });
+      expect({ feed, licence: report.licence }).toEqual({ feed, licence: "local-only" });
+    }
+
+    const at = new Date();
+    const reader = readerOf((await buildFull(db.sql, { at, disputeUrl: opts.disputeUrl })).bytes);
     const before = new Map<string, SnapshotRecord | null>();
     const onlyLocal: string[] = [];
     for (const address of samples.localOnly) {
       before.set(address, reader.get(address));
-      const { signals, network } = await gatherSignals(db.sql, ip(address), full.builtAt);
+      const { signals, network } = await gatherSignals(db.sql, ip(address), at);
       const noNetwork = network.asn === null && network.org === null && network.country === null;
       if (noNetwork && signals.length > 0 && signals.every((s) => !s.shippable)) onlyLocal.push(address);
     }
@@ -245,7 +265,7 @@ describeDb("US1: signed snapshot readable by any MMDB reader", () => {
     await db.sql`DELETE FROM behavior_sighting WHERE NOT shippable`;
     await db.sql`DELETE FROM behavior_daily WHERE NOT shippable`;
     await db.sql`DELETE FROM category_interval WHERE NOT shippable`;
-    const clean = readerOf((await buildFull(db.sql, { at: full.builtAt, disputeUrl: opts.disputeUrl })).bytes);
+    const clean = readerOf((await buildFull(db.sql, { at, disputeUrl: opts.disputeUrl })).bytes);
     for (const address of samples.localOnly) {
       expect({ address, record: before.get(address) }).toEqual({ address, record: clean.get(address) });
     }

@@ -171,14 +171,16 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   // ---------------------------------------------------------------- US2-3
   test("US2-3: signals from local-only feeds are not shippable and the report lists them (IPv4)", async () => {
     await ingestAll();
-    expect(reason(await lookup(s.ssh[4]), "ssh_bruteforce", "blocklist-de")!.shippable).toBe(false);
+    expect(reason(await lookup(s.cymru[4]), "bogon", "cymru-fullbogons")!.shippable).toBe(false);
     expect(reason(await lookup(s.tor), "tor_exit", "tor-exit")!.shippable).toBe(true);
+    // Unknown terms, shipped by decision (`ship: yes`, constitution v5.0.0).
+    expect(reason(await lookup(s.ssh[4]), "ssh_bruteforce", "blocklist-de")!.shippable).toBe(true);
     const rows = await db.sql`
       SELECT source, bool_or(shippable) AS any_shippable FROM (
         SELECT source, shippable FROM category_interval UNION ALL SELECT source, shippable FROM behavior_sighting
         UNION ALL SELECT source, shippable FROM behavior_daily) x GROUP BY source ORDER BY source`;
     expect(Object.fromEntries(rows.map((r: { source: string; any_shippable: boolean }) => [r.source, r.any_shippable]))).toEqual({
-      "blocklist-de": false, "cymru-fullbogons": false, "feodo-tracker": false, "spamhaus-drop": false,
+      "blocklist-de": true, "cymru-fullbogons": false, "feodo-tracker": true, "spamhaus-drop": true,
       "tor-exit": true, "x4bnet-datacenter": true,
     });
 
@@ -188,7 +190,7 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     expect(await proc.exited).toBe(0);
     const status = JSON.parse(await new Response(proc.stdout).text()) as { feeds: { feed: string; licence: string; licenceChecked: string | null }[] };
     const localOnly = status.feeds.filter((x) => x.licence === "local-only").map((x) => x.feed).sort();
-    expect(localOnly).toEqual(["blocklist-de", "cymru-fullbogons", "feodo-tracker", "spamhaus-drop"]);
+    expect(localOnly).toEqual(["cymru-fullbogons"]);
     for (const feed of status.feeds.filter((f) => f.feed in FILES)) {
       expect(feed.licenceChecked).toEqual((await readLicence(feed.feed, wikiRoot)).checked); // date from the licence record
     }
@@ -196,8 +198,9 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
 
   test("US2-3: signals from local-only feeds are not shippable and the report lists them (IPv6)", async () => {
     await ingestAll();
-    expect(reason(await lookup(s.ssh[6]), "ssh_bruteforce", "blocklist-de")!.shippable).toBe(false);
+    expect(reason(await lookup(s.cymru[6]), "bogon", "cymru-fullbogons")!.shippable).toBe(false);
     expect(reason(await lookup(hostOf(s.x4[6][0]!)), "hosting", "x4bnet-datacenter")!.shippable).toBe(true);
+    expect(reason(await lookup(s.ssh[6]), "ssh_bruteforce", "blocklist-de")!.shippable).toBe(true);
   });
 
   // ---------------------------------------------------------------- US2-4

@@ -4,13 +4,15 @@ kind: decision
 title: "ADR: customer-facing behavior signals come from first-party data only"
 tags: [data, license, distribution, first-party]
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-05
 sources: [2026-09-24-feed-licence-review]
-status: accepted
+status: superseded
 decided: 2026-09-30
 ---
 
 # ADR: customer-facing behavior signals come from first-party data only
+
+> **Superseded on 2026-10-05** by [[adr-ship-behavior-feeds-unnamed]]: the three behavior feeds ship to customers without their source.
 
 ## Context
 

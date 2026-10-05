@@ -4,7 +4,7 @@ kind: decision
 title: "ADR: accuracy measures: known-good false-positive gate, fresh known-bad samples, early detection"
 tags: [scoring, distribution, data]
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 sources: []
 status: accepted
 decided: 2026-10-04
@@ -41,7 +41,7 @@ Constitution v4.0.0 redefines Principle VI, and spec 003 implements it.
 
 ## Consequences
 
-- The public early-detection figure reads "not available" until a shippable behavior source exists, for example first-party data (roadmap stage 4).
+- The public early-detection figure reads "not available" until a shippable behavior source exists. Since 2026-10-05 the three behavior feeds are shippable ([[adr-ship-behavior-feeds-unnamed]]), so the figure is reported once an earlier full release has passed its window.
 - Known-bad evaluation still uses the ingested feeds, but each address is scored without its own feed and the sample stays fresh. Independent labels from first-party traffic are the next step.
 - `FOXTRUST_RELEASE_LABELS`, `data/labelled/` and `eval --labels` are gone; `FOXTRUST_KNOWN_GOOD` and `eval --known-good` replace them.
 

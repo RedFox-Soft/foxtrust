@@ -70,8 +70,8 @@ describeDb("US1 (spec 003): release gate on the known-good reference", () => {
     expect(mediumReport.regressions.join(" ")).toContain("FP rate at medium rose");
     expect(mediumReport.changed.map((c) => c.ip)).toContain("9.9.9.9");
 
-    // high: a shippable behavior sighting on 1.0.0.1. A shippable source is used on purpose:
-    // no behavior feed is shippable today, and a local-only one never reaches the customer view.
+    // high: a shippable behavior sighting on 1.0.0.1 (a local-only one never reaches the
+    // customer view).
     const highAt = new Date(t0.getTime() + 2 * DAY);
     await seedRows(db.sql, {
       sightings: [behaviorSighting({ prefix: "1.0.0.1/32", source: "tor-exit", code: "botnet_c2", recordedAt: iso(new Date(highAt.getTime() - 3_600_000)), shippable: true })],

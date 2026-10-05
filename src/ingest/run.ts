@@ -2,7 +2,7 @@ import { join } from "node:path";
 import type { Db } from "../db/client";
 import { getFeed } from "../feeds/registry";
 import { FeedParseError, type FeedDefinition, type FeedFile, type ParseResult } from "../feeds/types";
-import { applyEntries } from "./apply";
+import { applyEntries, setShippable } from "./apply";
 import { FeedFetchError, fetchFeed, limitsFor, loadArtifacts, saveArtifacts } from "./fetch";
 import { shrinkGuard } from "./guards";
 import { readLicence, type LicenceStatus } from "./licence-gate";
@@ -104,6 +104,7 @@ export async function runFeed(sql: Db, feedId: string, opts: RunOptions = {}): P
     try {
       const licence = await readLicence(def.id, opts.wikiRoot);
       report.licence = licence.status;
+      const [previous] = await sql`SELECT licence_status FROM feed WHERE id = ${def.id}`;
       await sql`
         INSERT INTO feed (id, licence_status, licence_checked, last_attempt_at)
         VALUES (${def.id}, ${licence.status}, ${licence.checked}, now())
@@ -118,6 +119,9 @@ export async function runFeed(sql: Db, feedId: string, opts: RunOptions = {}): P
         const error = licence.problems.join("; ");
         await finishRun(sql, runId, { status: "licence_missing", error });
         return { ...report, status: "licence_missing", error };
+      }
+      if (previous && previous.licence_status !== licence.status) {
+        await sql.begin((tx) => setShippable(tx, def, runId, licence.status === "shippable"));
       }
 
       const [feedRow] = await sql`SELECT entry_count FROM feed WHERE id = ${def.id}`;

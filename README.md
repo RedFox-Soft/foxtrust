@@ -42,7 +42,7 @@ Other commands: `feeds confirm <run>`, `retention run`, `eval [--compare a.json 
 
 ## Snapshots and forward-auth
 
-The scheduler also publishes the **customer verdict** as signed MMDB snapshots: a full file every day at 04:50 UTC and a cumulative delta every hour. Standard MaxMind DB readers can open them. Only shippable data goes in (feeds whose licence allows redistribution), and reasons carry a code, a time and a contribution, but no source.
+The scheduler also publishes the **customer verdict** as signed MMDB snapshots: a full file every day at 04:50 UTC and a cumulative delta every hour. Standard MaxMind DB readers can open them. Only shippable feeds go in (network, hosting, Tor and bogon data, plus the behavior feeds shipped by decision), and reasons carry a code, a time and a contribution, but never the source.
 
 1. **Create the signing key** (once) and publish its public half:
 
@@ -104,8 +104,8 @@ Set `FOXTRUST_TRUSTED_PROXIES` to your proxy's address range: `X-Forwarded-For` 
 
 - **"What it is" is separate from "what it did".** Categories (facts about the network) change slowly and are not dangerous on their own: an AWS IP is hosting, not an attacker. Behavior signals decay over time.
 - **A decision is a policy on top of both layers.** The score alone blocks nothing. Example: "Tor on the login page → challenge; hosting + brute force in the last 24 h → block".
-- **Explainability is the core differentiator.** There are two verdict views. The **internal** verdict (operators, delisting, evaluation) gives every reason with its signal code, source, matched prefix, `lastSeen` and contribution. The **customer** verdict (snapshots, `/verify`, later the SDK and public API) is computed from shippable signals only, and its reasons say what the address was seen doing: code, `lastSeen` and contribution, without the source. The owner of a listed address can see why and dispute it ([docs/dispute.md](docs/dispute.md)).
-- **Feed licences are checked before a feed is added.** Commercial use and redistribution are not allowed everywhere (Spamhaus, some FireHOL lists). Shipping a snapshot inside the SDK counts as redistribution.
+- **Explainability is the core differentiator.** There are two verdict views. The **internal** verdict (operators, delisting, evaluation) gives every reason with its signal code, source, matched prefix, `lastSeen` and contribution. The **customer** verdict (snapshots, `/verify`, later the SDK and public API) is computed from shippable feeds only, and its reasons say what the address was seen doing: code, `lastSeen` and contribution, without the source. The owner of a listed address can see why and dispute it ([docs/dispute.md](docs/dispute.md)).
+- **Feed licences are checked before a feed is added.** Commercial use and redistribution are not allowed everywhere (Spamhaus, some FireHOL lists). Shipping a snapshot inside the SDK counts as redistribution. A feed whose terms do not clearly allow it ships only by a recorded decision (`ship: yes` on its wiki page), is never named to customers, and can be withdrawn with `ship: no`.
 
 ## Model
 
@@ -118,7 +118,7 @@ type Signal = {
   confidence: number | null; // feed-provided, else per-source default
   firstSeen: Date;
   lastSeen: Date;
-  shippable: boolean;      // false when the feed licence forbids redistribution
+  shippable: boolean;      // false when the feed may not reach customers (licence or `ship: no`)
 };                         // weight and halfLifeHours come from the scoring config, per code
 
 type Verdict = {

@@ -29,7 +29,7 @@ The record lists `reasons`. Each reason has:
 
 | Field | Meaning |
 |-------|---------|
-| `code` | what the address was seen as or doing, for example `hosting`, `tor_exit`, `bogon` |
+| `code` | what the address was seen as or doing, for example `hosting`, `tor_exit`, `ssh_bruteforce`, `botnet_c2` |
 | `last_seen` | when it was last seen (Unix time, UTC) |
 | `contribution` | how much this reason adds to the risk |
 

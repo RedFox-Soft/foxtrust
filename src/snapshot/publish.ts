@@ -112,7 +112,10 @@ export async function stagedRangeTable(dir: string, version: string): Promise<Ui
 
 // ---- notices ---------------------------------------------------------------------------------
 
-/** FR-008a: the licence notice of every contributing source whose licence requires attribution. */
+/**
+ * FR-008a: the licence notice of every contributing source whose licence requires attribution.
+ * A feed shipped by decision is never named, so it has no notice (constitution II).
+ */
 export async function noticesFor(sources: string[], wikiRoot = DEFAULT_WIKI_ENTITIES): Promise<{ notices: Notice[]; problems: string[] }> {
   const notices: Notice[] = [];
   const problems: string[] = [];
@@ -122,7 +125,7 @@ export async function noticesFor(sources: string[], wikiRoot = DEFAULT_WIKI_ENTI
       problems.push(`source ${source} is ${licence.status}; it must not reach a customer-facing snapshot`);
       continue;
     }
-    if (!licence.attribution) continue;
+    if (!licence.attribution || licence.shippedByDecision) continue;
     if (!licence.notice) {
       problems.push(`source ${source} requires attribution but its wiki page records no notice`);
       continue;

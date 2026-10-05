@@ -22,15 +22,15 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Keep network **categories** (hosting, vpn, tor, bogon…) separate from **behavior** signals (bruteforce, spam, scan…). Never collapse them into one flag.
 - Behavior signals decay (`halfLifeHours`); categories decay slowly or not at all.
 - Risk is noisy-OR: `1 − Π(1 − w·c·decay)`.
-- Two verdict views. Internal verdicts carry `reasons[]` with code, `source`, prefix, `lastSeen`, `contribution`. Customer-facing verdicts (snapshots, SDK, `/verify`, middleware, API) carry code, `lastSeen`, `contribution` only, never the source or prefix, and are computed from shippable signals only.
+- Two verdict views. Internal verdicts carry `reasons[]` with code, `source`, prefix, `lastSeen`, `contribution`. Customer-facing verdicts (snapshots, SDK, `/verify`, middleware, API) carry code, `lastSeen`, `contribution` only, never the source or prefix, and are computed from shippable feeds only.
 - Block/allow is a **policy** over verdicts, not part of scoring.
-- Before adding a feed, record its licence (commercial use, redistribution) in `docs/wiki/entities/`. Unknown licence = do not ship in snapshots.
+- Before adding a feed, record its licence (commercial use, redistribution) in `docs/wiki/entities/`. A feed ships when both are `yes`, or when its page sets `ship: yes` backed by an ADR; `ship: no` withdraws it. Licence facts stay as found.
 - Snapshot format is MMDB; it must stay readable by standard MaxMind readers.
 - Never commit the snapshot signing key; it is a Docker secret (`FOXTRUST_SIGNING_KEY`).
 
 ## Workflow
 - Feature specs: spec-kit skills (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`). Output goes to `specs/NNN-name/`.
-- Principles: `.specify/memory/constitution.md` (v4.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
+- Principles: `.specify/memory/constitution.md` (v5.0.0). It overrides this file on conflict; amend via `/speckit-constitution`.
 
 ## Tests
 - Write tests **only** for user cases (acceptance scenarios of the user stories in `specs/NNN-name/spec.md`) and for security issues.

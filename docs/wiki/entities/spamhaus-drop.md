@@ -4,7 +4,7 @@ kind: feed
 title: Spamhaus DROP / DROPv6
 tags: [data, license, open-question, contested]
 created: 2026-09-24
-updated: 2026-09-30
+updated: 2026-10-05
 sources: [2026-09-24-feed-licence-review]
 url: https://www.spamhaus.org/drop/drop_v4.json
 license: Spamhaus DROP terms of use (DROP Fair Use Policy)
@@ -12,6 +12,7 @@ license_url: https://www.spamhaus.org/blocklists/drop-fair-use-policy/
 commercial_use: yes
 redistribution: unknown
 attribution: unknown
+ship: yes
 update_interval: 1h
 license_checked: 2026-09-30
 ---
@@ -26,11 +27,11 @@ Netblocks that are hijacked or controlled by criminals, as NDJSON (`cidr`, `sbli
   - §3.2 forbids using the "Spamhaus" name or "any reference to the 'Spamhaus data'" in "marketing, promotional or any other commercial materials";
   - the right to use can be revoked "for any reason" (§3.3).
 - **Changed since 2026-09-24:** the earlier statement "when used in a product, credit must be given to Spamhaus Project" is no longer on the site, and it conflicts with §3.2. `attribution` is therefore now `unknown`. This matters for us: verdict reasons name their source (`spamhaus-drop`), which may count as a reference to Spamhaus data in a commercial API.
-- **Status:** redistribution is treated as `unknown`, so the feed is **local-only**.
+- **Status:** redistribution is treated as `unknown`. Shipped by decision (`ship: yes`, [[adr-ship-behavior-feeds-unnamed]]): customer verdicts use it and never name it.
 - **Used for:** the `hijacked_netblock` behavior signal (half-life 30 days).
 
 ## Open question
 
-Decided on 2026-09-30 ([[adr-customer-facing-behavior-data]]): no permission request is sent for now. DROP stays local-only and must not influence customer-facing verdicts, snapshots or API responses. It is reopened if Spamhaus's terms change or a commercial licence is bought.
+Decided on 2026-09-30 ([[adr-customer-facing-behavior-data]]): no permission request is sent for now. Superseded on 2026-10-05 by [[adr-ship-behavior-feeds-unnamed]]: DROP ships to customers without its source. If Spamhaus objects or revokes the right to use, `ship: no` withdraws it from the next release.
 
 Source: [[2026-09-24-feed-licence-review]].

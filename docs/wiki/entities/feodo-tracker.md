@@ -4,7 +4,7 @@ kind: feed
 title: abuse.ch Feodo Tracker
 tags: [data, license, contested, open-question]
 created: 2026-09-24
-updated: 2026-09-30
+updated: 2026-10-05
 sources: [2026-09-24-feed-licence-review]
 url: https://feodotracker.abuse.ch/downloads/ipblocklist.json
 license: dataset page says CC0; platform terms of 2025-11-04 restrict commercial use
@@ -12,6 +12,7 @@ license_url: https://abuse.ch/terms-of-use/
 commercial_use: unknown
 redistribution: unknown
 attribution: unknown
+ship: yes
 update_interval: 5m
 license_checked: 2026-09-24
 ---
@@ -28,13 +29,13 @@ Botnet command-and-control servers, IPv4. Entries carry `first_seen`, `dst_ip`, 
 - **Dataset page:** it "can be used for both, commercial and non-commercial purpose without any limitations (CC0)".
 - **Platform terms of 2025-11-04:** commercial use "may require a paid subscription, which will be managed by Spamhaus" (§4), and derivative works are not allowed "without the express consent" (§7).
 
-Until abuse.ch confirms CC0 in writing, the feed is **local-only**.
+abuse.ch has not confirmed CC0 in writing, so redistribution stays `unknown`.
 
 Re-checked on 2026-09-30:
 
 - The terms name Spamhaus Technology Limited as "the primary licensee of the abuse.ch datasets".
 - Questions go to https://www.spamhaus.com/abuse-ch/#contact-us, because abuse.ch/contact/ returns 404.
 
-Decided on 2026-09-30 ([[adr-customer-facing-behavior-data]]): no confirmation request is sent for now. Feodo Tracker stays local-only and must not influence customer-facing verdicts.
+Decided on 2026-09-30 ([[adr-customer-facing-behavior-data]]): no confirmation request is sent for now. Superseded on 2026-10-05 by [[adr-ship-behavior-feeds-unnamed]]: Feodo Tracker ships to customers without its source (`ship: yes`).
 
 Source: [[2026-09-24-feed-licence-review]].

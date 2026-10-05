@@ -26,7 +26,7 @@ This wiki uses these page types, each with a dedicated subdirectory:
 
 | type | kind | For | Required extra frontmatter |
 |------|------|-----|----------------------------|
-| entity | `feed` | External data feed (Tor exit list, Spamhaus DROP, abuse.ch Feodo) | `url`, `license`, `commercial_use`, `redistribution`, `update_interval`, `license_checked` |
+| entity | `feed` | External data feed (Tor exit list, Spamhaus DROP, abuse.ch Feodo) | `url`, `license`, `commercial_use`, `redistribution`, `update_interval`, `license_checked`; optional `ship` |
 | entity | `provider` | Network operator: cloud, hosting, VPN, mobile carrier (AWS, Mullvad) | `asns` (list), `ranges_url` if published |
 | entity | `component` | FoxTrust module (ingest worker, scorer, MMDB builder, SDK, API, honeypot) | `path` (repo path once it exists) |
 | entity | `company` / `product` | Competitors and third-party products (AbuseIPDB, MaxMind, IPinfo) | — |
@@ -126,7 +126,7 @@ Generation is reproducible from markdown via `scripts/wiki_graph_extract.py`. Th
 
 ## Workflow customizations
 
-- **Feed licences are facts with a date.** Every `feed` page states commercial-use and redistribution terms with a link to the licence text and `license_checked: YYYY-MM-DD`. Unknown = `unknown`, never assumed permissive. Aggregators (FireHOL) inherit the strictest upstream licence. A page with `attribution: yes` also records `notice:`, the text the licence requires to be kept; snapshot manifests copy it, and publishing fails without it.
+- **Feed licences are facts with a date.** Every `feed` page states commercial-use and redistribution terms with a link to the licence text and `license_checked: YYYY-MM-DD`. Unknown = `unknown`, never assumed permissive. Aggregators (FireHOL) inherit the strictest upstream licence. A page with `attribution: yes` also records `notice:`, the text the licence requires to be kept; snapshot manifests copy it, and publishing fails without it. A shipping decision is separate from the facts: `ship: yes` ships a feed whose terms are not `yes`/`yes`, only with an accepted ADR linked from the page; `ship: no` keeps any feed out of customer outputs. Without `ship`, a feed ships only when `commercial_use` and `redistribution` are both `yes`. A feed shipped by decision is never named in customer outputs, notices included.
 - **Category vs behaviour.** Keep network facts (`category`) and observed activity (`signal` with `signal_kind: behavior`) on separate pages; never merge them into one score page.
 - **Decisions go to ADRs.** When a design choice is made (e.g. PostgreSQL over MongoDB), file a `synthesis` page with `kind: decision` and link it from affected component pages.
 - **Code wins over wiki for implemented behaviour.** Once a component exists, the wiki records *why*; the repository records *what*. Link `path:` instead of copying code.

@@ -60,7 +60,7 @@
           },
           "shippable": {
             "type": "boolean",
-            "description": "False when the source licence forbids redistribution or commercial use (FR-015)."
+            "description": "False when the source may not reach customer-facing outputs: its licence does not allow it and no shipping decision overrides it, or its page sets ship: no (FR-015, constitution v5.0.0)."
           }
         }
       }

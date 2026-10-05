@@ -13,6 +13,8 @@ export type Licence = {
   name: string | null;
   attribution: boolean;
   notice: string | null;
+  /** Shipped by an operator decision (`ship: yes`) rather than by its licence terms. */
+  shippedByDecision: boolean;
   problems: string[];
 };
 
@@ -56,6 +58,7 @@ export async function readLicence(feedId: string, wikiRoot: string = DEFAULT_WIK
     name: null,
     attribution: false,
     notice: null,
+    shippedByDecision: false,
     problems: [problem],
   });
 
@@ -80,12 +83,17 @@ export async function readLicence(feedId: string, wikiRoot: string = DEFAULT_WIK
   if (typeof fm.url !== "string" || fm.url.trim() === "") problems.push("url is missing");
   if (checked === null) problems.push("license_checked must be a YYYY-MM-DD date");
   if (fm.update_interval !== undefined && interval === null) problems.push("update_interval must look like 30m, 1h or 1d");
+  const ship = fm.ship === undefined ? null : parseTerm(fm.ship);
+  if ((fm.ship !== undefined && ship === null) || ship === "unknown") problems.push("ship must be yes or no");
   const name = typeof fm.license === "string" && fm.license.trim() !== "" ? fm.license.trim() : null;
   const attribution = parseTerm(fm.attribution) === "yes";
   const notice = typeof fm.notice === "string" && fm.notice.trim() !== "" ? fm.notice.trim() : null;
-  const extra = { name, attribution, notice };
+  // Constitution II/III: the terms decide unless the page records a shipping decision (`ship`).
+  const byTerms = commercial === "yes" && redistribution === "yes";
+  const shippedByDecision = ship === "yes" && !byTerms;
+  const extra = { name, attribution, notice, shippedByDecision };
 
   if (problems.length > 0) return { status: "missing", checked, updateIntervalMinutes: interval, ...extra, problems };
-  const status: LicenceStatus = commercial === "yes" && redistribution === "yes" ? "shippable" : "local-only";
+  const status: LicenceStatus = (ship ?? (byTerms ? "yes" : "no")) === "yes" ? "shippable" : "local-only";
   return { status, checked, updateIntervalMinutes: interval, ...extra, problems };
 }

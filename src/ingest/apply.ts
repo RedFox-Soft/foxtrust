@@ -152,6 +152,20 @@ async function applyBehaviorFeedTime(tx: SQL, source: string, runId: number, shi
 }
 
 /**
+ * Makes every stored signal of a feed follow its shippable status, so a licence or `ship`
+ * change reaches the customer view at once (constitution II: `ship: no` withdraws a feed).
+ * Creates a data version when any row changed.
+ */
+export async function setShippable(tx: SQL, def: FeedDefinition, runId: number, shippable: boolean): Promise<DataVersion | null> {
+  if (def.kind === "network") return null;
+  const updated = def.kind === "category"
+    ? count(await tx`UPDATE category_interval SET shippable = ${shippable} WHERE source = ${def.id} AND shippable <> ${shippable}`)
+    : count(await tx`UPDATE behavior_sighting SET shippable = ${shippable} WHERE source = ${def.id} AND shippable <> ${shippable}`)
+      + count(await tx`UPDATE behavior_daily SET shippable = ${shippable} WHERE source = ${def.id} AND shippable <> ${shippable}`);
+  return updated > 0 ? createDataVersion(tx, { cause: "feed_run", feedRunId: runId }) : null;
+}
+
+/**
  * Applies one feed version inside the caller's transaction and creates its data version.
  * Every bound written here is the transaction timestamp (research R7).
  */
