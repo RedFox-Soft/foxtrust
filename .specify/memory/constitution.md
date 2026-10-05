@@ -1,26 +1,31 @@
 <!--
 Sync Impact Report
-- Version change: 3.0.0 → 4.0.0 (MAJOR: Principle VI redefined)
-  (previous: 2.1.0 → 3.0.0 MAJOR, Principle II; 2.0.0 → 2.1.0 MINOR, Principle V;
-  1.0.0 → 2.0.0 MAJOR, Principle V)
+- Version change: 4.0.0 → 5.0.0 (MAJOR: Principles II and III redefined)
+  (previous: 3.0.0 → 4.0.0 MAJOR, Principle VI; 2.1.0 → 3.0.0 MAJOR, Principle II;
+  2.0.0 → 2.1.0 MINOR, Principle V; 1.0.0 → 2.0.0 MAJOR, Principle V)
 - Modified principles:
-  VI. Measured Accuracy: the fixed labelled set of known-good and known-bad addresses is replaced
-      by a known-good reference (release-gate configuration, false-positive gate on every
-      release), fresh leave-one-source-out samples of recent threat and behavior observations
-      for known-bad evaluation, and early-detection reporting that does not gate publication.
-      The per-release false-negative rate is dropped: non-shippable sources cannot appear in
-      the customer view, so the rate could not move.
-  V. Tests for User Cases and Security Only: "labelled-set evaluation" reworded to "accuracy
-      evaluation" (wording only).
+  II. Explainable Verdicts: "shippable" is now a property of a feed, not only of its licence. A
+      feed is shippable when its licence allows commercial use and redistribution, or when an
+      accepted ADR records the decision to ship it (`ship: yes` on its feed page); `ship: no`
+      withdraws any feed. A feed shipped by decision is never named in customer-facing outputs,
+      manifests and licence notices included.
+  III. Licence-Clean, Traceable Data: licence facts stay as found; feeds with unknown or
+      non-commercial terms may ship only by a recorded decision (Principle II).
+- Decision behind the amendment (2026-10-05): Spamhaus DROP, abuse.ch Feodo Tracker and
+  blocklist.de reach customer verdicts without their source.
 - Added sections: none
 - Removed sections: none
 - Templates: .specify/templates/*.md read the constitution at runtime; no edits required.
 - Dependent artifacts:
-  ⚠ AGENTS.md points to constitution v3.0.0; update the version reference.
-  ⚠ specs/001-core-ip-lookup FR-024/FR-025 and specs/002-snapshot-distribution FR-012/SC-009
-    describe the fixed labelled set; superseded by specs/003-accuracy-measures.
-  ⚠ Code: the release report still computes false-negative rates and reads
-    data/labelled/seed.csv; changed by the 003 implementation.
+  ⚠ AGENTS.md: version reference (v4.0.0) and the domain rules on shippable signals and
+    unknown licences.
+  ⚠ docs/wiki: ADR superseding adr-customer-facing-behavior-data; feed pages of the three feeds
+    get `ship: yes`; SCHEMA.md documents the `ship` field.
+  ⚠ specs/001-core-ip-lookup/contracts/feed-licence-page.md: gate rules gain the `ship` field.
+  ⚠ Code: the licence gate reads `ship`; stored signals of a feed follow its shippable status.
+  ⚠ README: snapshot and principles sections describe "shippable" as licence-only.
+  ⚠ specs/003-accuracy-measures assumes no behavior feed is shippable (public early detection
+    "not available"); historical, the figure now becomes available.
 - Deferred TODOs: none
 -->
 
@@ -52,8 +57,14 @@ existing IP reputation services.
     what the address was seen doing, not who reported it.
 - Source and matched prefix MUST NOT appear in customer-facing outputs. They MUST stay stored
   and available to operators and the delisting process.
-- Customer-facing verdicts MUST be computed from shippable signals only. A signal whose licence
-  forbids redistribution MUST NOT change any customer-facing risk, level, category or reason.
+- Customer-facing verdicts MUST be computed from the signals of shippable feeds only. A feed is
+  shippable when its licence allows commercial use and redistribution, or when an accepted ADR
+  in `docs/wiki/` records the decision to ship it and its feed page sets `ship: yes`. A feed
+  page MAY set `ship: no` to keep the feed out of customer-facing outputs whatever its licence.
+- A signal of a non-shippable feed MUST NOT change any customer-facing risk, level, category or
+  reason.
+- A feed shipped by decision MUST NOT be named in any customer-facing output, including snapshot
+  manifests and licence notices.
 - Scoring MUST be deterministic and reproducible from stored signals and a snapshot version.
 - The risk model MUST stay monotonic and decomposable (noisy-OR:
   `risk = 1 − Π(1 − w·c·decay)`); any replacement model MUST preserve per-signal
@@ -68,12 +79,16 @@ some sources forbid being named or redistributed.
 
 - Before a feed is ingested, its licence (commercial use, redistribution) MUST be recorded in
   `docs/wiki/` with the date it was checked.
+- Licence facts MUST be recorded as found; a decision to ship a feed MUST NOT change them.
 - A feed with unknown or non-commercial terms MUST NOT be included in shipped snapshots or
-  commercial API responses.
+  commercial API responses unless an accepted ADR records the decision to ship it and its feed
+  page sets `ship: yes` (Principle II).
 - Aggregated feeds (e.g. FireHOL) inherit the strictest licence of their upstream sources.
 - Every stored signal MUST carry its source identifier, `firstSeen` and `lastSeen`.
 
 Rationale: shipping a snapshot in the SDK is redistribution; one bad feed taints every release.
+Shipping a feed whose terms do not clearly allow it is therefore a recorded decision with its
+reasons, never a default, and it can be withdrawn per feed.
 
 ### IV. Privacy by Default for First-Party Data
 
@@ -170,4 +185,4 @@ Rationale: open formats drive adoption without our SDK; fewer moving parts keep 
 - Compliance is checked in every `/speckit-plan` Constitution Check and `/speckit-analyze` run;
   unresolved violations block implementation.
 
-**Version**: 4.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-10-04
+**Version**: 5.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-10-05
