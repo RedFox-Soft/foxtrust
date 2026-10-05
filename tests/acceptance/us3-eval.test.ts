@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
+import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +7,7 @@ import { evaluate, type EvaluationReport } from "../../src/eval/evaluate";
 import { loadKnownGood, type KnownGood } from "../../src/eval/known-good";
 import { runFeed } from "../../src/ingest/run";
 import type { ScoringConfig } from "../../src/model/types";
-import { describeDb, resetData, withTestDb } from "../helpers/db";
+import { describeDb, withTestDb } from "../helpers/db";
 import { shippedConfig } from "../helpers/seed";
 
 const FIX = join(import.meta.dir, "..", "fixtures", "feeds");
@@ -41,8 +41,8 @@ describeDb("US3: accuracy baseline", () => {
     await rm(tmp, { recursive: true, force: true });
   });
 
-  beforeEach(async () => {
-    await resetData(db.sql);
+  // The tests only read, so the fixture feeds are loaded once for the file.
+  beforeAll(async () => {
     await activateConfig(db.sql, base);
     const files: Record<string, string[]> = {
       iptoasn: [f("iptoasn", "ip2asn-combined.tsv.gz")],

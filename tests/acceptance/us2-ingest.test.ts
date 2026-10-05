@@ -6,7 +6,7 @@ import { activateConfig } from "../../src/db/versions";
 import { readLicence } from "../../src/ingest/licence-gate";
 import { runFeed, confirmHeldRun, type RunOptions, type RunReport } from "../../src/ingest/run";
 import { runRetention } from "../../src/retention/retention";
-import { createIpTrust } from "../../src/lookup/lookup";
+import { createIpTrust, type IpTrust } from "../../src/lookup/lookup";
 import type { Reason, Verdict } from "../../src/model/types";
 import { describeDb, resetData, withTestDb } from "../helpers/db";
 import { shippedConfig } from "../helpers/seed";
@@ -59,8 +59,10 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   let tmp: string;
   let wikiRoot: string;
   let s: Samples;
+  let client: IpTrust;
 
   beforeAll(async () => {
+    client = createIpTrust({ databaseUrl: db.url });
     tmp = await mkdtemp(join(tmpdir(), "foxtrust-us2-"));
     wikiRoot = join(tmp, "wiki");
     for await (const name of new Bun.Glob("*.md").scan({ cwd: WIKI })) {
@@ -69,6 +71,7 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     s = await loadSamples();
   });
   afterAll(async () => {
+    await client?.close();
     await rm(tmp, { recursive: true, force: true });
   });
   beforeEach(async () => {
@@ -84,14 +87,9 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     return reports;
   };
   const lookup = async (ip: string, at?: Date): Promise<Verdict> => {
-    const client = createIpTrust({ databaseUrl: db.url });
-    try {
-      const result = await client.lookup(ip, at ? { at } : {});
-      if (!result.ok) throw new Error(`lookup ${ip}: ${JSON.stringify(result.error)}`);
-      return result.verdict;
-    } finally {
-      await client.close();
-    }
+    const result = await client.lookup(ip, at ? { at } : {});
+    if (!result.ok) throw new Error(`lookup ${ip}: ${JSON.stringify(result.error)}`);
+    return result.verdict;
   };
   const reason = (v: Verdict, code: string, source: string): Reason | undefined =>
     v.reasons.find((r) => r.code === code && r.source === source);
