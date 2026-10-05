@@ -2,7 +2,7 @@ import type { SQL } from "bun";
 import { readSnapshot, type Db } from "../db/client";
 import { resolveVersionAt } from "../db/versions";
 import { toIpValue } from "../ip/parse";
-import { gatherSignals } from "../lookup/signals";
+import { gatherSignalsMany } from "../lookup/signals";
 import type { ScoringConfig } from "../model/types";
 import { score } from "../scoring/score";
 import type { KnownGood, ReferenceVersion } from "./known-good";
@@ -60,15 +60,24 @@ export type EvaluateOptions = {
   now?: Date;
 };
 
-/** Scores one address at `at` for every config, leaving out `exclude` sources. */
-async function scoreAll(tx: SQL, ip: string, at: Date, configs: ScoringConfig[], now: Date, exclude: string[]): Promise<Scored[]> {
-  const value = toIpValue(ip);
-  if ("error" in value) throw new Error(`address ${ip}: ${value.error}`);
-  const { signals } = await gatherSignals(tx, value, at, exclude);
-  return configs.map((config) => {
-    const result = score(signals, config, at, now);
-    return { ip, level: result.level, risk: result.risk };
+/**
+ * Scores addresses at `at` for every config: one result list per config, in address order.
+ * `exclude[i]` is a source left out for address i.
+ */
+async function scoreAll(
+  tx: SQL, ips: string[], at: Date, configs: ScoringConfig[], now: Date, exclude: (string | null)[] = [],
+): Promise<Scored[][]> {
+  const values = ips.map((ip) => {
+    const value = toIpValue(ip);
+    if ("error" in value) throw new Error(`address ${ip}: ${value.error}`);
+    return value;
   });
+  const gathered = await gatherSignalsMany(tx, values, at);
+  return configs.map((config) => gathered.map(({ signals }, i) => {
+    const left = exclude[i] ? signals.filter((s) => s.source !== exclude[i]) : signals;
+    const result = score(left, config, at, now);
+    return { ip: ips[i]!, level: result.level, risk: result.risk };
+  }));
 }
 
 /**
@@ -85,10 +94,7 @@ export async function evaluate(sql: Db, opts: EvaluateOptions): Promise<Evaluati
     const configs = opts.configs && opts.configs.length > 0 ? opts.configs : [version.config];
 
     const windowDays = opts.windowDays ?? 7;
-    const good: Scored[][] = configs.map(() => []);
-    for (const entry of opts.knownGood.entries) {
-      (await scoreAll(tx, entry.ip, at, configs, now, [])).forEach((r, i) => good[i]!.push(r));
-    }
+    const good = await scoreAll(tx, opts.knownGood.entries.map((e) => e.ip), at, configs, now);
 
     const { addresses, summary } = await drawSample(tx, {
       at,
@@ -97,10 +103,8 @@ export async function evaluate(sql: Db, opts: EvaluateOptions): Promise<Evaluati
       dataVersionLabel: version.label,
       knownGood: opts.knownGood.entries,
     });
-    const bad: SampledResult[][] = configs.map(() => []);
-    for (const address of addresses) {
-      (await scoreAll(tx, address.ip, at, configs, now, [address.feed])).forEach((r, i) => bad[i]!.push({ ...address, ...r }));
-    }
+    const bad: SampledResult[][] = (await scoreAll(tx, addresses.map((a) => a.ip), at, configs, now, addresses.map((a) => a.feed)))
+      .map((results) => results.map((r, i) => ({ ...addresses[i]!, ...r })));
 
     // Early detection: addresses first reported in the window that ends at `at` (research R4).
     const moment = new Date(at.getTime() - windowDays * 86_400_000);

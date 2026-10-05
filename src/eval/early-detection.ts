@@ -1,6 +1,6 @@
 import type { SQL } from "bun";
 import { toIpValue } from "../ip/parse";
-import { gatherSignals } from "../lookup/signals";
+import { gatherSignalsMany } from "../lookup/signals";
 import type { ScoringConfig } from "../model/types";
 import { score } from "../scoring/score";
 import { representativeAddress } from "./addresses";
@@ -89,14 +89,16 @@ export async function internalEarlyDetection(
   found: NewAddress[],
   opts: { moment: Date; windowDays: number; config: ScoringConfig; now: Date },
 ): Promise<EarlyDetectionByFeed> {
-  const scored: (Scored & { feed: string })[] = [];
-  for (const address of found) {
+  const values = found.map((address) => {
     const value = toIpValue(address.ip);
     if ("error" in value) throw new Error(`address ${address.ip}: ${value.error}`);
-    const { signals } = await gatherSignals(tx, value, opts.moment);
-    const result = score(signals, opts.config, opts.moment, opts.now);
-    scored.push({ ip: address.ip, feed: address.feed, level: result.level, risk: result.risk });
-  }
+    return value;
+  });
+  const gathered = await gatherSignalsMany(tx, values, opts.moment);
+  const scored: (Scored & { feed: string })[] = found.map((address, i) => {
+    const result = score(gathered[i]!.signals, opts.config, opts.moment, opts.now);
+    return { ip: address.ip, feed: address.feed, level: result.level, risk: result.risk };
+  });
   const byFeed: EarlyDetectionByFeed["byFeed"] = {};
   for (const feed of [...new Set(scored.map((s) => s.feed))].sort()) {
     const { moment: _m, windowDays: _w, ...rest } = summarize(opts.moment, opts.windowDays, scored.filter((s) => s.feed === feed));

@@ -3,7 +3,7 @@ import { readSnapshot, type Db } from "../db/client";
 import { resolveVersionAt, type ResolvedVersion } from "../db/versions";
 import { BITS, rangeToCidrs } from "../ip/cidr";
 import { parseIpv4, parseIpv6, type IpValue } from "../ip/parse";
-import { gatherSignals } from "../lookup/signals";
+import { gatherSignalsMany } from "../lookup/signals";
 import type { Network } from "../model/types";
 import { openMmdb, overlay } from "../mmdb/reader";
 import { MmdbWriter } from "../mmdb/writer";
@@ -187,8 +187,9 @@ export async function validateBuild(
 
     const config = build.dataVersion.config;
     let checked = 0;
-    for (const ip of addresses) {
-      const { signals, network } = await gatherSignals(tx, ip, build.builtAt);
+    const gathered = await gatherSignalsMany(tx, addresses, build.builtAt);
+    for (const [i, ip] of addresses.entries()) {
+      const { signals, network } = gathered[i]!;
       const expected = customerRecord(signals, isEmptyNetwork(network) ? null : network, config, build.builtAt);
       const actual = get(ip);
       const a = JSON.stringify(actual ?? null);

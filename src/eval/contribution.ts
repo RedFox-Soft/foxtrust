@@ -1,7 +1,7 @@
 import type { SQL } from "bun";
 import { FEEDS } from "../feeds/registry";
 import { toIpValue } from "../ip/parse";
-import { gatherSignals } from "../lookup/signals";
+import { gatherSignalsMany } from "../lookup/signals";
 import type { Level, ScoringConfig } from "../model/types";
 import { score } from "../scoring/score";
 import { representativeAddress } from "./addresses";
@@ -55,11 +55,14 @@ export async function feedContribution(
     const kind = def.kind;
     const { active, prefixes } = await activePrefixes(tx, def.id, kind, opts.at, since, opts.dataVersionLabel, opts.perFeed);
     const rows = opts.configs.map(() => ({ feed: def.id, kind, active, sampled: prefixes.length, keepMedium: 0, keepHigh: 0, dropBelowMedium: 0 }));
-    for (const prefix of prefixes) {
+    const ips = prefixes.map((prefix) => {
       const ip = toIpValue(representativeAddress(prefix));
       if ("error" in ip) throw new Error(`prefix ${prefix}: ${ip.error}`);
-      const withFeed = (await gatherSignals(tx, ip, opts.at)).signals;
-      const without = (await gatherSignals(tx, ip, opts.at, [def.id])).signals;
+      return ip;
+    });
+    // Sources are left out after reading, so one read gives both views.
+    for (const { signals: withFeed } of await gatherSignalsMany(tx, ips, opts.at)) {
+      const without = withFeed.filter((s) => s.source !== def.id);
       opts.configs.forEach((config, i) => {
         const a = score(withFeed, config, opts.at, opts.now).level;
         const b = score(without, config, opts.at, opts.now).level;
