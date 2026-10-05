@@ -53,4 +53,5 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-postgresql-storage]] — ADR: PostgreSQL with `inet`/`cidr` + `tstzrange` in GiST indexes, `Bun.sql`, no ORM
 - [[adr-production-hosting]] — ADR: production on the home server `geekom`; images built on the PC; one-command deploy/rollback in the homeserver repo
 - [[2026-10-05-production-database-review]] — first production review: cached-plan memory leak, `last_seen` rewrite churn, history kept, Postgres tuning, follow-ups
+- [[adr-test-strategy]] — ADR: decision logic tested in memory, PostgreSQL per query path, families only where they matter, parallel test files
 - [[candidate-data-sources]] — sources not yet ingested, by layer (network, anonymization, abuse, first-party); residential proxies out of scope

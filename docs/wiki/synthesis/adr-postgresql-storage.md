@@ -26,7 +26,7 @@ The core query is "which stored prefixes contain this address, and what was vali
 ## Consequences
 
 - One database holds intervals, behavior episodes, aggregates, feed runs, data versions and snapshot releases, and one transaction keeps them consistent.
-- Run references on intervals and episodes (`opened_run_id`, `closed_run_id`, `first_run_id`, `last_run_id`) carry no foreign key since 2026-10-05 (migration 0005). Only ingest writes them, from the run it applies in the same transaction, and `feed_run` rows are never deleted. The per-row checks cost about a third of every apply: loading all fixture feeds took 1.1 s with them and 0.64 s without.
+- Run references on intervals and episodes (`opened_run_id`, `closed_run_id`, `first_run_id`, `last_run_id`) carry no foreign key since 2026-10-05 (migration 0005). Only ingest writes them, from the run it applies in the same transaction, and `feed_run` rows are never deleted. The per-row checks cost about a third of every apply: loading all fixture feeds took 1.1 s with them and 0.64 s without ([[adr-test-strategy]]).
 - Snapshot distribution does not depend on the database: clients read MMDB files ([[adr-snapshot-format]]).
 - Operational lessons from production are in [[2026-10-05-production-database-review]].
 - Code: `db/migrations/`, `src/db/client.ts`.

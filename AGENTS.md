@@ -35,6 +35,7 @@ FoxTrust / IP Trust: IP reputation service. Overview and roadmap: `README.md`.
 - Write tests **only** for user cases (acceptance scenarios of the user stories in `specs/NNN-name/spec.md`) and for security issues.
 - Skip everything else: no dedicated tests for internal modules, helpers, CLI plumbing, parsers, refactors or config.
 - Tests never call live networks; use recorded fixtures.
+- Check decision logic in memory; use PostgreSQL for one scenario per query path, set operations and database guarantees. Test both address families only where the family changes the behavior (`docs/wiki/synthesis/adr-test-strategy.md`).
 - Name tests by what they cover: `US1-3: …` for a scenario, `SEC: …` for a security issue.
 - Success-criteria measurements (benchmarks, labelled-set evaluation) are not tests: keep them in `tests/perf/` or the eval tooling, run on demand.
 

@@ -46,3 +46,5 @@ Operations:
 ## [2026-10-05] query | 2026-10-05-production-database-review: unchanged runs skip the apply; content_sha256 hashes parsed entries (follow-ups closed)
 
 ## [2026-10-05] query | adr-postgresql-storage: per-row run foreign keys dropped (migration 0005)
+
+## [2026-10-05] query | Decision: adr-test-strategy (new); SCHEMA.md gains the `testing` tag
