@@ -64,4 +64,4 @@ The defaults were `shared_buffers` 128 MB, `work_mem` 4 MB and `maintenance_work
 
 - ~~Skip the full apply on `unchanged` runs.~~ Done 2026-10-05: an unchanged version of a network, category or feed-time behavior feed writes only its `feed_run` row and data version. Listing-episode behavior feeds still refresh their episodes.
 - ~~Detect "unchanged" from the parsed entries rather than the file hash.~~ Done 2026-10-05: `content_sha256` is the SHA-256 of the parsed entries in feed order. A [[cymru-fullbogons]] file that changes only its header is `unchanged`, and a parser change applies even to an old file. Hashing 1.49 M entries takes about 1.7 s.
-- Alert on the database container's memory, not only the host's 85 %.
+- ~~Alert on the database container's memory.~~ Not done, by decision (2026-10-05). The containers' `mem_limit` (4 GB for the database, 3 GB for the scheduler) is the safeguard: a leak gets the container OOM-killed instead of exhausting the host.
