@@ -1,0 +1,23 @@
+# Public-cloud ASNs for the `cloud` category (spec 005, contract specs/005-cloud-category/contracts/cloud-asn-list.md).
+# include: self-service public IaaS (virtual machines ordered through an API, billed by use, several regions).
+# exclude: ASNs that also carry public resolvers, NTP or CDN edges; keep them listed so they are not re-added.
+# Adding or removing a row is a scoring change: run `foxtrust eval --compare` and check the known-good report first.
+asn,provider,status,source,added,reason
+16509,Amazon Web Services (AMAZON-02),include,https://www.peeringdb.com/asn/16509,2026-10-05,
+14618,Amazon Web Services (AMAZON-AES),include,https://www.peeringdb.com/asn/14618,2026-10-05,
+8987,Amazon Web Services (GOVCLOUD),include,https://www.peeringdb.com/asn/8987,2026-10-05,"found by the SC-001 check: announces part of AWS's published ranges"
+396982,Google Cloud (GOOGLE-CLOUD-PLATFORM),include,https://www.peeringdb.com/asn/396982,2026-10-05,
+8075,Microsoft Azure (MICROSOFT-CORP-MSN-AS-BLOCK),include,https://www.peeringdb.com/asn/8075,2026-10-05,
+31898,Oracle Cloud (ORACLE-BMC-31898),include,https://www.peeringdb.com/asn/31898,2026-10-05,
+45102,Alibaba Cloud (ALIBABA-CN-NET),include,https://www.peeringdb.com/asn/45102,2026-10-05,
+132203,Tencent Cloud (TENCENT-NET-AP-CN),include,https://www.peeringdb.com/asn/132203,2026-10-05,
+36351,IBM Cloud (SOFTLAYER),include,https://www.peeringdb.com/asn/36351,2026-10-05,
+14061,DigitalOcean,include,https://www.peeringdb.com/asn/14061,2026-10-05,
+63949,Akamai Cloud / Linode (AKAMAI-LINODE-AP),include,https://www.peeringdb.com/asn/63949,2026-10-05,
+20473,Vultr (AS-VULTR),include,https://www.peeringdb.com/asn/20473,2026-10-05,"hosts NextDNS resolvers of the known-good reference; they stay low (cloud + hosting about 20 points)"
+24940,Hetzner,include,https://www.peeringdb.com/asn/24940,2026-10-05,
+16276,OVHcloud,include,https://www.peeringdb.com/asn/16276,2026-10-05,
+12876,Scaleway,include,https://www.peeringdb.com/asn/12876,2026-10-05,
+15169,Google (GOOGLE),exclude,https://www.peeringdb.com/asn/15169,2026-10-05,"public DNS 8.8.8.8 and NTP time.google.com (12 known-good addresses)"
+13335,Cloudflare,exclude,https://www.peeringdb.com/asn/13335,2026-10-05,"public DNS 1.1.1.1 and CDN edges (20 known-good addresses)"
+20940,Akamai CDN,exclude,https://www.peeringdb.com/asn/20940,2026-10-05,"CDN edges, not tenant compute"

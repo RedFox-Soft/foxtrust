@@ -24,4 +24,4 @@ VOLUME /app/var
 HEALTHCHECK --interval=60s --timeout=5s --start-period=90s --retries=3 \
   CMD test -f /app/var/heartbeat && [ $(( $(date +%s) - $(stat -c %Y /app/var/heartbeat) )) -lt 180 ]
 
-CMD ["sh", "-c", "bun run src/cli/main.ts db migrate && exec bun run src/cli/main.ts schedule --init-config config/scoring/2026-09-30.1.json --heartbeat /app/var/heartbeat"]
+CMD ["sh", "-c", "bun run src/cli/main.ts db migrate && exec bun run src/cli/main.ts schedule --init-config config/scoring/2026-10-06.1.json --heartbeat /app/var/heartbeat"]

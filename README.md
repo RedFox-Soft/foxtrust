@@ -6,7 +6,7 @@ An IP reputation service. For every address it answers three questions:
 2. **What has it done recently?** Brute force, spam, scanning, credential stuffing, C2.
 3. **Why do we think so?** Every conclusion is backed by signals, each with its code, age and contribution.
 
-> Status: **pre-alpha**. Stage 1 (core) and stage 2 (distribution) are implemented: an explainable `lookup(ip)` over eight licence-checked feeds, signed MMDB snapshots of the customer verdict, and a `/verify` forward-auth service with policies. There is no public API yet.
+> Status: **pre-alpha**. Stage 1 (core) and stage 2 (distribution) are implemented: an explainable `lookup(ip)` over nine licence-checked feeds, signed MMDB snapshots of the customer verdict, and a `/verify` forward-auth service with policies. There is no public API yet.
 
 ## Quick start
 
@@ -15,8 +15,8 @@ bun install
 docker compose up -d db
 cp .env.example .env                      # DATABASE_URL, DATABASE_URL_TEST
 bun run foxtrust db migrate
-bun run foxtrust config activate config/scoring/2026-09-30.1.json
-bun run foxtrust ingest                   # downloads the 8 feeds (licence-gated)
+bun run foxtrust config activate config/scoring/2026-10-06.1.json
+bun run foxtrust ingest                   # downloads the 9 feeds (licence-gated)
 bun run foxtrust lookup 185.220.101.5     # add --json for the machine-readable verdict
 bun run foxtrust feeds status
 bun run foxtrust schedule                 # long-running: per-feed schedules + nightly retention
@@ -33,7 +33,7 @@ docker compose logs -f scheduler          # one line per feed run
 At start the container:
 
 1. applies migrations;
-2. activates `config/scoring/2026-09-30.1.json`, but only if no config is active yet;
+2. activates `config/scoring/2026-10-06.1.json`, but only if no config is active yet (a running system switches with `config activate` after `eval --compare`);
 3. runs the scheduler.
 
 Docker restarts the container if it exits (`restart: unless-stopped`). Fetched artifacts live in the `feed-artifacts` volume. The licence pages from `docs/wiki/entities/` are copied into the image, so rebuild after editing them. Running `ingest` by hand at the same time is safe: per-feed advisory locks prevent overlapping runs.
@@ -152,6 +152,8 @@ type Verdict = {
 
 The JSON Schema is in `schemas/verdict.schema.json`.
 
+A scoring config scores only the sources listed in its `sourceConfidence`. A feed the active config leaves out is still ingested, but adds nothing to verdicts. `config check` and the scheduler report it as "not enabled", so a new feed can be evaluated with `eval --compare` before the config that enables it is activated.
+
 Risk is computed with noisy-OR:
 
 ```
@@ -187,7 +189,7 @@ The formula is monotonic, easy to explain ("this signal contributes 40%"), and n
 | Layer | Sources |
 |-------|---------|
 | Network, ASN, prefixes | RIR delegated stats, RouteViews, RIPE RIS, PeeringDB |
-| Cloud and hosting | Published ranges of AWS, GCP, Azure, Oracle, Cloudflare, DigitalOcean |
+| Cloud and hosting | Hosting: X4BNet datacenter list. Cloud: the public-cloud ASNs of `config/cloud/asns.csv` (AWS, Google Cloud, Azure, Oracle, Alibaba, DigitalOcean, Hetzner, OVHcloud and others; resolver and CDN ASNs excluded) with their BGP prefixes from ipverse/as-ip-blocks (CC0). The providers' own range files are not used: they state no licence |
 | Bogon | IANA special-purpose and address-space registries (Team Cymru fullbogons: internal only) |
 | Anonymization | Tor exit nodes, Mullvad and Proton server lists, VPN provider ASNs |
 | Abuse | Spamhaus DROP, abuse.ch (Feodo, ThreatFox), blocklist.de, DShield, CINS, FireHOL |

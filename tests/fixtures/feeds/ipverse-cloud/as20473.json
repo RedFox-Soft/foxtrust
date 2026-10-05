@@ -1,0 +1,31 @@
+{
+  "asn": 20473,
+  "metadata": {
+    "handle": "AS-VULTR",
+    "description": "The Constant Company LLC",
+    "countryCode": "US",
+    "country": "United States",
+    "origin": "authoritative",
+    "category": "hosting",
+    "networkRole": "major_transit"
+  },
+  "prefixes": {
+    "ipv4": [
+      "5.83.210.0/24",
+      "5.83.212.0/24",
+      "5.102.112.0/22",
+      "5.182.22.0/24",
+      "5.199.15.0/24",
+      "13.141.126.0/24",
+      "14.102.226.0/24",
+      "14.102.232.0/24",
+      "14.102.234.0/24",
+      "23.26.128.0/24"
+    ],
+    "ipv6": [
+      "2001:678:580::/48",
+      "2001:19f0::/38",
+      "2001:19f0:ccc::/47"
+    ]
+  }
+}

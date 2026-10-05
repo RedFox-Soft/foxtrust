@@ -32,6 +32,8 @@ export function baseFileName(path: string): string {
  * file name. Throws with the missing names when a multi-file feed gets only some of its files.
  */
 export function matchLocalFiles(def: FeedDefinition, paths: string[]): { name: string; path: string }[] {
+  // A definition with no files (e.g. an invalid cloud ASN list, spec 005) reads nothing; its parse reports why.
+  if (def.files.length === 0) return [];
   if (def.files.length === 1 && paths.length === 1) return [{ name: def.files[0]!.name, path: paths[0]! }];
   const byName = new Map(paths.map((p) => [baseFileName(p), p]));
   const unknown = paths.filter((p) => !def.files.some((f) => f.name === baseFileName(p)));

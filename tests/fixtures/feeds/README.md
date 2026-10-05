@@ -19,6 +19,8 @@ Real feed files, recorded on **2026-09-24** and trimmed to keep the repository s
 | `blocklist-de/ssh.txt`, `bruteforcelogin.txt` | https://lists.blocklist.de/lists/ | first 1,000 IPv4 lines + all IPv6 lines |
 | `blocklist-de/ssh.v2.txt` | derived | `ssh.txt` without its first 100 lines (US2-7) |
 | `iana-address-space/ipv4-address-space.csv`, `ipv6-unicast-address-assignments.csv` | https://www.iana.org/assignments/ (recorded 2026-09-30) | as recorded |
+| `ipverse-cloud/as16509.json`, `as396982.json`, `as8075.json`, `as20473.json` | https://github.com/ipverse/as-ip-blocks `as/<asn>/aggregated.json` (CC0, recorded 2026-10-05) | `asn` and `metadata` kept; about 10 IPv4 and 3 IPv6 prefixes each, plus one that overlaps the X4BNet fixture and, for AS16509, the prefix of 3.5.140.2 (spec 005) |
+| `ipverse-cloud/asns.csv` | written | the four ASNs above as `include` and 15169 as `exclude` (spec 005) |
 | `_security/gzip-bomb.gz` | generated | `1.2.3.4\n` repeated to 1.1 GB, gzip -9 (≈ 1.6 MB); `SEC:` tests |
 
 ## Cloud ranges (SC-003 measurement data only)

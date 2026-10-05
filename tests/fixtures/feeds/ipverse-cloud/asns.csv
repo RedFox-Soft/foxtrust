@@ -1,0 +1,7 @@
+# Fixture cloud ASN list (spec 005): the four ASNs with recorded files in tests/fixtures/feeds/ipverse-cloud.
+asn,provider,status,source,added,reason
+16509,Amazon Web Services (AMAZON-02),include,https://www.peeringdb.com/asn/16509,2026-10-05,
+396982,Google Cloud (GOOGLE-CLOUD-PLATFORM),include,https://www.peeringdb.com/asn/396982,2026-10-05,
+8075,Microsoft Azure (MICROSOFT-CORP-MSN-AS-BLOCK),include,https://www.peeringdb.com/asn/8075,2026-10-05,
+20473,Vultr (AS-VULTR),include,https://www.peeringdb.com/asn/20473,2026-10-05,
+15169,Google (GOOGLE),exclude,https://www.peeringdb.com/asn/15169,2026-10-05,"public DNS 8.8.8.8 and NTP"

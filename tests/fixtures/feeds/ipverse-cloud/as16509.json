@@ -1,0 +1,32 @@
+{
+  "asn": 16509,
+  "metadata": {
+    "handle": "AMAZON-02",
+    "description": "Amazon.com Inc.",
+    "countryCode": "US",
+    "country": "United States",
+    "origin": "authoritative",
+    "category": "hosting",
+    "networkRole": "major_transit"
+  },
+  "prefixes": {
+    "ipv4": [
+      "1.44.96.0/24",
+      "1.118.3.0/24",
+      "1.178.1.0/24",
+      "1.178.7.0/24",
+      "1.178.8.0/21",
+      "1.178.17.0/24",
+      "1.178.18.0/23",
+      "1.178.20.0/22",
+      "1.178.24.0/22",
+      "1.178.28.0/23",
+      "3.0.0.0/8"
+    ],
+    "ipv6": [
+      "2001:468:1f10::/47",
+      "2001:468:1f66::/48",
+      "2001:4f8:b::/48"
+    ]
+  }
+}

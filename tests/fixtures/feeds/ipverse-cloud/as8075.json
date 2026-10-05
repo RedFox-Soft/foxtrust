@@ -1,0 +1,31 @@
+{
+  "asn": 8075,
+  "metadata": {
+    "handle": "MICROSOFT-CORP-MSN-AS-BLOCK",
+    "description": "Microsoft Corporation",
+    "countryCode": "US",
+    "country": "United States",
+    "origin": "authoritative",
+    "category": "hosting",
+    "networkRole": "access_provider"
+  },
+  "prefixes": {
+    "ipv4": [
+      "1.186.0.0/16",
+      "2.58.103.0/24",
+      "4.144.0.0/12",
+      "4.160.0.0/11",
+      "4.192.0.0/10",
+      "5.23.34.0/24",
+      "9.129.0.0/16",
+      "9.130.0.0/15",
+      "9.132.0.0/15",
+      "9.135.0.0/16"
+    ],
+    "ipv6": [
+      "2001:67c:4f8::/48",
+      "2001:698::/47",
+      "2001:df0:7::/48"
+    ]
+  }
+}
