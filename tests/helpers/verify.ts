@@ -21,6 +21,7 @@ export const ADDR = {
   tor: { 4: "198.51.100.7", 6: "2001:db8:1::7" },
   high: { 4: "203.0.113.9", 6: "2001:db8:2::9" },
   low: { 4: "192.0.2.20", 6: "2001:db8:3::20" },
+  cloud: { 4: "198.18.0.5", 6: "2001:db8:4::5" },
   unlisted: { 4: "100.64.0.1", 6: "2001:db8:ffff::1" },
 } as const;
 
@@ -29,7 +30,7 @@ const record = (risk: number, level: string, categories: string[], codes: string
   risk, level, categories, reasons: codes.map((code) => ({ code, last_seen: SEEN, contribution: risk / codes.length })), network: {},
 });
 
-/** Publishes a small signed customer snapshot (Tor, high-risk and low-risk ranges) to `pub`. */
+/** Publishes a small signed customer snapshot (Tor, high-risk, low-risk and cloud ranges) to `pub`. */
 export async function publishRecordedSnapshot(pub: TestPublication, version = "f20261001"): Promise<string> {
   const writer = new MmdbWriter({
     databaseType: SNAPSHOT_DB_TYPE, description: { en: "recorded test snapshot" }, languages: ["en"],
@@ -38,10 +39,12 @@ export async function publishRecordedSnapshot(pub: TestPublication, version = "f
   const tor = record(34.3, "medium", ["tor"], ["tor_exit"]);
   const high = record(82, "high", ["hosting"], ["hosting", "botnet_c2"]);
   const low = record(12, "low", ["hosting"], ["hosting"]);
+  const cloud = record(9, "low", ["cloud"], ["cloud"]);
   for (const [cidr, value] of [
     ["198.51.100.0/24", tor], ["2001:db8:1::/48", tor],
     ["203.0.113.0/24", high], ["2001:db8:2::/48", high],
     ["192.0.2.0/24", low], ["2001:db8:3::/48", low],
+    ["198.18.0.0/24", cloud], ["2001:db8:4::/48", cloud],
   ] as const) writer.insert(parseCidr(cidr)!, value);
   const bytes = writer.build();
   const key = await loadSigningKey(pub.signingKeyPath);

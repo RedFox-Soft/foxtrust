@@ -1,16 +1,21 @@
-import { beforeEach, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import Ajv2020 from "ajv/dist/2020";
 import scenarios from "../fixtures/scenarios.json";
 import verdictSchema from "../../schemas/verdict.schema.json";
-import { createIpTrust } from "../../src/lookup/lookup";
+import { toIpValue } from "../../src/ip/parse";
+import { buildVerdict, createIpTrust } from "../../src/lookup/lookup";
+import { configSha256 } from "../../src/scoring/config";
 import type { LookupOptions, ScoringConfig, Verdict } from "../../src/model/types";
 import { describeDb, resetData, withTestDb } from "../helpers/db";
 import { seedDataVersion, seedConfig, seedRows, shippedConfig, type SeedRows } from "../helpers/seed";
+import { gatherFromSeed } from "../helpers/signals";
 
 type Case = {
   scenario: string;
   name: string;
   family: 4 | 6;
+  /** "sql": also run against PostgreSQL. Keep one case per query path (selection, time, network). */
+  layer?: "sql";
   seed: SeedRows;
   ip: string;
   at?: string;
@@ -40,13 +45,31 @@ async function configFor(c: Case): Promise<ScoringConfig> {
   };
 }
 
+const cases = scenarios.cases as unknown as Case[];
+
+// Every scenario runs in memory: the lookup's selection modelled over the scenario rows
+// (tests/helpers/signals.ts), then the same rules and verdict assembly as the lookup.
+describe("US1: explainable verdict for an address (rules)", () => {
+  for (const c of cases) {
+    test(`${c.scenario}: ${c.name} (IPv${c.family})`, async () => {
+      const config = await configFor(c);
+      const ip = toIpValue(c.ip);
+      if ("error" in ip) throw new Error(ip.error);
+      const at = new Date(c.at ?? scenarios.defaults.at);
+      const { signals, network } = gatherFromSeed({ versions: scenarios.defaults.versions, ...c.seed }, ip, at, c.options?.excludeSources);
+      const verdict = buildVerdict(ip, signals, network, config, at, NOW, `dv1.noisy-or/1.${configSha256(config).slice(0, 8)}`);
+      expect(verdict).toMatchObject(c.expected);
+      expectValidVerdict(verdict);
+    });
+  }
+});
+
 describeDb("US1: explainable verdict for an address", () => {
   const db = withTestDb();
   beforeEach(() => resetData(db.sql));
 
-  const cases = scenarios.cases as unknown as Case[];
-  for (const c of cases) {
-    test(`${c.scenario}: ${c.name} (IPv${c.family})`, async () => {
+  for (const c of cases.filter((c) => c.layer === "sql")) {
+    test(`${c.scenario}: ${c.name} (IPv${c.family}, PostgreSQL)`, async () => {
       const seed: SeedRows = { versions: scenarios.defaults.versions, ...c.seed };
       await seedRows(db.sql, seed, await configFor(c));
 

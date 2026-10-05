@@ -35,7 +35,7 @@
       }
     },
     {
-      "scenario": "US1-2", "name": "hosting plus brute force 1 h ago combine by noisy-OR; overlapping prefixes and duplicate sightings", "family": 4,
+      "scenario": "US1-2", "name": "hosting plus brute force 1 h ago combine by noisy-OR; overlapping prefixes and duplicate sightings", "family": 4, "layer": "sql",
       "seed": {
         "network": [
           { "prefix": "45.155.204.0/22", "asn": 210644, "org": "Wide Hosting Ltd", "country": "GB", "from": "2026-08-01T00:00:00Z" },
@@ -167,7 +167,7 @@
       "expected": { "ip": "2001:4860:4860::8888", "risk": 0, "level": "low", "categories": [], "reasons": [], "network": { "asn": 15169, "org": "GOOGLE", "prefix": "2001:4860::/32", "country": "US" } }
     },
     {
-      "scenario": "US1-4", "name": "an address in no routed prefix has unknown network fields", "family": 4,
+      "scenario": "US1-4", "name": "an address in no routed prefix has unknown network fields", "family": 4, "layer": "sql",
       "seed": {},
       "ip": "1.1.1.1",
       "expected": { "risk": 0, "level": "low", "reasons": [], "network": { "asn": null, "org": null, "prefix": null, "country": null } }
@@ -188,7 +188,7 @@
       "expected": { "ip": "88.99.1.2", "risk": 12, "level": "low", "categories": ["hosting"], "reasons": [{ "code": "hosting", "prefix": "88.99.0.0/16", "contribution": 12 }], "network": { "asn": 24940, "prefix": "88.99.0.0/16" } }
     },
     {
-      "scenario": "US1-5", "name": "an address in a listed prefix gets the same verdict in both families", "family": 6,
+      "scenario": "US1-5", "name": "an address in a listed prefix gets the same verdict in both families", "family": 6, "layer": "sql",
       "seed": {
         "network": [{ "prefix": "2a01:4f8::/32", "asn": 24940, "org": "Hetzner Online GmbH", "country": "DE", "from": "2026-08-01T00:00:00Z" }],
         "categories": [{ "prefix": "2a01:4f8::/32", "code": "hosting", "source": "x4bnet-datacenter", "from": "2026-08-01T00:00:00Z", "lastSeen": "2026-09-10T04:00:00Z" }]
@@ -247,7 +247,7 @@
       }
     },
     {
-      "scenario": "US1-6", "name": "a past time inside a closed category interval reproduces the old verdict", "family": 4,
+      "scenario": "US1-6", "name": "a past time inside a closed category interval reproduces the old verdict", "family": 4, "layer": "sql",
       "seed": {
         "runs": [{ "feed": "tor-exit", "at": "2026-09-02T12:00:00Z" }],
         "categories": [{ "prefix": "185.220.101.7/32", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-01T00:00:00Z", "to": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-04T12:00:00Z" }]
@@ -271,13 +271,13 @@
       "expected": { "risk": 0, "categories": [], "reasons": [] }
     },
     {
-      "scenario": "US1-6", "name": "after the interval closed the category is gone", "family": 6,
+      "scenario": "US1-6", "name": "after the interval closed the category is gone", "family": 6, "layer": "sql",
       "seed": { "categories": [{ "prefix": "2a0b:f4c2:2::7/128", "code": "tor_exit", "source": "tor-exit", "from": "2026-08-01T00:00:00Z", "to": "2026-09-05T00:00:00Z", "lastSeen": "2026-09-04T12:00:00Z" }] },
       "ip": "2a0b:f4c2:2::7", "at": "2026-09-06T00:00:00.000Z",
       "expected": { "risk": 0, "categories": [], "reasons": [] }
     },
     {
-      "scenario": "US1-6", "name": "a past time between two behavior episodes sees only the first one", "family": 4,
+      "scenario": "US1-6", "name": "a past time between two behavior episodes sees only the first one", "family": 4, "layer": "sql",
       "seed": {
         "sightings": [
           { "prefix": "80.82.77.40/32", "code": "ssh_bruteforce", "source": "blocklist-de", "firstSeen": "2026-08-20T00:00:00Z", "lastSeen": "2026-08-25T00:00:00Z" },
