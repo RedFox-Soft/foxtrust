@@ -32,12 +32,13 @@ The project rule still holds: tests cover user scenarios and security issues onl
 - **What stays on PostgreSQL.** Set operations stay there: the ingest diff, retention and sampling. So do the database guarantees: one data version per verdict, and parameter binding.
 - **End-to-end tests.** At most one end-to-end test per CLI command or service.
 - **Address family.** Both families are tested where the family changes the behavior: parsing, prefix storage and containment, network data, snapshots. State over time (holds, failed updates, retention, re-runs, transactions) is tested once. SC-008 was amended accordingly.
+- **Minimal fixtures.** A test loads only the fixture feeds its scenario needs (`loadFixtureFeeds`). The full dataset (about 1.3 s) stays for tests that check every feed, such as the snapshot contents.
 - **`/verify` and policy tests use a recorded snapshot.** `/verify` reads only the published files.
 - **Parallel files.** `bun test --parallel=8` runs the files in parallel. Test pools are capped (admin 1, file 4 connections) to stay under the server's 100 connections.
 
 ## Consequences
 
-- The suite takes about 17–20 s instead of about 250 s. The longest file (feed ingestion) sets the floor.
+- The suite takes about 9 s instead of about 250 s. The longest files (feed ingestion, the archive) set the floor.
 - A rule change shows up in milliseconds in the in-memory scenarios. Breaking the category lastSeen rule fails ten tests, the in-memory ones included.
 - Production benefits from the same work: batched reads in evaluations and release reports, one round trip per lookup, and cheaper applies.
-- Still open: alert, release-gate and archive tests check pure decisions through full database cycles. The plan is to test those decisions in memory and keep one database test per state transition.
+- Alert tests still check their decisions through database cycles. They take about 1 s per file, so moving those decisions into memory is not worth it.
