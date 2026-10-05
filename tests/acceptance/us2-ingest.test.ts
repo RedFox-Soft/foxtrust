@@ -401,16 +401,20 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   for (const family of [4, 6] as const) {
     test(`US2-9: the same content twice creates no duplicates and refreshes lastSeen (IPv${family})`, async () => {
       const category = family === 4 ? "tor-exit" : "x4bnet-datacenter";
-      const categoryPrefix = family === 4 ? `${s.tor}/32` : s.x4[6][0]!;
+      const categoryCode = family === 4 ? "tor_exit" : "hosting";
+      const categoryIp = family === 4 ? s.tor : hostOf(s.x4[6][0]!);
       const behaviorPrefix = `${s.ssh[family]}/${family === 4 ? 32 : 128}`;
 
       await ingest(category);
       await ingest("blocklist-de");
       const counts = async () => (await db.sql`
         SELECT (SELECT count(*)::int FROM category_interval) AS c, (SELECT count(*)::int FROM behavior_sighting) AS b`)[0];
-      const lastSeen = async () => (await db.sql`
-        SELECT (SELECT last_seen FROM category_interval WHERE prefix = ${categoryPrefix}::cidr AND upper_inf(valid)) AS c,
-               (SELECT last_seen FROM behavior_sighting WHERE prefix = ${behaviorPrefix}::cidr AND open AND code = 'ssh_bruteforce') AS b`)[0];
+      const lastSeen = async () => ({
+        c: reason(await lookup(categoryIp), categoryCode, category)!.lastSeen,
+        b: (await db.sql`
+          SELECT last_seen FROM behavior_sighting
+          WHERE prefix = ${behaviorPrefix}::cidr AND open AND code = 'ssh_bruteforce'`)[0].last_seen,
+      });
       const before = await counts();
       const seenBefore = await lastSeen();
 

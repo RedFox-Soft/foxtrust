@@ -35,9 +35,9 @@ export async function measureLookup(): Promise<Measurement[]> {
         FROM generate_series(0, 199999) i;`);
     }
     await db.sql.unsafe(`
-      INSERT INTO category_interval (prefix, code, source, valid, last_seen, shippable)
+      INSERT INTO category_interval (prefix, code, source, valid, shippable)
       SELECT set_masklen('1.0.0.0'::inet + (i::bigint * 2048), 24)::cidr, 'hosting', 'x4bnet-datacenter',
-             tstzrange(now() - interval '1 day', NULL), now(), true
+             tstzrange(now() - interval '1 day', NULL), true
       FROM generate_series(0, 99999) i;
       INSERT INTO behavior_sighting (prefix, code, source, first_seen, last_seen, recorded_at, first_run_id, last_run_id, open, shippable)
       SELECT set_masklen('1.0.0.0'::inet + (i::bigint * 509), 32)::cidr, 'ssh_bruteforce', 'blocklist-de',

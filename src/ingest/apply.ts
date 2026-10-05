@@ -75,23 +75,28 @@ async function applyNetwork(tx: SQL, source: string, runId: number): Promise<App
   return { opened: count(opened), closed: count(closed), refreshed: 0 };
 }
 
+/**
+ * Open intervals are not touched while the feed keeps listing them: their lastSeen is the feed's
+ * latest successful run (lookup/signals.ts). A closing interval stores the last run that listed it,
+ * the latest successful run before this one, whose own `committed_at` is not set yet.
+ */
 async function applyCategory(tx: SQL, source: string, runId: number, shippable: boolean): Promise<ApplyCounts> {
   const closed = await tx`
     UPDATE category_interval ci
-    SET valid = tstzrange(lower(ci.valid), now(), '[)'), closed_run_id = ${runId}
+    SET valid = tstzrange(lower(ci.valid), now(), '[)'), closed_run_id = ${runId},
+        last_seen = GREATEST(lower(ci.valid), (
+          SELECT max(fr.committed_at) FROM feed_run fr
+          WHERE fr.feed_id = ${source} AND fr.status IN ('applied', 'unchanged')))
     WHERE ci.source = ${source} AND upper_inf(ci.valid)
       AND NOT EXISTS (SELECT 1 FROM incoming i WHERE i.prefix = ci.prefix AND i.code = ci.code)`;
-  const refreshed = await tx`
-    UPDATE category_interval SET last_seen = now()
-    WHERE source = ${source} AND upper_inf(valid)`;
   const opened = await tx`
-    INSERT INTO category_interval (prefix, code, source, valid, last_seen, opened_run_id, shippable)
-    SELECT DISTINCT i.prefix, i.code, ${source}, tstzrange(now(), NULL, '[)'), now(), ${runId}, ${shippable}
+    INSERT INTO category_interval (prefix, code, source, valid, opened_run_id, shippable)
+    SELECT DISTINCT i.prefix, i.code, ${source}, tstzrange(now(), NULL, '[)'), ${runId}, ${shippable}
     FROM incoming i
     WHERE NOT EXISTS (
       SELECT 1 FROM category_interval ci
       WHERE ci.source = ${source} AND upper_inf(ci.valid) AND ci.prefix = i.prefix AND ci.code = i.code)`;
-  return { opened: count(opened), closed: count(closed), refreshed: count(refreshed) };
+  return { opened: count(opened), closed: count(closed), refreshed: 0 };
 }
 
 /** Listing episodes: extend while listed, close when absent, start anew when listed again. */

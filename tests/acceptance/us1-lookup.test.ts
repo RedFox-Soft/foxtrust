@@ -92,8 +92,8 @@ describeDb("US1: explainable verdict for an address", () => {
             INSERT INTO feed_run (feed_id, started_at, status, committed_at)
             VALUES ('tor-exit', now(), 'applied', now()) RETURNING id`;
           await tx`
-            INSERT INTO category_interval (prefix, code, source, valid, last_seen, opened_run_id, shippable)
-            VALUES (${prefix}::cidr, 'tor_exit', 'tor-exit', tstzrange(now(), NULL, '[)'), now(), ${run.id}, true)`;
+            INSERT INTO category_interval (prefix, code, source, valid, opened_run_id, shippable)
+            VALUES (${prefix}::cidr, 'tor_exit', 'tor-exit', tstzrange(now(), NULL, '[)'), ${run.id}, true)`;
           await seedDataVersion(tx, new Date().toISOString(), config, "feed_run");
           inserted();
           await gate;

@@ -81,7 +81,7 @@ export async function seedRows(sql: SQL, rows: SeedRows, config?: ScoringConfig)
       INSERT INTO category_interval (prefix, code, source, valid, last_seen, opened_run_id, shippable)
       VALUES (${c.prefix}::cidr, ${c.code}, ${c.source},
               tstzrange(${c.from}::timestamptz, ${c.to ?? null}::timestamptz, '[)'),
-              ${c.lastSeen}, ${run}, ${c.shippable ?? true})`;
+              ${c.to ? c.lastSeen : null}, ${run}, ${c.shippable ?? true})`;
   }
   for (const s of rows.sightings ?? []) {
     const run = await runFor(s.source, s.recordedAt ?? s.firstSeen);

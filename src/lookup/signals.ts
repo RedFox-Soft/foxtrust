@@ -25,16 +25,14 @@ export async function gatherSignals(
 ): Promise<GatheredSignals> {
   const address = formatIp(ip);
 
-  // Categories: interval valid at `at`. lastSeen is the stored last_seen unless it has moved past
-  // `at`; then it is the latest successful run of the feed at or before `at`.
+  // Categories: interval valid at `at`. lastSeen is the latest successful run of the feed at or
+  // before `at`: every such run since the interval opened listed the prefix, or it would have closed.
   const categoryRows = await tx`
     SELECT ci.prefix::text AS prefix, masklen(ci.prefix) AS length, ci.code, ci.source, ci.shippable,
            lower(ci.valid) AS first_seen,
-           CASE WHEN ci.last_seen <= ${at} THEN ci.last_seen
-                ELSE COALESCE((SELECT max(fr.committed_at) FROM feed_run fr
-                               WHERE fr.feed_id = ci.source AND fr.status IN ${tx(SUCCESS)}
-                                 AND fr.committed_at <= ${at}), lower(ci.valid))
-           END AS last_seen
+           GREATEST(lower(ci.valid), (SELECT max(fr.committed_at) FROM feed_run fr
+                                      WHERE fr.feed_id = ci.source AND fr.status IN ${tx(SUCCESS)}
+                                        AND fr.committed_at <= ${at})) AS last_seen
     FROM category_interval ci
     WHERE ci.prefix >>= ${address}::inet AND ci.valid @> ${at}::timestamptz`;
 

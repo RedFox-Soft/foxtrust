@@ -38,3 +38,5 @@ Operations:
 ## [2026-10-05] query | Decision: operator alerts (spec 004) → adr-operator-alerts (new); SCHEMA.md gains the `operations` tag
 
 ## [2026-10-05] ingest | Cloud category (spec 005): ipverse-cloud (new feed page, CC0), adr-cloud-category (new), code-cloud updated
+
+## [2026-10-05] query | Decision: a category signal's lastSeen comes from feed_run; category_interval.last_seen is written only when the interval closes (migration 0004) → adr-history-and-retention updated

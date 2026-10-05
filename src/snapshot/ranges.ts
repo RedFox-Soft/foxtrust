@@ -57,15 +57,17 @@ export async function collectItems(tx: SQL, at: Date): Promise<Item[]> {
     });
   }
 
+  // lastSeen as in lookup/signals.ts, with each feed's latest run computed once for all its rows.
   const categories = await tx`
+    WITH last_run AS (
+      SELECT feed_id, max(committed_at) AS committed_at FROM feed_run
+      WHERE status IN ${tx(SUCCESS)} AND committed_at <= ${at}
+      GROUP BY feed_id
+    )
     SELECT ci.prefix::text AS prefix, masklen(ci.prefix) AS length, ci.code, ci.source,
-           lower(ci.valid) AS first_seen,
-           CASE WHEN ci.last_seen <= ${at} THEN ci.last_seen
-                ELSE COALESCE((SELECT max(fr.committed_at) FROM feed_run fr
-                               WHERE fr.feed_id = ci.source AND fr.status IN ${tx(SUCCESS)}
-                                 AND fr.committed_at <= ${at}), lower(ci.valid))
-           END AS last_seen
+           lower(ci.valid) AS first_seen, GREATEST(lower(ci.valid), lr.committed_at) AS last_seen
     FROM category_interval ci
+    LEFT JOIN last_run lr ON lr.feed_id = ci.source
     WHERE ci.valid @> ${at}::timestamptz AND ci.shippable`;
   for (const c of categories) {
     items.push({
