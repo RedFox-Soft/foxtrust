@@ -2,7 +2,8 @@ import type { SQL } from "bun";
 import { BITS, parseCidr, type Cidr } from "../ip/cidr";
 import type { Family } from "../ip/parse";
 import { specialPurposeEntries } from "../ip/special-purpose";
-import { BUILTIN_BOGON_SOURCE } from "../lookup/signals";
+import { categoryLastSeen, episodeLastSeen, BUILTIN_BOGON_SOURCE } from "../lookup/rules";
+import { latestRuns } from "../lookup/signals";
 import type { Network, ScoringConfig, Signal } from "../model/types";
 import type { MmdbValue } from "../mmdb/writer";
 import { customerVerdict } from "../verdict/customer";
@@ -21,8 +22,6 @@ type Item =
   | { kind: "network"; family: Family; start: bigint; end: bigint; length: number; network: Network; source: string }
   | { kind: "signal"; family: Family; start: bigint; end: bigint; length: number; signal: Signal; id: string }
   | { kind: "special"; family: Family; start: bigint; end: bigint; length: number; bogon: boolean; cidr: string };
-
-const SUCCESS = ["applied", "unchanged"];
 
 function span(cidr: Cidr): { start: bigint; end: bigint } {
   const size = 1n << BigInt(BITS[cidr.family] - cidr.length);
@@ -57,60 +56,57 @@ export async function collectItems(tx: SQL, at: Date): Promise<Item[]> {
     });
   }
 
-  // lastSeen as in lookup/signals.ts, with each feed's latest run computed once for all its rows.
+  const latest = await latestRuns(tx, at);
   const categories = await tx`
-    WITH last_run AS (
-      SELECT feed_id, max(committed_at) AS committed_at FROM feed_run
-      WHERE status IN ${tx(SUCCESS)} AND committed_at <= ${at}
-      GROUP BY feed_id
-    )
-    SELECT ci.prefix::text AS prefix, masklen(ci.prefix) AS length, ci.code, ci.source,
-           lower(ci.valid) AS first_seen, GREATEST(lower(ci.valid), lr.committed_at) AS last_seen
-    FROM category_interval ci
-    LEFT JOIN last_run lr ON lr.feed_id = ci.source
-    WHERE ci.valid @> ${at}::timestamptz AND ci.shippable`;
+    SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source, lower(valid) AS first_seen
+    FROM category_interval
+    WHERE valid @> ${at}::timestamptz AND shippable`;
   for (const c of categories) {
+    const firstSeen = new Date(c.first_seen);
     items.push({
       kind: "signal",
       ...itemFromPrefix(c.prefix),
       id: `c:${c.source}:${c.code}:${c.prefix}`,
       signal: {
         kind: "category", code: c.code, source: c.source, prefix: c.prefix, prefixLength: Number(c.length),
-        firstSeen: new Date(c.first_seen), lastSeen: new Date(c.last_seen), confidence: null, shippable: true,
+        firstSeen, lastSeen: categoryLastSeen(firstSeen, latest.get(c.source)), confidence: null, shippable: true,
       },
     });
   }
 
-  const behavior = await tx`
-    WITH raw AS (
-      SELECT s.prefix, s.code, s.source, s.first_seen, s.confidence,
-             CASE WHEN s.feed_time THEN s.last_seen
-                  ELSE LEAST(s.last_seen, COALESCE((SELECT max(fr.committed_at) FROM feed_run fr
-                                                   WHERE fr.feed_id = s.source AND fr.status IN ${tx(SUCCESS)}
-                                                     AND fr.committed_at <= ${at}), s.first_seen))
-             END AS last_seen
-      FROM behavior_sighting s
-      WHERE s.shippable AND s.recorded_at <= ${at}
-      UNION ALL
-      SELECT d.prefix, d.code, d.source, d.first_seen, d.confidence, d.last_seen
-      FROM behavior_daily d
-      WHERE d.shippable AND ((d.day + 1)::timestamp AT TIME ZONE 'UTC') <= ${at}
-    )
-    SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source,
-           min(first_seen) AS first_seen, max(last_seen) AS last_seen, max(confidence) AS confidence
-    FROM raw GROUP BY prefix, code, source`;
-  for (const b of behavior) {
-    items.push({
-      kind: "signal",
-      ...itemFromPrefix(b.prefix),
-      id: `b:${b.source}:${b.code}:${b.prefix}`,
-      signal: {
-        kind: "behavior", code: b.code, source: b.source, prefix: b.prefix, prefixLength: Number(b.length),
-        firstSeen: new Date(b.first_seen), lastSeen: new Date(b.last_seen),
-        confidence: b.confidence === null ? null : Number(b.confidence), shippable: true,
-      },
-    });
+  // Episodes and daily aggregates of one (prefix, code, source) become one signal.
+  const [sightings, daily] = await Promise.all([
+    tx`
+      SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source, first_seen, last_seen, feed_time, confidence
+      FROM behavior_sighting
+      WHERE shippable AND recorded_at <= ${at}`,
+    tx`
+      SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source, first_seen, last_seen, confidence
+      FROM behavior_daily
+      WHERE shippable AND ((day + 1)::timestamp AT TIME ZONE 'UTC') <= ${at}`,
+  ]);
+  const behavior = new Map<string, Signal>();
+  const add = (row: { prefix: string; length: unknown; code: string; source: string; confidence: unknown }, firstSeen: Date, lastSeen: Date) => {
+    const id = `b:${row.source}:${row.code}:${row.prefix}`;
+    const confidence = row.confidence === null ? null : Number(row.confidence);
+    const seen = behavior.get(id);
+    if (!seen) {
+      behavior.set(id, {
+        kind: "behavior", code: row.code, source: row.source, prefix: row.prefix, prefixLength: Number(row.length),
+        firstSeen, lastSeen, confidence, shippable: true,
+      });
+      return;
+    }
+    if (firstSeen < seen.firstSeen) seen.firstSeen = firstSeen;
+    if (lastSeen > seen.lastSeen) seen.lastSeen = lastSeen;
+    if (confidence !== null && (seen.confidence === null || confidence > seen.confidence)) seen.confidence = confidence;
+  };
+  for (const s of sightings) {
+    const firstSeen = new Date(s.first_seen);
+    add(s, firstSeen, episodeLastSeen({ firstSeen, lastSeen: new Date(s.last_seen), feedTime: s.feed_time }, latest.get(s.source)));
   }
+  for (const d of daily) add(d, new Date(d.first_seen), new Date(d.last_seen));
+  for (const [id, signal] of behavior) items.push({ kind: "signal", ...itemFromPrefix(signal.prefix), id, signal });
 
   for (const e of specialPurposeEntries()) {
     items.push({ kind: "special", ...itemFromPrefix(e.cidr), bogon: !e.globallyReachable, cidr: e.cidr });

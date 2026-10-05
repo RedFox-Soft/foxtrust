@@ -1,7 +1,7 @@
 import { openDb, readSnapshot } from "../db/client";
 import { resolveVersionAt } from "../db/versions";
-import { formatIp, toIpValue } from "../ip/parse";
-import type { LookupOptions, LookupResult, Verdict } from "../model/types";
+import { formatIp, toIpValue, type IpValue } from "../ip/parse";
+import type { LookupOptions, LookupResult, Network, ScoringConfig, Signal, Verdict } from "../model/types";
 import { score } from "../scoring/score";
 import { BUILTIN_BOGON_SOURCE, gatherSignals } from "./signals";
 
@@ -14,6 +14,24 @@ export type IpTrustOptions = {
 export interface IpTrust {
   lookup(ip: string, options?: LookupOptions): Promise<LookupResult>;
   close(): Promise<void>;
+}
+
+/** The verdict for `ip` from its signals and network at `at` (pure: the lookup's decision part). */
+export function buildVerdict(
+  ip: IpValue, signals: Signal[], network: Network, config: ScoringConfig, at: Date, now: Date, dataVersion: string,
+): Verdict {
+  const result = score(signals, config, at, now);
+  return {
+    ip: formatIp(ip),
+    risk: result.risk,
+    level: result.level,
+    categories: result.categories,
+    reasons: result.reasons,
+    network,
+    dataVersion,
+    evaluatedAt: at.toISOString(),
+    behaviorHistoryIncomplete: result.behaviorHistoryIncomplete,
+  };
 }
 
 /** Opens a read-only lookup client over the local database (FR-001: no external calls). */
@@ -45,19 +63,7 @@ export function createIpTrust(options: IpTrustOptions = {}): IpTrust {
         }
 
         const { signals, network } = await gatherSignals(tx, parsed, at, exclude);
-        const result = score(signals, version.config, at, now);
-        const verdict: Verdict = {
-          ip: formatIp(parsed),
-          risk: result.risk,
-          level: result.level,
-          categories: result.categories,
-          reasons: result.reasons,
-          network,
-          dataVersion: version.label,
-          evaluatedAt: at.toISOString(),
-          behaviorHistoryIncomplete: result.behaviorHistoryIncomplete,
-        };
-        return { ok: true, verdict };
+        return { ok: true, verdict: buildVerdict(parsed, signals, network, version.config, at, now, version.label) };
       });
     },
     close: () => sql.close(),

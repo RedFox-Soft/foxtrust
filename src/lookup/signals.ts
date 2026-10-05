@@ -1,10 +1,9 @@
 import type { SQL } from "bun";
-import { BITS, parseCidr } from "../ip/cidr";
 import { formatIp, type IpValue } from "../ip/parse";
-import { isSpecialPurposeBogon } from "../ip/special-purpose";
 import type { Network, Signal } from "../model/types";
+import { builtinBogonSignal, categoryLastSeen, episodeLastSeen, type LatestRuns } from "./rules";
 
-export const BUILTIN_BOGON_SOURCE = "iana-special-purpose";
+export { BUILTIN_BOGON_SOURCE } from "./rules";
 
 export type GatheredSignals = { signals: Signal[]; network: Network };
 
@@ -12,53 +11,46 @@ const SUCCESS = ["applied", "unchanged"];
 const asDate = (v: unknown) => new Date(v as string | Date);
 const asNumber = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
-/**
- * Builds the signals for `ip` at evaluation time `at` from stored data, following the rules in
- * data-model.md ("Signal"). Only data committed at or before `at` counts, so a past `at`
- * reproduces the verdict that was current then (FR-004, FR-028–FR-031).
- */
-export async function gatherSignals(
+/** Each feed's latest successful run at or before `at` (the input of the lastSeen rules). */
+export async function latestRuns(tx: SQL, at: Date): Promise<LatestRuns> {
+  const rows = await tx`
+    SELECT feed_id, max(committed_at) AS committed_at FROM feed_run
+    WHERE status IN ${tx(SUCCESS)} AND committed_at <= ${at}
+    GROUP BY feed_id`;
+  return new Map(rows.map((r: { feed_id: string; committed_at: unknown }) => [r.feed_id, asDate(r.committed_at)]));
+}
+
+async function gather(
   tx: SQL,
   ip: IpValue,
   at: Date,
-  excludeSources: string[] = [],
+  excludeSources: string[],
+  runs: Promise<LatestRuns>,
 ): Promise<GatheredSignals> {
   const address = formatIp(ip);
 
-  // The four reads are independent; sent together they cost one round trip, not four.
-  const [categoryRows, sightingRows, dailyRows, [networkRow]] = await Promise.all([
-    // Categories: interval valid at `at`. lastSeen is the latest successful run of the feed at or
-    // before `at`: every such run since the interval opened listed the prefix, or it would have closed.
+  // The reads are independent; sent together they cost one round trip.
+  const [categoryRows, sightingRows, dailyRows, [networkRow], latest] = await Promise.all([
+    // Category intervals valid at `at`.
     tx`
-      SELECT ci.prefix::text AS prefix, masklen(ci.prefix) AS length, ci.code, ci.source, ci.shippable,
-             lower(ci.valid) AS first_seen,
-             GREATEST(lower(ci.valid), (SELECT max(fr.committed_at) FROM feed_run fr
-                                        WHERE fr.feed_id = ci.source AND fr.status IN ${tx(SUCCESS)}
-                                          AND fr.committed_at <= ${at})) AS last_seen
-      FROM category_interval ci
-      WHERE ci.prefix >>= ${address}::inet AND ci.valid @> ${at}::timestamptz`,
+      SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source, shippable, lower(valid) AS first_seen
+      FROM category_interval
+      WHERE prefix >>= ${address}::inet AND valid @> ${at}::timestamptz`,
 
-    // Raw behavior observations recorded by `at`. For listing episodes, the latest observation at
-    // or before `at` is the latest successful run of the feed at or before `at` (research R3).
-    // Feed-provided times are used as they are (a future time is clamped to `at` by the scorer).
+    // Raw behavior observations recorded by `at`.
     tx`
-      SELECT s.prefix::text AS prefix, masklen(s.prefix) AS length, s.code, s.source, s.shippable,
-             s.confidence, s.first_seen,
-             CASE WHEN s.feed_time THEN s.last_seen
-                  ELSE LEAST(s.last_seen, COALESCE((SELECT max(fr.committed_at) FROM feed_run fr
-                                                   WHERE fr.feed_id = s.source AND fr.status IN ${tx(SUCCESS)}
-                                                     AND fr.committed_at <= ${at}), s.first_seen))
-             END AS last_seen
-      FROM behavior_sighting s
-      WHERE s.prefix >>= ${address}::inet AND s.recorded_at <= ${at}`,
+      SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source, shippable, confidence,
+             first_seen, last_seen, feed_time
+      FROM behavior_sighting
+      WHERE prefix >>= ${address}::inet AND recorded_at <= ${at}`,
 
     // Daily aggregates whose UTC day has ended by `at` (whole-day precision beyond the raw window).
     tx`
-      SELECT d.prefix::text AS prefix, masklen(d.prefix) AS length, d.code, d.source, d.shippable,
-             d.confidence, d.first_seen, d.last_seen
-      FROM behavior_daily d
-      WHERE d.prefix >>= ${address}::inet
-        AND ((d.day + 1)::timestamp AT TIME ZONE 'UTC') <= ${at}`,
+      SELECT prefix::text AS prefix, masklen(prefix) AS length, code, source, shippable, confidence,
+             first_seen, last_seen
+      FROM behavior_daily
+      WHERE prefix >>= ${address}::inet
+        AND ((day + 1)::timestamp AT TIME ZONE 'UTC') <= ${at}`,
 
     tx`
       SELECT prefix::text AS prefix, asn, org, country
@@ -66,52 +58,43 @@ export async function gatherSignals(
       WHERE prefix >>= ${address}::inet AND valid @> ${at}::timestamptz
       ORDER BY masklen(prefix) DESC
       LIMIT 1`,
+
+    runs,
   ]);
 
   const excluded = new Set(excludeSources);
   const signals: Signal[] = [];
+  const base = (row: { prefix: string; length: unknown; code: string; source: string; shippable: boolean }) => ({
+    code: row.code,
+    source: row.source,
+    prefix: row.prefix,
+    prefixLength: Number(row.length),
+    shippable: row.shippable,
+  });
   for (const row of categoryRows) {
+    const firstSeen = asDate(row.first_seen);
     signals.push({
-      kind: "category",
-      code: row.code,
-      source: row.source,
-      prefix: row.prefix,
-      prefixLength: Number(row.length),
-      firstSeen: asDate(row.first_seen),
-      lastSeen: asDate(row.last_seen),
+      kind: "category", ...base(row), firstSeen,
+      lastSeen: categoryLastSeen(firstSeen, latest.get(row.source)),
       confidence: null,
-      shippable: row.shippable,
     });
   }
-  for (const row of [...sightingRows, ...dailyRows]) {
+  for (const row of sightingRows) {
+    const firstSeen = asDate(row.first_seen);
     signals.push({
-      kind: "behavior",
-      code: row.code,
-      source: row.source,
-      prefix: row.prefix,
-      prefixLength: Number(row.length),
-      firstSeen: asDate(row.first_seen),
-      lastSeen: asDate(row.last_seen),
+      kind: "behavior", ...base(row), firstSeen,
+      lastSeen: episodeLastSeen({ firstSeen, lastSeen: asDate(row.last_seen), feedTime: row.feed_time }, latest.get(row.source)),
       confidence: asNumber(row.confidence),
-      shippable: row.shippable,
     });
   }
-
-  const builtin = isSpecialPurposeBogon(ip);
-  if (builtin) {
-    const cidr = parseCidr(builtin.cidr)!;
+  for (const row of dailyRows) {
     signals.push({
-      kind: "category",
-      code: "bogon",
-      source: BUILTIN_BOGON_SOURCE,
-      prefix: builtin.cidr,
-      prefixLength: cidr.family === ip.family ? cidr.length : BITS[ip.family],
-      firstSeen: at,
-      lastSeen: at,
-      confidence: null,
-      shippable: true,
+      kind: "behavior", ...base(row), firstSeen: asDate(row.first_seen), lastSeen: asDate(row.last_seen),
+      confidence: asNumber(row.confidence),
     });
   }
+  const builtin = builtinBogonSignal(ip, at);
+  if (builtin) signals.push(builtin);
 
   const network: Network = networkRow
     ? {
@@ -123,6 +106,15 @@ export async function gatherSignals(
     : { asn: null, org: null, prefix: null, country: null };
 
   return { signals: signals.filter((s) => !excluded.has(s.source)), network };
+}
+
+/**
+ * Builds the signals for `ip` at evaluation time `at` from stored data, following the rules in
+ * data-model.md ("Signal"). Only data committed at or before `at` counts, so a past `at`
+ * reproduces the verdict that was current then (FR-004, FR-028–FR-031).
+ */
+export function gatherSignals(tx: SQL, ip: IpValue, at: Date, excludeSources: string[] = []): Promise<GatheredSignals> {
+  return gather(tx, ip, at, excludeSources, latestRuns(tx, at));
 }
 
 const BATCH = 500;
@@ -138,9 +130,11 @@ export async function gatherSignalsMany(
   at: Date,
   excludeSources: string[] = [],
 ): Promise<GatheredSignals[]> {
+  if (ips.length === 0) return [];
+  const runs = latestRuns(tx, at);
   const out: GatheredSignals[] = [];
   for (let i = 0; i < ips.length; i += BATCH) {
-    out.push(...await Promise.all(ips.slice(i, i + BATCH).map((ip) => gatherSignals(tx, ip, at, excludeSources))));
+    out.push(...await Promise.all(ips.slice(i, i + BATCH).map((ip) => gather(tx, ip, at, excludeSources, runs))));
   }
   return out;
 }
