@@ -62,6 +62,6 @@ The defaults were `shared_buffers` 128 MB, `work_mem` 4 MB and `maintenance_work
 
 ## Open follow-ups
 
-- Skip the full apply on `unchanged` runs. Category and network feeds then need only the `feed_run` row; listing-episode behavior feeds still refresh their episodes. An unchanged [[iptoasn]] run still loads 1.49 M rows into a temp table.
-- Detect "unchanged" from the parsed entries rather than the file hash, for feeds like [[cymru-fullbogons]].
+- ~~Skip the full apply on `unchanged` runs.~~ Done 2026-10-05: an unchanged version of a network, category or feed-time behavior feed writes only its `feed_run` row and data version. Listing-episode behavior feeds still refresh their episodes.
+- ~~Detect "unchanged" from the parsed entries rather than the file hash.~~ Done 2026-10-05: `content_sha256` is the SHA-256 of the parsed entries in feed order. A [[cymru-fullbogons]] file that changes only its header is `unchanged`, and a parser change applies even to an old file. Hashing 1.49 M entries takes about 1.7 s.
 - Alert on the database container's memory, not only the host's 85 %.
