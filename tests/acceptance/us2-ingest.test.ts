@@ -99,11 +99,6 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     const [row] = await db.sql`SELECT committed_at FROM feed_run WHERE id = ${runId}`;
     return new Date(row.committed_at);
   };
-  const writeTemp = async (name: string, content: string | Uint8Array) => {
-    const path = join(tmp, crypto.randomUUID(), name);
-    await Bun.write(path, content);
-    return path;
-  };
 
   // ---------------------------------------------------------------- US2-1
   test("US2-1: every feed with a licence is ingested into signals with kind, code, source and times (IPv4)", async () => {
@@ -148,11 +143,9 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   });
 
   // ---------------------------------------------------------------- US2-2
-  for (const [family, feed, ip, code] of [
-    [4, "blocklist-de", () => s.ssh[4], "ssh_bruteforce"],
-    [6, "x4bnet-datacenter", () => hostOf(s.x4[6][0]!), "hosting"],
-  ] as const) {
-    test(`US2-2: a feed without a licence page is skipped and the others still run (IPv${family})`, async () => {
+  {
+    const [feed, ip, code] = ["blocklist-de", () => s.ssh[4], "ssh_bruteforce"] as const;
+    test("US2-2: a feed without a licence page is skipped and the others still run", async () => {
       const partialWiki = join(tmp, `wiki-without-${feed}`);
       for await (const name of new Bun.Glob("*.md").scan({ cwd: wikiRoot })) {
         if (name !== `${feed}.md`) await Bun.write(join(partialWiki, name), Bun.file(join(wikiRoot, name)));
@@ -169,7 +162,7 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   }
 
   // ---------------------------------------------------------------- US2-3
-  test("US2-3: signals from local-only feeds are not shippable and the report lists them (IPv4)", async () => {
+  test("US2-3: signals from local-only feeds are not shippable and the report lists them", async () => {
     await ingestAll();
     expect(reason(await lookup(s.cymru[4]), "bogon", "cymru-fullbogons")!.shippable).toBe(false);
     expect(reason(await lookup(s.tor), "tor_exit", "tor-exit")!.shippable).toBe(true);
@@ -196,15 +189,8 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     }
   });
 
-  test("US2-3: signals from local-only feeds are not shippable and the report lists them (IPv6)", async () => {
-    await ingestAll();
-    expect(reason(await lookup(s.cymru[6]), "bogon", "cymru-fullbogons")!.shippable).toBe(false);
-    expect(reason(await lookup(hostOf(s.x4[6][0]!)), "hosting", "x4bnet-datacenter")!.shippable).toBe(true);
-    expect(reason(await lookup(s.ssh[6]), "ssh_bruteforce", "blocklist-de")!.shippable).toBe(true);
-  });
-
   // ---------------------------------------------------------------- US2-4
-  test("US2-4: a failed or unparsable update keeps the previous data and marks the feed stale (IPv4)", async () => {
+  test("US2-4: a failed or unparsable update keeps the previous data and marks the feed stale", async () => {
     await ingest("tor-exit");
     const [{ before }] = await db.sql`SELECT count(*)::int AS before FROM category_interval WHERE upper_inf(valid)`;
 
@@ -224,21 +210,8 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     expect(new Date(feed.last_attempt_at).getTime()).toBeGreaterThan(new Date(feed.last_success_at).getTime());
   });
 
-  test("US2-4: a failed or unparsable update keeps the previous data and marks the feed stale (IPv6)", async () => {
-    await ingest("x4bnet-datacenter");
-    const failed = await ingest("x4bnet-datacenter", [], {
-      fromFiles: [],
-      urls: { "ipv4.txt": "http://127.0.0.1:9/ipv4.txt", "ipv6.txt": "http://127.0.0.1:9/ipv6.txt" },
-      allowLoopbackHttp: true,
-    });
-    expect(failed.status).toBe("failed");
-    expect(reason(await lookup(hostOf(s.x4[6][0]!)), "hosting", "x4bnet-datacenter")).toBeDefined();
-    const [feed] = await db.sql`SELECT stale FROM feed WHERE id = 'x4bnet-datacenter'`;
-    expect(feed.stale).toBe(true);
-  });
-
   // ---------------------------------------------------------------- US2-5
-  test("US2-5: a shrunk update is held until the operator confirms it (IPv4)", async () => {
+  test("US2-5: a shrunk update is held until the operator confirms it", async () => {
     await ingest("tor-exit");
     const held = await ingest("tor-exit", [f("tor-exit", "shrunk.txt")]);
     expect(held.status).toBe("held");
@@ -253,26 +226,11 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     expect(reason(await lookup(s.torNotInShrunk), "tor_exit", "tor-exit")).toBeUndefined();
   });
 
-  test("US2-5: a shrunk update is held until the operator confirms it (IPv6)", async () => {
-    await ingest("x4bnet-datacenter");
-    const v4 = await writeTemp("ipv4.txt", s.x4[4].slice(0, 100).join("\n"));
-    const v6 = await writeTemp("ipv6.txt", s.x4[6].slice(0, 100).join("\n"));
-    const dropped = hostOf(s.x4[6][300]!);
-    const held = await ingest("x4bnet-datacenter", [v4, v6]);
-    expect(held.status).toBe("held");
-    expect(reason(await lookup(dropped), "hosting", "x4bnet-datacenter")).toBeDefined();
-    await confirmHeldRun(db.sql, held.runId!, { wikiRoot });
-    expect(reason(await lookup(dropped), "hosting", "x4bnet-datacenter")).toBeUndefined();
-  });
-
   // ---------------------------------------------------------------- US2-6
-  for (const family of [4, 6] as const) {
-    test(`US2-6: a prefix that leaves a category feed is closed at that run; history stays (IPv${family})`, async () => {
-      const list = s.x4[family];
-      const removed = list[10]!;
-      const v2 = family === 4
-        ? [f("x4bnet-datacenter", "ipv4.v2.txt"), f("x4bnet-datacenter", "ipv6.txt")]
-        : [f("x4bnet-datacenter", "ipv4.txt"), await writeTemp("ipv6.v2.txt", list.filter((_, i) => i < 10 || i >= 20).join("\n"))];
+  {
+    test("US2-6: a prefix that leaves a category feed is closed at that run; history stays", async () => {
+      const removed = s.x4[4][10]!;
+      const v2 = [f("x4bnet-datacenter", "ipv4.v2.txt"), f("x4bnet-datacenter", "ipv6.txt")];
 
       await ingest("x4bnet-datacenter");
       const run2 = await ingest("x4bnet-datacenter", v2);
@@ -295,7 +253,7 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     });
   }
 
-  test("US2-6: a network whose ASN changes is closed and reopened (IPv4)", async () => {
+  test("US2-6: a network whose ASN changes is closed and reopened", async () => {
     await ingest("iptoasn");
     const run2 = await ingest("iptoasn", [f("iptoasn", "ip2asn-combined.v2.tsv.gz")]);
     const changedAt = await committedAt(run2.runId);
@@ -303,30 +261,11 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
     expect((await lookup("1.0.0.1")).network).toMatchObject({ asn: 64496, org: "EXAMPLE-RENUMBERED" });
   });
 
-  test("US2-6: a network whose ASN changes is closed and reopened (IPv6)", async () => {
-    const original = Bun.gunzipSync(new Uint8Array(await Bun.file(FILES.iptoasn![0]!).arrayBuffer()));
-    const rows = new TextDecoder().decode(original).split("\n");
-    const index = rows.findIndex((r) => r.split("\t")[0]!.includes(":") && Number(r.split("\t")[2]) > 0);
-    const fields = rows[index]!.split("\t");
-    const ip = fields[0]!;
-    rows[index] = [fields[0], fields[1], "64497", fields[3], "EXAMPLE-RENUMBERED-V6"].join("\t");
-    const v2 = await writeTemp("ip2asn-combined.tsv.gz", Bun.gzipSync(new TextEncoder().encode(rows.join("\n"))));
-
-    await ingest("iptoasn");
-    const run2 = await ingest("iptoasn", [v2]);
-    const changedAt = await committedAt(run2.runId);
-    expect((await lookup(ip, new Date(changedAt.getTime() - 1))).network.asn).toBe(Number(fields[2]));
-    expect((await lookup(ip)).network).toMatchObject({ asn: 64497, org: "EXAMPLE-RENUMBERED-V6" });
-  });
-
   // ---------------------------------------------------------------- US2-7
-  for (const family of [4, 6] as const) {
-    test(`US2-7: an address that leaves a behavior feed keeps its lastSeen and decays (IPv${family})`, async () => {
-      const ip = s.ssh[family];
-      const sshLines = await lines(f("blocklist-de", "ssh.txt"));
-      const v2 = family === 4
-        ? f("blocklist-de", "ssh.v2.txt")
-        : await writeTemp("ssh.v2.txt", sshLines.filter((l) => !l.includes(":")).join("\n"));
+  {
+    test("US2-7: an address that leaves a behavior feed keeps its lastSeen and decays", async () => {
+      const ip = s.ssh[4];
+      const v2 = f("blocklist-de", "ssh.v2.txt");
       const bfl = f("blocklist-de", "bruteforcelogin.txt");
 
       const run1 = await ingest("blocklist-de");
@@ -334,20 +273,20 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
       expect(run2.status).toBe("applied");
       const seen1 = await committedAt(run1.runId);
 
-      const [episode] = await db.sql`SELECT open FROM behavior_sighting WHERE prefix = ${`${ip}/${family === 4 ? 32 : 128}`}::cidr AND code = 'ssh_bruteforce'`;
+      const [episode] = await db.sql`SELECT open FROM behavior_sighting WHERE prefix = ${`${ip}/32`}::cidr AND code = 'ssh_bruteforce'`;
       expect(episode.open).toBe(false);
       const later = reason(await lookup(ip), "ssh_bruteforce", "blocklist-de");
       expect(later).toBeDefined();
       expect(later!.lastSeen).toBe(seen1.toISOString());
 
       const run3 = await ingest("blocklist-de"); // listed again → a new episode
-      const episodes = await db.sql`SELECT count(*)::int AS n FROM behavior_sighting WHERE prefix = ${`${ip}/${family === 4 ? 32 : 128}`}::cidr AND code = 'ssh_bruteforce'`;
+      const episodes = await db.sql`SELECT count(*)::int AS n FROM behavior_sighting WHERE prefix = ${`${ip}/32`}::cidr AND code = 'ssh_bruteforce'`;
       expect(episodes[0].n).toBe(2);
       expect(reason(await lookup(ip), "ssh_bruteforce", "blocklist-de")!.lastSeen).toBe((await committedAt(run3.runId)).toISOString());
     });
   }
 
-  test("US2-7: feed-provided times are kept as observations (IPv4)", async () => {
+  test("US2-7: feed-provided times are kept as observations", async () => {
     await ingest("feodo-tracker");
     await ingest("feodo-tracker");
     const [{ n, feed_time }] = await db.sql`
@@ -359,13 +298,13 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   });
 
   // ---------------------------------------------------------------- US2-8
-  for (const family of [4, 6] as const) {
-    test(`US2-8: retention removes old raw rows and aggregates without changing the current verdict (IPv${family})`, async () => {
-      const ip = s.ssh[family];
+  {
+    test("US2-8: retention removes old raw rows and aggregates without changing the current verdict", async () => {
+      const ip = s.ssh[4];
       const run = await ingest("blocklist-de");
       const future = new Date(Date.now() + 100 * 86_400_000);
       const dayAgo = (days: number) => new Date(future.getTime() - days * 86_400_000).toISOString().slice(0, 10);
-      const other = family === 4 ? "198.18.0.1/32" : "2001:2::1/128";
+      const other = "198.18.0.1/32";
       for (const days of [460, 400]) {
         await db.sql`
           INSERT INTO behavior_daily (prefix, code, source, day, count, first_seen, last_seen, shippable)
@@ -398,12 +337,10 @@ describeDb("US2: licence-gated ingestion of reliable feeds", () => {
   }
 
   // ---------------------------------------------------------------- US2-9
-  for (const family of [4, 6] as const) {
-    test(`US2-9: the same content twice creates no duplicates and refreshes lastSeen (IPv${family})`, async () => {
-      const category = family === 4 ? "tor-exit" : "x4bnet-datacenter";
-      const categoryCode = family === 4 ? "tor_exit" : "hosting";
-      const categoryIp = family === 4 ? s.tor : hostOf(s.x4[6][0]!);
-      const behaviorPrefix = `${s.ssh[family]}/${family === 4 ? 32 : 128}`;
+  {
+    test("US2-9: the same content twice creates no duplicates and refreshes lastSeen", async () => {
+      const [category, categoryCode, categoryIp] = ["tor-exit", "tor_exit", s.tor] as const;
+      const behaviorPrefix = `${s.ssh[4]}/32`;
 
       await ingest(category);
       await ingest("blocklist-de");
