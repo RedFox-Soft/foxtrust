@@ -26,7 +26,7 @@ export type MmdbMetadata = {
 export type Mmdb = {
   metadata: MmdbMetadata;
   /** The record for `ip`, or null when the database has no data for it. */
-  get(ip: IpValue): MmdbValue | null;
+  get: (ip: IpValue) => MmdbValue | null;
 };
 
 export class MmdbFormatError extends Error {}
@@ -119,7 +119,8 @@ class Decoder {
         for (let i = 0; i < size; i++) {
           const [key, afterKey] = this.decode(p, depth + 1);
           const [value, afterValue] = this.decode(afterKey, depth + 1);
-          out[String(key)] = value;
+          if (typeof key !== "string") throw new MmdbFormatError("map key is not a string");
+          out[key] = value;
           p = afterValue;
         }
         return [out, p];

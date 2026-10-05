@@ -93,7 +93,7 @@ describeDb("US2 (spec 003): known-bad evaluation on a fresh sample", () => {
     const variant: ScoringConfig = {
       ...config,
       version: "2026-09-30.98",
-      codes: { ...config.codes, ssh_bruteforce: { ...config.codes.ssh_bruteforce!, weight: 0.1 } as ScoringConfig["codes"][string] },
+      codes: { ...config.codes, ssh_bruteforce: { ...config.codes.ssh_bruteforce!, weight: 0.1 } },
     };
 
     const report = await evaluate(db.sql, { knownGood, at, configs: [config, variant] });

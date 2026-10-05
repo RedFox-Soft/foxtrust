@@ -46,7 +46,7 @@ describeDb("SEC: feed input limits (research R14)", () => {
     });
   });
   afterAll(async () => {
-    server.stop(true);
+    await server.stop(true);
     await rm(tmp, { recursive: true, force: true });
   });
   beforeEach(async () => {

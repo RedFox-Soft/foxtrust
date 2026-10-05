@@ -12,5 +12,5 @@ export function openDb(url: string | undefined = Bun.env.DATABASE_URL): Db {
  * committed state (FR-021: a verdict never mixes two data versions).
  */
 export function readSnapshot<T>(sql: Db, fn: (tx: SQL) => Promise<T>): Promise<T> {
-  return sql.begin("isolation level repeatable read read only", fn) as Promise<T>;
+  return sql.begin("isolation level repeatable read read only", fn);
 }

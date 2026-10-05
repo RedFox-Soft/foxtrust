@@ -1,0 +1,41 @@
+# Typecheck, lint and the acceptance and security tests on every push and pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      # Same image as the `db` service in docker-compose.yml; each test file creates its own database.
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: foxtrust
+          POSTGRES_PASSWORD: foxtrust
+          POSTGRES_DB: foxtrust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U foxtrust -d foxtrust"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      # Without it the database tests are skipped, so CI must always set it.
+      DATABASE_URL_TEST: postgres://foxtrust:foxtrust@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test

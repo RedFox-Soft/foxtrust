@@ -68,7 +68,7 @@ async function commitRun(
   status: "applied" | "unchanged",
   extra: { sha: string | null; previousEntryCount: number | null; artifact: string | null; confirm?: boolean },
 ): Promise<string> {
-  return (await sql.begin(async (tx) => {
+  return sql.begin<string>(async (tx) => {
     const { version } = await applyEntries(tx, def, runId, parsed.entries, shippable);
     await tx`
       UPDATE feed_run SET status = ${status}, finished_at = now(), committed_at = now(),
@@ -81,7 +81,7 @@ async function commitRun(
       UPDATE feed SET last_success_at = now(), entry_count = ${parsed.entries.length}, stale = false, last_error = NULL
       WHERE id = ${def.id}`;
     return version.label;
-  })) as string;
+  });
 }
 
 /**

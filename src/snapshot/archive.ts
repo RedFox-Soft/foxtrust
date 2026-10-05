@@ -29,6 +29,7 @@ export type ArchivedFile = {
   releaseNote: string | null;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Bun.sql rows are untyped
 const toFile = (r: Record<string, any>): ArchivedFile => ({
   version: r.version,
   kind: r.kind,

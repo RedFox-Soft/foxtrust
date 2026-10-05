@@ -61,7 +61,7 @@ export async function importTrustedKeys(publicKeys: string[]): Promise<TrustedKe
   for (const k of publicKeys.map((s) => s.trim()).filter(Boolean)) {
     const raw = unb64(k);
     if (raw.length !== 32) throw new Error(`trusted key ${k.slice(0, 12)}… is not a 32-byte Ed25519 key`);
-    out.push({ keyId: keyId(k), key: await crypto.subtle.importKey("raw", raw as Uint8Array<ArrayBuffer>, { name: "Ed25519" }, false, ["verify"]) });
+    out.push({ keyId: keyId(k), key: await crypto.subtle.importKey("raw", raw, { name: "Ed25519" }, false, ["verify"]) });
   }
   return out;
 }

@@ -84,7 +84,7 @@ describeDb("US3: accuracy baseline", () => {
     const variant: ScoringConfig = {
       ...base,
       version: "2026-09-24.2",
-      codes: { ...base.codes, hosting: { ...base.codes.hosting!, weight: 0.4 } as ScoringConfig["codes"][string] },
+      codes: { ...base.codes, hosting: { ...base.codes.hosting!, weight: 0.4 } },
     };
     const report = await evaluate(db.sql, { knownGood, configs: [base, variant] });
     const [a, b] = report.configs;

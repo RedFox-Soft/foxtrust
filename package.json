@@ -10,13 +10,18 @@
     "foxtrust": "bun run src/cli/main.ts",
     "test": "bun test tests/acceptance tests/security",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "bench": "bun run tests/perf/run.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bun": "^1.4.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "ajv": "^8.20.0",
+    "eslint": "^10.12.0",
     "mmdb-lib": "^3.0.3",
-    "typescript": "^7.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "^8.71.0"
   },
   "dependencies": {
     "elysia": "1.4.30"

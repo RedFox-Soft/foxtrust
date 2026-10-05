@@ -18,13 +18,19 @@ export const spamhausDrop: FeedDefinition = {
     let invalidLines = 0;
     for (const file of files) {
       for (const line of contentLines(decodeText(file.body))) {
-        let record: { cidr?: unknown; type?: unknown };
+        let parsed: unknown;
         try {
-          record = JSON.parse(line);
+          parsed = JSON.parse(line);
         } catch {
           invalidLines++;
           continue;
         }
+        // A line may be valid JSON without being an object (`null`, `1`): invalid, not fatal.
+        if (typeof parsed !== "object" || parsed === null) {
+          invalidLines++;
+          continue;
+        }
+        const record = parsed as { cidr?: unknown; type?: unknown };
         if (record.type === "metadata") continue;
         const prefix = typeof record.cidr === "string" ? normaliseCidr(record.cidr) : null;
         if (prefix === null) invalidLines++;

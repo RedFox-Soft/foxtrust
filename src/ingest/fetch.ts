@@ -125,16 +125,16 @@ export async function fetchBoundedResponse(
         headers: { "User-Agent": USER_AGENT, "Accept-Encoding": "identity", ...opts.headers },
       });
     } catch (error) {
-      if (signal.aborted) throw new FeedFetchError("timeout", `timed out fetching ${current}`);
-      throw new FeedFetchError("network_error", `cannot fetch ${current}: ${(error as Error).message}`);
+      if (signal.aborted) throw new FeedFetchError("timeout", `timed out fetching ${current.href}`);
+      throw new FeedFetchError("network_error", `cannot fetch ${current.href}: ${(error as Error).message}`);
     }
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
       await response.body?.cancel();
-      if (!location) throw new FeedFetchError("http_error", `redirect without Location from ${current}`);
+      if (!location) throw new FeedFetchError("http_error", `redirect without Location from ${current.href}`);
       const next = new URL(location, current);
       if (!isAllowed(next, opts)) {
-        throw new FeedFetchError("insecure_redirect", `redirect to non-https ${next}`);
+        throw new FeedFetchError("insecure_redirect", `redirect to non-https ${next.href}`);
       }
       if (redirects + 1 > limits.maxRedirects) throw new FeedFetchError("http_error", `too many redirects from ${url}`);
       current = next;
@@ -146,13 +146,13 @@ export async function fetchBoundedResponse(
     }
     if (!response.ok || !response.body) {
       await response.body?.cancel();
-      throw new FeedFetchError("http_error", `HTTP ${response.status} from ${current}`);
+      throw new FeedFetchError("http_error", `HTTP ${response.status} from ${current.href}`);
     }
     try {
-      const body = await readBounded(response.body, limits.maxCompressedBytes, `response from ${current}`);
+      const body = await readBounded(response.body, limits.maxCompressedBytes, `response from ${current.href}`);
       return { status: response.status, headers: response.headers, body };
     } catch (error) {
-      if (signal.aborted) throw new FeedFetchError("timeout", `timed out reading ${current}`);
+      if (signal.aborted) throw new FeedFetchError("timeout", `timed out reading ${current.href}`);
       throw error;
     }
   }

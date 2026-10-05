@@ -31,7 +31,7 @@ export const feodoTracker: FeedDefinition = {
     const entries: BehaviorEntry[] = [];
     let invalidLines = 0;
     for (const record of records as Record<string, unknown>[]) {
-      const ip = toIpValue(String(record?.ip_address ?? ""));
+      const ip = toIpValue(typeof record?.ip_address === "string" ? record.ip_address : "");
       const firstSeen = parseFeodoTime(record?.first_seen);
       const lastOnline = parseFeodoTime(record?.last_online);
       const observedAt = lastOnline && firstSeen && lastOnline < firstSeen ? firstSeen : (lastOnline ?? firstSeen);

@@ -1,4 +1,4 @@
-import { BITS, type Cidr } from "../ip/cidr";
+import type { Cidr } from "../ip/cidr";
 
 /**
  * MaxMind DB format 2.0 writer (https://maxmind.github.io/MaxMind-DB/), research R1.

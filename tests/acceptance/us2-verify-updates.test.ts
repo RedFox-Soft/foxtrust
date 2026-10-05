@@ -172,7 +172,7 @@ describeDb("US2: /verify keeps its snapshot current", () => {
     await service.loader.check();
     const status = service.loader.status();
     expect(status.deltaVersion).toBe(deltaVersion);
-    expect(status.lastError).toContain(next.path!);
+    expect(status.lastError).toContain(next.path);
     expect(await ask(service.port, TOR_MOVED_TO)).toEqual(before);
   }, 60_000);
 

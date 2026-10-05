@@ -106,7 +106,7 @@ function toVerdict(value: MmdbValue | null): CustomerVerdict | null {
     reasons: reasons.filter(isObject).map((x) => {
       const reason = x as Record<string, MmdbValue>;
       return {
-        code: String(reason.code),
+        code: typeof reason.code === "string" ? reason.code : "",
         lastSeen: new Date(Number(reason.last_seen) * 1000).toISOString(),
         contribution: Number(reason.contribution ?? 0),
       };

@@ -53,7 +53,7 @@ export async function createDataVersion(
 /** Stores the config (once per distinct body) and makes it active with a new data version. */
 export async function activateConfig(sql: Db, config: ScoringConfig): Promise<DataVersion> {
   const sha = configSha256(config);
-  return sql.begin(async (tx) => {
+  return sql.begin<DataVersion>(async (tx) => {
     let [row] = await tx`SELECT id FROM scoring_config WHERE sha256 = ${sha}`;
     if (!row) {
       [row] = await tx`
@@ -62,7 +62,7 @@ export async function activateConfig(sql: Db, config: ScoringConfig): Promise<Da
         RETURNING id`;
     }
     return createDataVersion(tx, { cause: "config", scoringConfigId: toNumber(row.id) });
-  }) as Promise<DataVersion>;
+  });
 }
 
 /** The data version current at `at` (latest with committed_at <= at), with its config. */

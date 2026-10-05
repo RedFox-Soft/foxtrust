@@ -1,4 +1,4 @@
-import type { BehaviorCode, ScoringConfig } from "../model/types";
+import type { ScoringConfig } from "../model/types";
 
 export const ALGORITHM_VERSION = "noisy-or/1";
 
@@ -152,7 +152,7 @@ export function relevanceHorizonHours(config: ScoringConfig): number {
   for (const def of Object.values(config.codes)) {
     if (def.kind !== "behavior") continue;
     const ratio = (100 * def.weight) / RELEVANCE_POINTS;
-    if (ratio > 1) max = Math.max(max, (def as BehaviorCode).halfLifeHours * Math.log2(ratio));
+    if (ratio > 1) max = Math.max(max, def.halfLifeHours * Math.log2(ratio));
   }
   return max;
 }

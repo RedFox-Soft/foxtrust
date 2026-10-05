@@ -129,6 +129,7 @@ export async function snapshotList(args: string[], ctx: Context): Promise<number
     const iso = (d: Date | null) => (d ? new Date(d).toISOString().slice(0, 16).replace("T", " ") : null);
     printTable(
       ["version", "kind", "base", "status", "built", "valid from", "valid to", "bytes", "records"],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Bun.sql rows are untyped
       rows.map((r: Record<string, any>) => [
         r.version, r.kind, r.base_version, r.status, iso(r.built_at), iso(r.valid_from), iso(r.valid_to),
         r.size_bytes === null ? null : Number(r.size_bytes), r.record_count,
@@ -161,7 +162,7 @@ export async function snapshotVerify(args: string[], ctx: Context): Promise<numb
   let metadata: Record<string, unknown> | null = null;
   let readError: string | null = null;
   try {
-    metadata = openMmdb(bytes).metadata as unknown as Record<string, unknown>;
+    metadata = openMmdb(bytes).metadata;
   } catch (error) {
     readError = (error as Error).message;
   }
@@ -169,9 +170,9 @@ export async function snapshotVerify(args: string[], ctx: Context): Promise<numb
   else {
     printLine(`${file}: signature ${result.ok ? `valid (key ${result.keyId})` : "INVALID"}`);
     if (metadata) {
-      printLine(`  database_type: ${metadata.database_type}`);
+      printLine(`  database_type: ${String(metadata.database_type)}`);
       printLine(`  build_epoch:   ${new Date(Number(metadata.build_epoch) * 1000).toISOString()}`);
-      printLine(`  node_count:    ${metadata.node_count}`);
+      printLine(`  node_count:    ${String(metadata.node_count)}`);
       printLine(`  description:   ${(metadata.description as Record<string, string>)?.en ?? ""}`);
     }
     if (readError) warn(`  cannot read the file: ${readError}`);
