@@ -22,12 +22,13 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[feodo-tracker]] — feed: botnet C2; CC0 vs 2025 terms contested; shipped unnamed by decision
 - [[blocklist-de]] — feed: SSH/login brute force, 48 h lists; no licence; shipped unnamed by decision
 - [[iana-special-purpose]] — built-in special-purpose/bogon ranges; CC0, shippable
+- [[ipverse-cloud]] — feed: BGP prefixes of the public-cloud ASNs in config/cloud/asns.csv, from ipverse/as-ip-blocks; CC0, shippable
 - [[iana-address-space]] — feed: IANA IPv4/IPv6 allocation registries → unallocated/reserved bogons; CC0, shippable
 
 ## Concepts
 
 - [[code-hosting]] — category code `hosting`, weight 0.15
-- [[code-cloud]] — category code `cloud`, weight 0.1 (reserved, no stage 1 feed)
+- [[code-cloud]] — category code `cloud`, weight 0.1, from [[ipverse-cloud]] (config 2026-10-06.1)
 - [[code-vpn]] — category code `vpn`, weight 0.25 (reserved, no stage 1 feed)
 - [[code-tor-exit]] — category code `tor_exit`, weight 0.35
 - [[code-bogon]] — category code `bogon`, weight 0.3
@@ -46,5 +47,6 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[adr-publication-topology]] — ADR: own publication server, three containers from one image, signing key as a Docker secret, verifiers pin keys
 - [[adr-snapshot-format]] — ADR: flattened customer records in MMDB, cumulative deltas with tombstones, detached Ed25519 signatures, `/v1/` layout
 - [[adr-accuracy-measures]] — ADR: known-good false-positive gate (medium and high), fresh leave-one-source-out known-bad samples, early detection; no fixed labelled set
+- [[adr-cloud-category]] — ADR: own public-cloud ASN list (exclusions for resolvers/CDN) × ipverse prefixes; configs enable sources; confidence 0.9
 - [[adr-operator-alerts]] — ADR: Telegram operator alerts; a minute tick reconciles feed/release state into `alert_problem`; no outbox; token redacted
 - [[adr-ship-behavior-feeds-unnamed]] — ADR: DROP/Feodo/blocklist.de ship to customers without their source (`ship: yes`); `ship: no` withdraws a feed

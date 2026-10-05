@@ -36,3 +36,5 @@ Operations:
 ## [2026-10-05] query | Decision: behavior feeds ship to customers without their source (constitution v5.0.0) → adr-ship-behavior-feeds-unnamed (new) supersedes adr-customer-facing-behavior-data; spamhaus-drop, feodo-tracker, blocklist-de get `ship: yes`; SCHEMA.md gains the `ship` field; adr-stage1-feed-selection, adr-accuracy-measures updated
 
 ## [2026-10-05] query | Decision: operator alerts (spec 004) → adr-operator-alerts (new); SCHEMA.md gains the `operations` tag
+
+## [2026-10-05] ingest | Cloud category (spec 005): ipverse-cloud (new feed page, CC0), adr-cloud-category (new), code-cloud updated
