@@ -48,7 +48,6 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 | B-11 | **Spec: TS SDK** for Bun and Node: local MMDB lookup, signed auto-update, API fallback; reuses the `/verify` loader and decision engine | spec | L | `npm i` → `lookup(ip)` works offline and updates hourly |
 | B-12c | **Spec 007: bot verdict** (observe mode by default; after one step-up pass unless the operator chooses block). *Built 2026-10-06 ([ADR](wiki/synthesis/adr-bot-verdict.md)); SC-001 and SC-002 pass on desktop Chrome/Edge/Opera/Firefox, Android Chrome and Tor Browser ("Standard" and "Safer"); open: Safari/iOS samples, phone timing.* Environment probe (automation markers, cross-layer consistency), optional `X-JA4` from trusted proxies (JA4 only, not JA4+), log-odds score with the address risk as prior, versioned weights config, `env.*` reason codes in the operator log only, policy pass / step-up / block; labelled set of recorded payloads from real browsers and Playwright, Puppeteer, puppeteer-stealth, patchright, Camoufox | spec | L | On the labelled set, stock headless Playwright and Puppeteer never get a token on the first attempt; real browsers pass without step-up at the rate the spec sets |
 | B-12d | **Spec: behavior collector.** Pointer, key intervals (no key values), touch, scroll, focus, `isTrusted`; encrypted payload bound to nonce and PoW; features computed server-side in memory; press-and-hold step-up; later an embeddable snippet for login forms shared with B-11. Absence of events never blocks | spec | L | Scripted input (ghost-cursor, CDP) scores apart from human recordings on the labelled set; a keyboard-only user passes |
-| B-12e | **Spec 008: returning-device token** (cap 20 addresses per token per 24 h). First-party, random, not bound to the address, revoked on a failed challenge (constitution IV). Private Access Tokens wait for a production issuer ([research](wiki/synthesis/private-access-tokens.md)) | spec | M | A browser that passed once passes without PoW after its address changes |
 | B-13 | **IP / ASN pages and "my IP" page**: public, indexable, customer verdict only | spec | M | `foxtrust.dev/ip/1.1.1.1` shows reasons without sources |
 | B-14 | **Self-service delisting**: prove control (rDNS or WHOIS contact), file a dispute, see its state; replaces the manual email flow in `docs/dispute.md`. More important now that behavior listings ship | spec | L | A dispute filed on the site removes the reason in the next hourly delta |
 
@@ -86,6 +85,9 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
   constitution v5.0.0.
 - B-07 (2026-10-05): CI on every push (typecheck, ESLint with typescript-eslint, tests).
 - B-05 (2026-10-05): Telegram operator alerts (spec 004); deploy on the server pending.
+- B-12e (2026-10-06): returning-device token (spec 008): zero-cost challenge after an address change,
+  bot verdict still runs, cap 20 addresses per 24 h, revocation on block or failed step-up, hashed
+  per-instance state ([ADR](wiki/synthesis/adr-returning-device.md)).
 - B-12f (2026-10-06): research. JA4 can reach `/verify` from nginx/Caddy modules and Envoy, not
   Traefik; Cloudflare only on Enterprise; JA4+ needs a FoxIO OEM licence
   ([page](wiki/synthesis/tls-fingerprints-at-the-proxy.md)). No PAT issuer usable by a third party

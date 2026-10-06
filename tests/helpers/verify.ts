@@ -14,7 +14,9 @@ import { buildChallengeAssets } from "../../src/verify/challenge/assets";
 import { readChallenge } from "../../src/verify/challenge/challenge";
 import { leadingZeroBits, sha256Block, solve } from "../../src/verify/challenge/pow";
 import { createReplayCache } from "../../src/verify/challenge/replay";
-import { DEFAULT_CHALLENGE, type ChallengeSettings, type DifficultyKey } from "../../src/verify/config";
+import { DEFAULT_CHALLENGE, DEFAULT_DEVICE, type ChallengeSettings, type DifficultyKey } from "../../src/verify/config";
+import { createDeviceStore, type DeviceStore } from "../../src/verify/device/store";
+import { tmpdir } from "node:os";
 import { createLoader, type Loader } from "../../src/verify/loader";
 import { createPolicyHolder, type PolicyHolder } from "../../src/verify/policy-file";
 import { startVerifyServer } from "../../src/verify/server";
@@ -97,6 +99,10 @@ export async function startTestVerify(opts: {
   clock?: () => Date;
   /** Bot verdict (spec 007); off unless a test sets it, so spec 006 tests see no verdict. */
   bot?: Partial<BotPolicy> & { weightsFile?: string; ja4FamiliesFile?: string };
+  /** Returning-device token (spec 008); off unless a test sets it. */
+  device?: Partial<{ enabled: boolean; ttlDays: number; cap: number }>;
+  /** State file of the device store; a fresh temporary file by default. */
+  deviceStateFile?: string;
 }): Promise<TestVerify> {
   const logs: string[] = [];
   const policy = createPolicyHolder(opts.policyFile ?? EXAMPLE_POLICY, vocabularyFromConfig(await loadConfig(STAGE2_CONFIG)), (l) => logs.push(l));
@@ -117,6 +123,16 @@ export async function startTestVerify(opts: {
     page: !challengeUrl ? "none" : builtIn ? "built-in" : "external",
     path: builtIn ? challengeUrl : null,
   };
+  let deviceStore: { settings: typeof DEFAULT_DEVICE; store: DeviceStore } | null = null;
+  if (builtIn && opts.device && opts.device.enabled !== false) {
+    const settings = {
+      ...DEFAULT_DEVICE, ...opts.device, enabled: true,
+      stateFile: opts.deviceStateFile ?? join(tmpdir(), `foxtrust-device-${crypto.randomUUID()}.json`),
+    };
+    const store = createDeviceStore({ file: settings.stateFile, secret: opts.challengeSecret ?? "", cap: settings.cap });
+    await store.load();
+    deviceStore = { settings, store };
+  }
   const server = startVerifyServer({
     loader, policy, port: 0, hostname: "127.0.0.1", log: (l) => logs.push(l),
     ...(builtIn ? { challengeAssets: await buildChallengeAssets() } : {}),
@@ -128,6 +144,7 @@ export async function startTestVerify(opts: {
         })
       : null,
     ...(opts.clock ? { clock: opts.clock } : {}),
+    device: deviceStore,
     config: {
       trustedProxies: opts.trustedProxies ?? LOOPBACK,
       failMode: opts.failMode ?? "open",
@@ -201,15 +218,31 @@ export function wrongSolution(challenge: string): string {
   for (let s = 0n; ; s++) if (leadingZeroBits(sha256Block(payload.nonce, s)) < payload.bits) return s.toString();
 }
 
-export type AnswerResponse = { status: number; location: string | null; cookie: string | null; pass: string | null; html: string };
+export type AnswerResponse = {
+  status: number;
+  location: string | null;
+  /** The pass cookie line, if one was set. */
+  cookie: string | null;
+  pass: string | null;
+  /** The returning-device cookie line (spec 008), if one was set or cleared. */
+  deviceCookie: string | null;
+  /** The device token value, "deleted" when the response cleared it, or null. */
+  device: string | null;
+  html: string;
+};
 
 async function answerResponse(res: Response): Promise<AnswerResponse> {
-  const cookie = res.headers.get("set-cookie");
+  const lines = res.headers.getSetCookie();
+  const cookie = lines.find((l) => l.startsWith("foxtrust_pass=")) ?? null;
+  const deviceCookie = lines.find((l) => l.startsWith("foxtrust_device=")) ?? null;
+  const deviceValue = deviceCookie ? (/^foxtrust_device=([^;]*)/.exec(deviceCookie)?.[1] ?? "") : null;
   return {
     status: res.status,
     location: res.headers.get("location"),
     cookie,
     pass: cookie ? (/^foxtrust_pass=([^;]+)/.exec(cookie)?.[1] ?? null) : null,
+    deviceCookie,
+    device: deviceValue === null ? null : deviceValue === "" ? "deleted" : deviceValue,
     html: await res.text(),
   };
 }

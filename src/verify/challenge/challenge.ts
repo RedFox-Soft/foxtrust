@@ -11,7 +11,7 @@ import type { ReplayCache } from "./replay";
  */
 
 export type ChallengeKind = "pow" | "wait";
-export type RefusalReason = "malformed" | "signature" | "expired" | "address" | "nojs-off" | "early" | "solution" | "replay";
+export type RefusalReason = "malformed" | "signature" | "expired" | "address" | "nojs-off" | "early" | "solution" | "replay" | "device";
 
 export const MAX_CHALLENGE_LENGTH = 512;
 const MAC_DOMAIN = "foxtrust-challenge/1\n";
@@ -19,7 +19,8 @@ const SOLUTION = /^\d{1,20}$/;
 const MAX_COUNTER = (1n << 64n) - 1n;
 
 /** `u: 1` marks a step-up challenge of the bot verdict (spec 007); signed like every other field. */
-type Payload = { v: 1; k: ChallengeKind; a: string; d: number; n: string; exp: number; nbf?: number; u?: 1 };
+/** `r` binds a zero-cost challenge to a returning-device token id (spec 008). */
+type Payload = { v: 1; k: ChallengeKind; a: string; d: number; n: string; exp: number; nbf?: number; u?: 1; r?: string };
 
 const seconds = (date: Date) => Math.floor(date.getTime() / 1000);
 const challengeMac = (payload: string, secret: string) => hmac(MAC_DOMAIN + payload, secret);
@@ -31,6 +32,7 @@ export function issueChallenge(opts: {
   ttlSeconds: number;
   waitSeconds?: number;
   stepUp?: boolean;
+  deviceId?: string;
   secret: string;
   now: Date;
 }): string {
@@ -45,6 +47,7 @@ export function issueChallenge(opts: {
   };
   if (opts.kind === "wait") body.nbf = issued + (opts.waitSeconds ?? 0);
   if (opts.stepUp) body.u = 1;
+  if (opts.deviceId) body.r = opts.deviceId;
   const payload = b64url(JSON.stringify(body));
   return `${payload}.${b64url(challengeMac(payload, opts.secret))}`;
 }
@@ -57,16 +60,17 @@ function decodePayload(payload: string): Payload | null {
     return null;
   }
   if (typeof value !== "object" || value === null) return null;
-  const { v, k, a, d, n, exp, nbf, u } = value as Record<string, unknown>;
+  const { v, k, a, d, n, exp, nbf, u, r } = value as Record<string, unknown>;
   if (u !== undefined && u !== 1) return null;
+  if (r !== undefined && (typeof r !== "string" || !/^[A-Za-z0-9_-]{22}$/.test(r))) return null;
   if (v !== 1 || (k !== "pow" && k !== "wait") || typeof a !== "string" || typeof n !== "string") return null;
   if (!Number.isInteger(d) || !Number.isInteger(exp) || (nbf !== undefined && !Number.isInteger(nbf))) return null;
   if (Buffer.from(n, "base64url").length !== NONCE_BYTES) return null;
-  return { v, k, a, d: d as number, n, exp: exp as number, ...(nbf === undefined ? {} : { nbf: nbf as number }), ...(u === 1 ? { u: 1 as const } : {}) };
+  return { v, k, a, d: d as number, n, exp: exp as number, ...(nbf === undefined ? {} : { nbf: nbf as number }), ...(u === 1 ? { u: 1 as const } : {}), ...(typeof r === "string" ? { r } : {}) };
 }
 
 export type AnswerResult =
-  | { ok: true; kind: ChallengeKind; bits: number; nonce: string; stepUp: boolean }
+  | { ok: true; kind: ChallengeKind; bits: number; nonce: string; stepUp: boolean; deviceId?: string }
   | { ok: false; reason: RefusalReason; bits?: number; remainingSeconds?: number };
 
 /** Checks an answer in the order of data-model.md; the first failed check is the reason. */
@@ -115,7 +119,7 @@ export function checkAnswer(opts: {
   // 8–9. Single use per instance.
   if (opts.replay.has(payload.n)) return refuse("replay");
   opts.replay.add(payload.n, payload.exp, now);
-  return { ok: true, kind: payload.k, bits, nonce: payload.n, stepUp: payload.u === 1 };
+  return { ok: true, kind: payload.k, bits, nonce: payload.n, stepUp: payload.u === 1, ...(payload.r ? { deviceId: payload.r } : {}) };
 }
 
 /** The payload of a challenge string, without checking it (tests and the page use it). */

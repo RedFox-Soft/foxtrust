@@ -11,6 +11,9 @@ import { DEFAULT_BOT_POLICY, type BotPolicy } from "./bot/policy";
 
 export type DifficultyKey = Level | "none";
 
+export type DeviceSettings = { enabled: boolean; ttlDays: number; cap: number; stateFile: string };
+export const DEFAULT_DEVICE: DeviceSettings = { enabled: true, ttlDays: 30, cap: 20, stateFile: "var/verify/device-state.json" };
+
 /** Settings of the built-in challenge page (spec 006 research R9). */
 export type ChallengeSettings = {
   /** `built-in` when FOXTRUST_CHALLENGE_URL is a path, `external` for a URL, `none` when empty. */
@@ -47,6 +50,8 @@ export type VerifyConfig = {
   challenge: ChallengeSettings;
   /** Bot verdict of the built-in page (spec 007); weights and JA4 list files are loaded at start. */
   bot: BotPolicy & { weightsFile: string | null; ja4FamiliesFile: string | null };
+  /** Returning-device token of the built-in page (spec 008). */
+  device: DeviceSettings;
   maxAgeHours: number;
   updateEvery: string;
   port: number;
@@ -163,6 +168,14 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
   if (waitSeconds >= challengeTtlSeconds) problems.push("FOXTRUST_CHALLENGE_NOJS_WAIT_SECONDS must be less than FOXTRUST_CHALLENGE_TTL_SECONDS");
 
   const bot = readBotSettings(text, problems);
+  const deviceText = text("FOXTRUST_DEVICE") ?? "on";
+  if (deviceText !== "on" && deviceText !== "off") problems.push("FOXTRUST_DEVICE must be on or off");
+  const device: DeviceSettings = {
+    enabled: deviceText === "on",
+    ttlDays: int("FOXTRUST_DEVICE_TTL_DAYS", DEFAULT_DEVICE.ttlDays, 1, 365),
+    cap: int("FOXTRUST_DEVICE_CAP", DEFAULT_DEVICE.cap, 1, 1000),
+    stateFile: text("FOXTRUST_DEVICE_STATE") ?? DEFAULT_DEVICE.stateFile,
+  };
 
   const maxAgeHours = Number(text("FOXTRUST_MAX_AGE_HOURS") ?? "26");
   if (!Number.isFinite(maxAgeHours) || maxAgeHours <= 0) problems.push("FOXTRUST_MAX_AGE_HOURS must be a positive number");
@@ -201,6 +214,7 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
       waitSeconds,
     },
     bot,
+    device,
     maxAgeHours,
     updateEvery,
     port,

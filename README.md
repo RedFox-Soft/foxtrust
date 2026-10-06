@@ -167,6 +167,14 @@ Design and limits: [ADR challenge page](docs/wiki/synthesis/adr-challenge-page.m
 
 Design: [ADR bot verdict](docs/wiki/synthesis/adr-bot-verdict.md).
 
+**Returning-device token.** A browser that passed cleanly also gets a `foxtrust_device` cookie: host-only, random, 30 days (`FOXTRUST_DEVICE_TTL_DAYS`). When the same browser is challenged again from another address (a new Tor circuit, a mobile network, travel), the page skips the proof-of-work. The bot verdict still runs. Limits:
+
+- **Cap.** One token gets passes for at most `FOXTRUST_DEVICE_CAP` (20) addresses per 24 hours; an IPv6 `/64` counts as one address.
+- **Revocation.** The token is revoked when its browser is blocked or fails a step-up.
+- **State.** Revocations and caps are kept in `FOXTRUST_DEVICE_STATE` (compose: volume `verify-state`). The file holds keyed hashes, no addresses, and is per `verify` instance.
+
+`FOXTRUST_DEVICE=off` turns it off. Design: [ADR returning device](docs/wiki/synthesis/adr-returning-device.md).
+
 ## Alerts
 
 The scheduler can tell the operator in Telegram when something needs attention, so problems don't sit unnoticed in logs:

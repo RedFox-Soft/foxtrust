@@ -9,7 +9,9 @@ import { formatReasons, scoreVerdict, type BotVerdict } from "../bot/verdict";
 import type { Weights } from "../bot/weights";
 import type { Zones } from "../bot/zones";
 import { clientAddress } from "../client-ip";
-import type { ChallengeSettings, DifficultyKey } from "../config";
+import type { ChallengeSettings, DeviceSettings, DifficultyKey } from "../config";
+import type { DeviceStore } from "../device/store";
+import { clearDeviceCookie, DEVICE_COOKIE, deviceCookie, issueDeviceToken, readDeviceToken } from "../device/token";
 import type { Loader } from "../loader";
 import { b64url, issuePassTokenV2 } from "../token";
 import type { ChallengeAssets } from "./assets";
@@ -39,6 +41,8 @@ export type ChallengeRouteDeps = {
   replay: ReplayCache;
   assets: ChallengeAssets;
   bot: BotDeps | null;
+  /** Returning-device token (spec 008), or null when off. */
+  device: { settings: DeviceSettings; store: DeviceStore } | null;
   clock: () => Date;
   log: (line: string) => void;
 };
@@ -70,6 +74,17 @@ async function readBody(request: Request, limit: number): Promise<string | null>
 }
 
 type Client = { ip: IpValue | null; host: string | null; plainHttp: boolean; https: boolean; viaProxy: boolean };
+/** A presented device token that is genuine, unexpired, for this host and not revoked. */
+type Presented = { id: string; exp: number } | null;
+
+function cookieValue(header: string | null, name: string): string | null {
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq > 0 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim();
+  }
+  return null;
+}
 
 export function challengeRoutes(deps: ChallengeRouteDeps) {
   const { settings, secret, log } = deps;
@@ -99,17 +114,31 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
     return settings.difficulty[key];
   }
 
-  function page(ip: IpValue, returnTo: string, stepUp = false): Response {
+  /** The device token this request carries, if it may be used (spec 008); never throws. */
+  function presented(request: Request, host: string | null): Presented {
+    if (!deps.device) return null;
+    const now = deps.clock();
+    const token = readDeviceToken(cookieValue(request.headers.get("cookie"), DEVICE_COOKIE), { host, secret, now });
+    if (!token || deps.device.store.isRevoked(token.id, Math.floor(now.getTime() / 1000))) return null;
+    return token;
+  }
+
+  const nowSeconds = () => Math.floor(deps.clock().getTime() / 1000);
+
+  /** The page; `deviceId` makes it a zero-cost challenge bound to that returning-device token. */
+  function page(ip: IpValue, returnTo: string, stepUp = false, deviceId?: string): Response {
     const now = deps.clock();
     const extra = stepUp && deps.bot ? deps.bot.policy.stepUpBits : 0;
-    const bits = Math.min(MAX_BITS, bitsFor(ip) + extra);
-    const challenge = issueChallenge({ kind: "pow", ip, bits, ttlSeconds: settings.challengeTtlSeconds, stepUp, secret, now });
+    const bits = deviceId ? 0 : Math.min(MAX_BITS, bitsFor(ip) + extra);
+    const device = deviceId ? { deviceId } : {};
+    const challenge = issueChallenge({ kind: "pow", ip, bits, ttlSeconds: settings.challengeTtlSeconds, stepUp, secret, now, ...device });
+    const waitSeconds = deviceId ? 0 : settings.waitSeconds;
     const wait = settings.noJs
       ? {
           challenge: issueChallenge({
-            kind: "wait", ip, bits: 0, ttlSeconds: settings.challengeTtlSeconds, waitSeconds: settings.waitSeconds, stepUp, secret, now,
+            kind: "wait", ip, bits: 0, ttlSeconds: settings.challengeTtlSeconds, waitSeconds, stepUp, secret, now, ...device,
           }),
-          seconds: settings.waitSeconds,
+          seconds: waitSeconds,
         }
       : null;
     const html = renderChallengePage({ path, challenge, nonce: b64url(readChallenge(challenge)!.nonce), bits, returnTo, wait });
@@ -118,14 +147,30 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
 
   const malformed = () => new Response(renderMalformed(), { status: 400, headers: pageHeaders() });
 
-  function passResponse(ip: IpValue, returnTo: string, plainHttp: boolean): Response {
+  function passResponse(ip: IpValue, returnTo: string, plainHttp: boolean, extraCookie?: string): Response {
     const token = issuePassTokenV2(ip, settings.passTtlMinutes * 60, secret, deps.clock());
-    const cookie = `${PASS_COOKIE}=${token}; Path=/; Max-Age=${settings.passTtlMinutes * 60}; HttpOnly; SameSite=Lax${plainHttp ? "" : "; Secure"}`;
-    return new Response(null, { status: 303, headers: { ...COMMON_HEADERS, Location: returnTo, "Set-Cookie": cookie } });
+    const headers = new Headers({ ...COMMON_HEADERS, Location: returnTo });
+    headers.append("Set-Cookie", `${PASS_COOKIE}=${token}; Path=/; Max-Age=${settings.passTtlMinutes * 60}; HttpOnly; SameSite=Lax${plainHttp ? "" : "; Secure"}`);
+    if (extraCookie) headers.append("Set-Cookie", extraCookie);
+    return new Response(null, { status: 303, headers });
+  }
+
+  /** On a pass: count this address for the token used, or hand out a token to a clean newcomer. */
+  function devicePass(ip: IpValue, host: string | null, plainHttp: boolean, used: Presented, clean: boolean): string | undefined {
+    if (!deps.device) return undefined;
+    const now = nowSeconds();
+    if (used) {
+      deps.device.store.record(used.id, ip, now);
+      return undefined;
+    }
+    if (!clean || !host) return undefined;
+    const issued = issueDeviceToken({ host, ttlDays: deps.device.settings.ttlDays, secret, now: deps.clock() });
+    deps.device.store.record(issued.id, ip, now);
+    return deviceCookie(issued.token, deps.device.settings.ttlDays, plainHttp);
   }
 
   /** Bot verdict of a correct answer (spec 007); probe values stay inside this function. */
-  function judge(request: Request, c: Client, ip: IpValue, result: Extract<AnswerResult, { ok: true }>, probeText: string | null) {
+  function judge(request: Request, c: Client, ip: IpValue, result: Extract<AnswerResult, { ok: true }>, probeText: string | null, returningDevice: boolean) {
     const bot = deps.bot!;
     const headers = request.headers;
     const probe = result.kind === "pow" ? parseProbe(probeText, result.nonce) : null;
@@ -144,6 +189,7 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
       country: verdict?.network.country ?? null,
       zones: bot.zones,
       families: bot.families,
+      returningDevice,
     });
     const scored = scoreVerdict(verdict?.level ?? null, codes, bot.weights);
     return { scored, ...decideAction(scored, bot.policy, result.stepUp) };
@@ -159,16 +205,34 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
   /** The outcome of an answer: a pass and the way back, a step-up, a block, or the page again. */
   function settle(request: Request, c: Client, result: AnswerResult, ip: IpValue, returnTo: string, challenge: string, probeText: string | null): Response {
     const address = formatIp(ip);
+    const used = presented(request, c.host);
+    if (result.ok && result.deviceId !== undefined) {
+      // A zero-cost challenge counts only with its own token, still valid and under the cap (spec 008).
+      if (!used || used.id !== result.deviceId || !deps.device!.store.allows(used.id, ip, nowSeconds())) {
+        return settle(request, c, { ok: false, reason: "device", bits: 0 }, ip, returnTo, challenge, null);
+      }
+    }
+    const viaDevice = result.ok && result.deviceId !== undefined;
     if (result.ok) {
       if (!botOn) {
         log(`challenge: pass ${address} kind=${result.kind}${result.kind === "pow" ? ` bits=${result.bits}` : ""}`);
-        return passResponse(ip, returnTo, c.plainHttp);
+        return passResponse(ip, returnTo, c.plainHttp, devicePass(ip, c.host, c.plainHttp, used, true));
       }
-      const { scored, action, would } = judge(request, c, ip, result, probeText);
+      const { scored, action, would } = judge(request, c, ip, result, probeText, viaDevice);
       logDecision(action, would, ip, result, scored);
+      const policy = deps.bot!.policy;
+      const failedStepUp = result.stepUp && scored.score >= policy.stepUp;
+      if (used && policy.mode === "enforce" && (action === "block" || failedStepUp)) {
+        deps.device!.store.revoke(used.id, used.exp, nowSeconds());
+        const cleared = clearDeviceCookie(c.plainHttp);
+        if (action === "block") {
+          return new Response(renderBlocked({ disputeUrl: deps.loader.disputeUrl() }), { status: 403, headers: { ...pageHeaders(), "Set-Cookie": cleared } });
+        }
+        if (action === "pass") return passResponse(ip, returnTo, c.plainHttp, cleared);
+      }
       if (action === "block") return new Response(renderBlocked({ disputeUrl: deps.loader.disputeUrl() }), { status: 403, headers: pageHeaders() });
       if (action === "stepup") return page(ip, returnTo, true);
-      return passResponse(ip, returnTo, c.plainHttp);
+      return passResponse(ip, returnTo, c.plainHttp, devicePass(ip, c.host, c.plainHttp, used, would === "pass"));
     }
     log(`challenge: refused ${address} reason=${result.reason}${result.bits === undefined ? "" : ` bits=${result.bits}`}`);
     if (result.reason === "malformed") return malformed();
@@ -186,7 +250,11 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
     .get(path, ({ request, server, query }) => {
       const c = client(request, server?.requestIP(request)?.address ?? null);
       if (!c.ip) return malformed();
-      return page(c.ip, sanitizeReturn(typeof query.return === "string" ? query.return : null, c.host));
+      const returnTo = sanitizeReturn(typeof query.return === "string" ? query.return : null, c.host);
+      const used = presented(request, c.host);
+      if (used && deps.device!.store.allows(used.id, c.ip, nowSeconds())) return page(c.ip, returnTo, false, used.id);
+      if (used) log(`challenge: device-cap ${formatIp(c.ip)}`);
+      return page(c.ip, returnTo);
     })
     .post(
       path,

@@ -9,7 +9,7 @@ sources: []
 
 # Challenge page: telling humans from bots without a captcha
 
-Research for backlog item B-12, the page that `/verify` sends `challenge` decisions to and that issues the pass token `/verify` already checks (`src/verify/token.ts`). Goal: no captcha to solve. The page computes a **bot verdict** for the browser session the way the core computes one for an address, and a policy turns it into pass, step-up or block. The first part, a proof-of-work page without client signals (B-12a), is built: [[adr-challenge-page]]. The environment and transport layers with the log-odds verdict (B-12c) are built: [[adr-bot-verdict]].
+Research for backlog item B-12, the page that `/verify` sends `challenge` decisions to and that issues the pass token `/verify` already checks (`src/verify/token.ts`). Goal: no captcha to solve. The page computes a **bot verdict** for the browser session the way the core computes one for an address, and a policy turns it into pass, step-up or block. The first part, a proof-of-work page without client signals (B-12a), is built: [[adr-challenge-page]]. The environment and transport layers with the log-odds verdict (B-12c) are built: [[adr-bot-verdict]]. The returning-device token (B-12e) is built: [[adr-returning-device]].
 
 ## Decided (2026-10-06)
 

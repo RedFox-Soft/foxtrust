@@ -17,7 +17,7 @@ COPY config ./config
 COPY docs/wiki/entities ./docs/wiki/entities
 
 # New named volumes take the owner of these directories, so the scheduler can write to them.
-RUN mkdir -p /app/var/publication /app/var/snapshots && chown -R bun:bun /app/var
+RUN mkdir -p /app/var/publication /app/var/snapshots /app/var/verify && chown -R bun:bun /app/var
 USER bun
 VOLUME /app/var
 

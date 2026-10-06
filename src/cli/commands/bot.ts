@@ -7,7 +7,7 @@ import { activeWeightsFile } from "../../verify/bot/weights";
 import { parseProbe } from "../../verify/bot/probe-schema";
 import { buildChallengeAssets } from "../../verify/challenge/assets";
 import { COMMON_HEADERS, pageHeaders, renderRecorded, renderRecorderPage } from "../../verify/challenge/page";
-import { printJson, printLine, printTable, rejectUnknown, takeOption, UsageError, type Context } from "../util";
+import { printJson, printLine, printTable, rejectUnknown, takeFlag, takeOption, UsageError, type Context } from "../util";
 
 /**
  * `foxtrust bot record` (spec 007 contracts/bot-verdict.md): a development server that records
@@ -113,20 +113,24 @@ export async function botEval(args: string[], ctx: Context): Promise<number> {
   const samplesDir = one(args, "--samples") ?? SAMPLES_DIR;
   const weightsArg = one(args, "--weights");
   const compareFile = one(args, "--compare");
+  const withDevice = takeFlag(args, "--with-device");
   rejectUnknown(args);
   const problems: string[] = [];
   const settings = readBotSettings((name) => Bun.env[name]?.trim() || null, problems);
   if (problems.length > 0) throw new UsageError(problems.join("\n"));
   const { weightsFile, ja4FamiliesFile, ...policy } = settings;
   const { result, compare } = await evaluateSamples({
-    samplesDir, weightsFile: weightsArg ?? weightsFile ?? activeWeightsFile(), compareFile, policy, ja4FamiliesFile,
+    samplesDir, weightsFile: weightsArg ?? weightsFile ?? activeWeightsFile(), compareFile, policy, ja4FamiliesFile, withDevice,
   });
   if (ctx.json) {
     printJson({ result, compare });
     return 0;
   }
   const other = new Map((compare?.labels ?? []).map((l) => [l.label, l]));
-  printLine(`Weights ${result.weightsVersion}${compare ? ` vs ${compare.weightsVersion}` : ""}; step-up ${policy.stepUp}, block ${policy.block}; first attempt.`);
+  printLine(
+    `Weights ${result.weightsVersion}${compare ? ` vs ${compare.weightsVersion}` : ""}; step-up ${policy.stepUp}, block ${policy.block}; ` +
+      `first attempt${withDevice ? "; every sample presents a returning-device token" : ""}.`,
+  );
   printTable(
     ["label", "kind", "n", "pass", "stepup", "block", "mean", ...(compare ? [`pass@${compare.weightsVersion}`, "Δpass"] : [])],
     result.labels.map((l) => {

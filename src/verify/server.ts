@@ -6,7 +6,8 @@ import type { ChallengeAssets } from "./challenge/assets";
 import { createReplayCache, type ReplayCache } from "./challenge/replay";
 import { challengeRoutePaths, challengeRoutes, PASS_COOKIE, type BotDeps } from "./challenge/routes";
 import { clientAddress } from "./client-ip";
-import { DEFAULT_CHALLENGE, type ChallengeSettings, type VerifyConfig } from "./config";
+import { DEFAULT_CHALLENGE, type ChallengeSettings, type DeviceSettings, type VerifyConfig } from "./config";
+import type { DeviceStore } from "./device/store";
 import type { Loader } from "./loader";
 import type { PolicyHolder } from "./policy-file";
 import { verifyPassToken } from "./token";
@@ -30,6 +31,8 @@ export type VerifyDeps = {
   challengeAssets?: ChallengeAssets;
   /** Bot verdict of the built-in page (spec 007): its policy, weights, zones and JA4 families. */
   bot?: BotDeps | null;
+  /** Returning-device token of the built-in page (spec 008): its settings and loaded store. */
+  device?: { settings: DeviceSettings; store: DeviceStore } | null;
   /** Accepted challenge nonces (default: a fresh cache with the standard cap). */
   replay?: ReplayCache;
   log?: (line: string) => void;
@@ -129,6 +132,12 @@ export function createVerifyApp(deps: VerifyDeps) {
                 ja4Families: deps.bot.families.size,
               }
             : { mode: "off" },
+          device: deps.device
+            ? {
+                enabled: true, ttlDays: deps.device.settings.ttlDays, cap: deps.device.settings.cap,
+                ...deps.device.store.counts(Math.floor(clock().getTime() / 1000)),
+              }
+            : { enabled: false },
         },
         { headers: { "Cache-Control": "no-store" } },
       ))
@@ -201,6 +210,7 @@ export function createVerifyApp(deps: VerifyDeps) {
       replay: deps.replay ?? createReplayCache(),
       assets: deps.challengeAssets!,
       bot: deps.bot ?? null,
+      device: deps.device ?? null,
       clock,
       log,
     }),
@@ -214,6 +224,7 @@ export function startVerifyServer(deps: VerifyDeps & { port: number; hostname?: 
     port: app.server!.port as number,
     stop: async () => {
       await app.stop();
+      await deps.device?.store.flush();
     },
   };
 }

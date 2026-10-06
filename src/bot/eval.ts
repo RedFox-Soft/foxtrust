@@ -55,7 +55,9 @@ export function readSamples(dir: string): Sample[] {
   return samples;
 }
 
-function evaluate(samples: Sample[], weights: Weights, policy: BotPolicy, zones: Zones, families: Awaited<ReturnType<typeof loadJa4Families>>): EvalResult {
+function evaluate(
+  samples: Sample[], weights: Weights, policy: BotPolicy, zones: Zones, families: Awaited<ReturnType<typeof loadJa4Families>>, withDevice: boolean,
+): EvalResult {
   const byLabel = new Map<string, LabelResult & { scoreSum: number }>();
   const enforce: BotPolicy = { ...policy, mode: "enforce" };
   for (const sample of samples) {
@@ -75,6 +77,7 @@ function evaluate(samples: Sample[], weights: Weights, policy: BotPolicy, zones:
       country: sample.country ?? null,
       zones,
       families,
+      returningDevice: withDevice,
     });
     const verdict = scoreVerdict(LEVEL[sample.addressKind], codes, weights);
     const { action } = decideAction(verdict, enforce, false);
@@ -111,11 +114,14 @@ export async function evaluateSamples(opts: {
   compareFile?: string | undefined;
   policy: BotPolicy;
   ja4FamiliesFile?: string | null | undefined;
+  /** Every sample presents a valid returning-device token (spec 008 SC-004). */
+  withDevice?: boolean;
 }): Promise<{ result: EvalResult; compare: EvalResult | null }> {
   const samples = readSamples(opts.samplesDir);
   const zones = await loadZones();
   const families = await loadJa4Families(opts.ja4FamiliesFile ?? JA4_FAMILIES_FILE);
-  const result = evaluate(samples, await loadWeights(opts.weightsFile), opts.policy, zones, families);
-  const compare = opts.compareFile ? evaluate(samples, await loadWeights(opts.compareFile), opts.policy, zones, families) : null;
+  const withDevice = opts.withDevice ?? false;
+  const result = evaluate(samples, await loadWeights(opts.weightsFile), opts.policy, zones, families, withDevice);
+  const compare = opts.compareFile ? evaluate(samples, await loadWeights(opts.compareFile), opts.policy, zones, families, withDevice) : null;
   return { result, compare };
 }

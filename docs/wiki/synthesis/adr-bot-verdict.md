@@ -12,7 +12,7 @@ decided: 2026-10-06
 
 # ADR: bot verdict on the challenge page
 
-Decision for backlog item B-12c (spec 007). It extends [[adr-challenge-page]], where a correct proof-of-work alone earned a pass. The research behind it is in [[challenge-bot-detection]] and [[tls-fingerprints-at-the-proxy]]. Privacy limits: constitution v5.1.0, Principle IV.
+Decision for backlog item B-12c (spec 007). It extends [[adr-challenge-page]], where a correct proof-of-work alone earned a pass. [[adr-returning-device]] builds on it. The research behind it is in [[challenge-bot-detection]] and [[tls-fingerprints-at-the-proxy]]. Privacy limits: constitution v5.1.0, Principle IV.
 
 ## Decision
 

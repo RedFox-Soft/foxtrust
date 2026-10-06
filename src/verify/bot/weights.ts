@@ -9,7 +9,7 @@ export const KNOWN_CODES = [
   "env.webdriver", "env.cdp", "env.driver_globals", "env.headless_ua", "env.probe_missing", "env.engine_mismatch",
   "env.ua_mismatch", "env.hints_mismatch", "env.perm_inconsistent", "env.window_zero", "env.software_gl",
   "env.tz_mismatch", "req.headless_ua", "req.no_accept_language", "transport.ja4_mismatch", "transport.ja4_tool",
-  "profile.uniform",
+  "profile.uniform", "attest.returning_device",
 ] as const;
 export type ReasonCode = (typeof KNOWN_CODES)[number];
 export type PriorKey = "none" | "low" | "medium" | "high";

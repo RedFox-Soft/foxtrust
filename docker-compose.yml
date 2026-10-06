@@ -84,6 +84,12 @@ services:
       FOXTRUST_BOT_BLOCK: ${FOXTRUST_BOT_BLOCK:-}
       FOXTRUST_BOT_AFTER_STEPUP: ${FOXTRUST_BOT_AFTER_STEPUP:-}
       FOXTRUST_BOT_STEPUP_BITS: ${FOXTRUST_BOT_STEPUP_BITS:-}
+      # Returning-device token of the built-in page: on by default; revocations live in the volume below.
+      FOXTRUST_DEVICE: ${FOXTRUST_DEVICE:-}
+      FOXTRUST_DEVICE_TTL_DAYS: ${FOXTRUST_DEVICE_TTL_DAYS:-}
+      FOXTRUST_DEVICE_CAP: ${FOXTRUST_DEVICE_CAP:-}
+    volumes:
+      - verify-state:/app/var/verify
     ports:
       - "8080:8080"
     healthcheck:
@@ -101,3 +107,4 @@ volumes:
   pgdata:
   feed-artifacts:
   publication:
+  verify-state:

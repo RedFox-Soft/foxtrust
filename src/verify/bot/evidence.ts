@@ -63,6 +63,8 @@ export function collectEvidence(opts: {
   country: string | null;
   zones: Zones;
   families: Ja4Families;
+  /** The answer was bound to a valid returning-device token (spec 008). */
+  returningDevice?: boolean;
 }): Set<ReasonCode> {
   const { probe, request } = opts;
   const codes = new Set<ReasonCode>();
@@ -70,6 +72,7 @@ export function collectEvidence(opts: {
 
   if (request.userAgent && /HeadlessChrome/.test(request.userAgent)) codes.add("req.headless_ua");
   if (!request.acceptLanguage) codes.add("req.no_accept_language");
+  if (opts.returningDevice) codes.add("attest.returning_device");
 
   const family = classifyJa4(request.ja4, opts.families);
   if (family?.startsWith("tool:")) codes.add("transport.ja4_tool");
