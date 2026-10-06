@@ -8,7 +8,11 @@ import type { CustomerVerdict } from "../verdict/customer";
  * No database, no network.
  */
 
-export type DecisionReason = "rule" | "default" | "no-data" | "challenge-pass" | "challenge-fallback";
+/**
+ * Why a decision was made. `challenge-page`: the request is for the built-in challenge page
+ * itself, which `/verify` always lets through (spec 006 FR-003); `decide` never returns it.
+ */
+export type DecisionReason = "rule" | "default" | "no-data" | "challenge-pass" | "challenge-fallback" | "challenge-page";
 
 export type Decision = {
   action: Action;

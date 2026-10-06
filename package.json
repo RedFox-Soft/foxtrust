@@ -9,7 +9,7 @@
   "scripts": {
     "foxtrust": "bun run src/cli/main.ts",
     "test": "bun test --parallel=8 tests/acceptance tests/security",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/verify/challenge/client",
     "lint": "eslint .",
     "bench": "bun run tests/perf/run.ts"
   },

@@ -2,8 +2,11 @@ import { Elysia } from "elysia";
 import { decide, type Decision } from "../decision/engine";
 import { formatIp } from "../ip/parse";
 import type { Action } from "../policy";
+import type { ChallengeAssets } from "./challenge/assets";
+import { createReplayCache, type ReplayCache } from "./challenge/replay";
+import { challengeRoutePaths, challengeRoutes, PASS_COOKIE } from "./challenge/routes";
 import { clientAddress } from "./client-ip";
-import type { VerifyConfig } from "./config";
+import { DEFAULT_CHALLENGE, type ChallengeSettings, type VerifyConfig } from "./config";
 import type { Loader } from "./loader";
 import type { PolicyHolder } from "./policy-file";
 import { verifyPassToken } from "./token";
@@ -15,12 +18,18 @@ import { verifyPassToken } from "./token";
 
 type ProxyMode = "nginx" | "traefik" | "caddy";
 const PROXY_MODES: ProxyMode[] = ["nginx", "traefik", "caddy"];
-const PASS_COOKIE = "foxtrust_pass";
 
 export type VerifyDeps = {
   loader: Loader;
   policy: PolicyHolder;
-  config: Pick<VerifyConfig, "trustedProxies" | "failMode" | "challengeUrl" | "challengeFallback" | "challengeSecret">;
+  /** Without `challenge`, the defaults apply and the page kind follows `challengeUrl`. */
+  config: Pick<VerifyConfig, "trustedProxies" | "failMode" | "challengeUrl" | "challengeFallback" | "challengeSecret"> & {
+    challenge?: ChallengeSettings;
+  };
+  /** Browser scripts of the built-in challenge page; required when the page is built in. */
+  challengeAssets?: ChallengeAssets;
+  /** Accepted challenge nonces (default: a fresh cache with the standard cap). */
+  replay?: ReplayCache;
   log?: (line: string) => void;
   clock?: () => Date;
 };
@@ -34,6 +43,12 @@ function cookie(header: string | null, name: string): string | null {
     if (eq > 0 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim();
   }
   return null;
+}
+
+/** True when `uri` is exactly one of the built-in page's routes, with an optional query. */
+function isChallengeRoute(uri: string, routes: string[]): boolean {
+  const q = uri.indexOf("?");
+  return routes.includes(q === -1 ? uri : uri.slice(0, q));
 }
 
 /** The original URL as the proxy saw it, for the challenge page's return address. */
@@ -69,16 +84,54 @@ export function createVerifyApp(deps: VerifyDeps) {
   const log = deps.log ?? ((line: string) => process.stderr.write(`${line}\n`));
   const clock = deps.clock ?? (() => new Date());
   const { config } = deps;
+  const challenge: ChallengeSettings = config.challenge ?? {
+    ...DEFAULT_CHALLENGE,
+    page: !config.challengeUrl ? "none" : config.challengeUrl.startsWith("/") ? "built-in" : "external",
+    path: config.challengeUrl?.startsWith("/") ? config.challengeUrl : null,
+  };
+  const builtIn = challenge.page === "built-in" && challenge.path !== null;
+  const exempt = builtIn ? challengeRoutePaths(challenge.path!) : [];
+  if (builtIn && (!config.challengeSecret || !deps.challengeAssets)) {
+    throw new Error("the built-in challenge page needs FOXTRUST_CHALLENGE_SECRET and its built scripts");
+  }
 
-  return new Elysia()
+  const app = new Elysia()
     .get("/healthz", () => {
       const ok = deps.loader.current() !== null || config.failMode === "open";
       return new Response(ok ? "ok\n" : "no snapshot loaded\n", { status: ok ? 200 : 503 });
     })
-    .get("/status", () => Response.json({ ...deps.loader.status(), policy: deps.policy.status() }, { headers: { "Cache-Control": "no-store" } }))
+    .get("/status", () =>
+      Response.json(
+        {
+          ...deps.loader.status(),
+          policy: deps.policy.status(),
+          challenge: {
+            enforced: challenge.page !== "none",
+            page: challenge.page,
+            path: challenge.path,
+            difficulty: challenge.difficulty,
+            challengeTtlSeconds: challenge.challengeTtlSeconds,
+            passTtlMinutes: challenge.passTtlMinutes,
+            noJs: challenge.noJs,
+            waitSeconds: challenge.waitSeconds,
+          },
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      ))
     .all("/verify", ({ request, server, query }) => {
       const mode = (PROXY_MODES as string[]).includes(String(query.proxy)) ? (query.proxy as ProxyMode) : "traefik";
       const headers = request.headers;
+      const uri = headers.get("x-forwarded-uri") ?? headers.get("x-original-uri") ?? "/";
+      if (isChallengeRoute(uri, exempt)) {
+        // The challenge page itself is never challenged or blocked (spec 006 FR-003): exact routes only.
+        return new Response(null, {
+          status: 200,
+          headers: {
+            "X-FoxTrust-Action": "allow", "X-FoxTrust-Rule": "default", "X-FoxTrust-Reason": "challenge-page",
+            "X-FoxTrust-Snapshot": deps.loader.source().snapshotVersion ?? "none", "Cache-Control": "no-store",
+          },
+        });
+      }
       const peer = server?.requestIP(request)?.address ?? null;
       const ip = clientAddress(peer, headers.get("x-forwarded-for"), config.trustedProxies);
       const policy = deps.policy.current();
@@ -93,7 +146,6 @@ export function createVerifyApp(deps: VerifyDeps) {
       }
 
       const method = (headers.get("x-forwarded-method") ?? headers.get("x-original-method") ?? "GET").toUpperCase();
-      const uri = headers.get("x-forwarded-uri") ?? headers.get("x-original-uri") ?? "/";
       const now = clock();
       const token = cookie(headers.get("cookie"), PASS_COOKIE) ?? headers.get("x-foxtrust-pass");
       const decision = decide({
@@ -115,10 +167,26 @@ export function createVerifyApp(deps: VerifyDeps) {
       }
 
       if (decision.action !== "challenge") return new Response(null, { status: STATUS[decision.action], headers: out });
-      const location = `${config.challengeUrl}${config.challengeUrl!.includes("?") ? "&" : "?"}return=${encodeURIComponent(originalUrl(headers))}`;
+      // A built-in page lives on the protected host, so it gets a relative path and the original path and query.
+      const returnTo = builtIn ? (uri.startsWith("/") ? uri : `/${uri}`) : originalUrl(headers);
+      const location = `${config.challengeUrl}${config.challengeUrl!.includes("?") ? "&" : "?"}return=${encodeURIComponent(returnTo)}`;
       if (mode === "nginx") return new Response(null, { status: 401, headers: { ...out, "X-FoxTrust-Challenge-Location": location } });
       return new Response(null, { status: 302, headers: { ...out, Location: location } });
     });
+
+  if (!builtIn) return app;
+  return app.use(
+    challengeRoutes({
+      settings: { ...challenge, path: challenge.path! },
+      secret: config.challengeSecret!,
+      trustedProxies: config.trustedProxies,
+      loader: deps.loader,
+      replay: deps.replay ?? createReplayCache(),
+      assets: deps.challengeAssets!,
+      clock,
+      log,
+    }),
+  );
 }
 
 export function startVerifyServer(deps: VerifyDeps & { port: number; hostname?: string }) {

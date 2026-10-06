@@ -1,8 +1,37 @@
 import { join } from "node:path";
 import { parseCidr, type Cidr } from "../ip/cidr";
+import type { Level } from "../model/types";
 import type { Action } from "../policy";
 
-/** `/verify` configuration from the environment (contracts/verify-http.md). */
+/**
+ * `/verify` configuration from the environment (spec 002 contracts/verify-http.md; the built-in
+ * challenge page: spec 006 contracts/challenge-http.md).
+ */
+
+export type DifficultyKey = Level | "none";
+
+/** Settings of the built-in challenge page (spec 006 research R9). */
+export type ChallengeSettings = {
+  /** `built-in` when FOXTRUST_CHALLENGE_URL is a path, `external` for a URL, `none` when empty. */
+  page: "none" | "built-in" | "external";
+  /** The page's path when built in. */
+  path: string | null;
+  /** Proof-of-work bits per customer-verdict level; `none` = no record or no snapshot. */
+  difficulty: Record<DifficultyKey, number>;
+  challengeTtlSeconds: number;
+  passTtlMinutes: number;
+  noJs: boolean;
+  waitSeconds: number;
+};
+
+export const DEFAULT_DIFFICULTY: Record<DifficultyKey, number> = { none: 14, low: 14, medium: 16, high: 18 };
+export const DEFAULT_CHALLENGE: Omit<ChallengeSettings, "page" | "path"> = {
+  difficulty: DEFAULT_DIFFICULTY,
+  challengeTtlSeconds: 120,
+  passTtlMinutes: 30,
+  noJs: false,
+  waitSeconds: 10,
+};
 
 export type VerifyConfig = {
   publicationUrl: string;
@@ -14,6 +43,7 @@ export type VerifyConfig = {
   challengeUrl: string | null;
   challengeFallback: Action;
   challengeSecret: string | null;
+  challenge: ChallengeSettings;
   maxAgeHours: number;
   updateEvery: string;
   port: number;
@@ -31,6 +61,37 @@ export function defaultScoringConfigFile(): string {
 }
 
 const ACTIONS = ["allow", "challenge", "block"] as const;
+const RESERVED_PATHS = ["/verify", "/status", "/healthz"];
+
+/** A path the built-in page may live on (research R1): plain segments, no dot segments. */
+export function challengePathProblem(path: string): string | null {
+  if (path.length > 100 || !/^\/[A-Za-z0-9._~-]+(\/[A-Za-z0-9._~-]+)*$/.test(path)) {
+    return "FOXTRUST_CHALLENGE_URL: a path must be /segment[/segment…] of letters, digits and ._~- (at most 100 characters)";
+  }
+  if (path.split("/").some((segment) => segment === "." || segment === "..")) return "FOXTRUST_CHALLENGE_URL: a path must not contain . or .. segments";
+  if (RESERVED_PATHS.some((reserved) => path === reserved || path.startsWith(`${reserved}/`))) {
+    return `FOXTRUST_CHALLENGE_URL: ${path} collides with a /verify endpoint`;
+  }
+  return null;
+}
+
+/** `none=14,low=14,…` merged over the defaults; bits 8–24, never fewer for a higher level. */
+export function parseDifficulty(text: string | null, problems: string[]): Record<DifficultyKey, number> {
+  const out = { ...DEFAULT_DIFFICULTY };
+  for (const item of (text ?? "").split(",").map((s) => s.trim()).filter(Boolean)) {
+    const match = /^(none|low|medium|high)=(\d{1,2})$/.exec(item);
+    const bits = match ? Number(match[2]) : NaN;
+    if (!match || bits < 8 || bits > 24) {
+      problems.push(`FOXTRUST_CHALLENGE_DIFFICULTY: ${item} must be <none|low|medium|high>=<8–24>`);
+      continue;
+    }
+    out[match[1] as DifficultyKey] = bits;
+  }
+  if (!(out.low <= out.medium && out.medium <= out.high)) {
+    problems.push(`FOXTRUST_CHALLENGE_DIFFICULTY: a higher level must not get fewer bits (low=${out.low}, medium=${out.medium}, high=${out.high})`);
+  }
+  return out;
+}
 
 export function readVerifyConfig(env: Record<string, string | undefined> = Bun.env): VerifyConfig {
   const problems: string[] = [];
@@ -64,7 +125,11 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
   if (failMode !== "open" && failMode !== "closed") problems.push("FOXTRUST_FAIL_MODE must be open or closed");
 
   const challengeUrl = text("FOXTRUST_CHALLENGE_URL");
-  if (challengeUrl) {
+  const builtIn = challengeUrl?.startsWith("/") ?? false;
+  if (challengeUrl && builtIn) {
+    const problem = challengePathProblem(challengeUrl);
+    if (problem) problems.push(problem);
+  } else if (challengeUrl) {
     try {
       const url = new URL(challengeUrl);
       if (url.protocol !== "https:" && url.protocol !== "http:") problems.push("FOXTRUST_CHALLENGE_URL must be http(s)");
@@ -78,6 +143,21 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
   }
   const challengeSecret = text("FOXTRUST_CHALLENGE_SECRET");
   if (challengeSecret && challengeSecret.length < 32) problems.push("FOXTRUST_CHALLENGE_SECRET must be at least 32 characters");
+  if (builtIn && !challengeSecret) problems.push("FOXTRUST_CHALLENGE_SECRET is required when FOXTRUST_CHALLENGE_URL is a path (built-in challenge page)");
+
+  const int = (name: string, fallback: number, min: number, max: number) => {
+    const raw = text(name);
+    const value = raw === null ? fallback : Number(raw);
+    if (!Number.isInteger(value) || value < min || value > max) problems.push(`${name} must be a whole number from ${min} to ${max}`);
+    return value;
+  };
+  const difficulty = parseDifficulty(text("FOXTRUST_CHALLENGE_DIFFICULTY"), problems);
+  const challengeTtlSeconds = int("FOXTRUST_CHALLENGE_TTL_SECONDS", DEFAULT_CHALLENGE.challengeTtlSeconds, 30, 600);
+  const passTtlMinutes = int("FOXTRUST_PASS_TTL_MINUTES", DEFAULT_CHALLENGE.passTtlMinutes, 1, 1440);
+  const noJsText = text("FOXTRUST_CHALLENGE_NOJS") ?? "off";
+  if (noJsText !== "on" && noJsText !== "off") problems.push("FOXTRUST_CHALLENGE_NOJS must be on or off");
+  const waitSeconds = int("FOXTRUST_CHALLENGE_NOJS_WAIT_SECONDS", DEFAULT_CHALLENGE.waitSeconds, 3, 120);
+  if (waitSeconds >= challengeTtlSeconds) problems.push("FOXTRUST_CHALLENGE_NOJS_WAIT_SECONDS must be less than FOXTRUST_CHALLENGE_TTL_SECONDS");
 
   const maxAgeHours = Number(text("FOXTRUST_MAX_AGE_HOURS") ?? "26");
   if (!Number.isFinite(maxAgeHours) || maxAgeHours <= 0) problems.push("FOXTRUST_MAX_AGE_HOURS must be a positive number");
@@ -106,6 +186,15 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
     challengeUrl,
     challengeFallback: challengeFallback as Action,
     challengeSecret,
+    challenge: {
+      page: !challengeUrl ? "none" : builtIn ? "built-in" : "external",
+      path: builtIn ? challengeUrl : null,
+      difficulty,
+      challengeTtlSeconds,
+      passTtlMinutes,
+      noJs: noJsText === "on",
+      waitSeconds,
+    },
     maxAgeHours,
     updateEvery,
     port,

@@ -1,6 +1,7 @@
 import { loadConfig } from "../../scoring/config";
 import { vocabularyFromConfig } from "../../policy";
 import { importTrustedKeys } from "../../snapshot/sign";
+import { buildChallengeAssets } from "../../verify/challenge/assets";
 import { readVerifyConfig, VerifyConfigError } from "../../verify/config";
 import { createLoader } from "../../verify/loader";
 import { createPolicyHolder } from "../../verify/policy-file";
@@ -27,12 +28,21 @@ export async function verifyServe(args: string[], _ctx: Context): Promise<number
 
   const loader = createLoader({ publicationUrl: config.publicationUrl, trustedKeys, maxAgeHours: config.maxAgeHours });
   const stopUpdates = loader.start(config.updateEvery);
-  const server = startVerifyServer({ loader, policy, config, port: config.port, log: warn });
+  const { challenge } = config;
+  const challengeAssets = challenge.page === "built-in" ? await buildChallengeAssets() : undefined;
+  const server = startVerifyServer({ loader, policy, config, port: config.port, log: warn, ...(challengeAssets ? { challengeAssets } : {}) });
   printLine(
     `/verify on port ${server.port}: publication ${config.publicationUrl}, ${trustedKeys.length} trusted key(s) ` +
       `(${trustedKeys.map((k) => k.keyId).join(", ")}), fail mode ${config.failMode}, updates "${config.updateEvery}".`,
   );
   if (!config.challengeUrl) warn(`FOXTRUST_CHALLENGE_URL is not set: challenge decisions fall back to ${config.challengeFallback}.`);
+  else if (challenge.page === "built-in") {
+    const bits = Object.entries(challenge.difficulty).map(([level, value]) => `${level}=${value}`).join(",");
+    printLine(
+      `Challenge page built in at ${challenge.path}: difficulty ${bits} bits, challenge ${challenge.challengeTtlSeconds} s, ` +
+        `pass ${challenge.passTtlMinutes} min, no-JavaScript path ${challenge.noJs ? `on (${challenge.waitSeconds} s)` : "off"}.`,
+    );
+  } else printLine(`Challenge page: external at ${config.challengeUrl}.`);
 
   await new Promise<void>((done) => {
     process.once("SIGINT", done);
