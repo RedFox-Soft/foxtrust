@@ -1,3 +1,5 @@
+import { behaviorCodes } from "./behavior";
+import type { BehaviorPayload } from "./behavior-types";
 import { classifyJa4, type Ja4Families } from "./ja4";
 import type { Engine, ProbeResult } from "./probe-types";
 import type { ReasonCode } from "./weights";
@@ -65,6 +67,10 @@ export function collectEvidence(opts: {
   families: Ja4Families;
   /** The answer was bound to a valid returning-device token (spec 008). */
   returningDevice?: boolean;
+  /** Input of the press-and-hold step (spec 009), or null when absent or invalid. */
+  behavior?: BehaviorPayload | null;
+  /** The hold step was shown, so its input is expected. */
+  holdRequired?: boolean;
 }): Set<ReasonCode> {
   const { probe, request } = opts;
   const codes = new Set<ReasonCode>();
@@ -78,8 +84,10 @@ export function collectEvidence(opts: {
   if (family?.startsWith("tool:")) codes.add("transport.ja4_tool");
   else if (family && claimed !== "unknown" && family !== claimed) codes.add("transport.ja4_mismatch");
 
-  // No-JavaScript answers have no probe by design (spec 007 research R7).
+  // No-JavaScript answers have no probe or hold by design (spec 007 research R7).
   if (opts.kind === "wait") return codes;
+  if (opts.holdRequired && !opts.behavior) codes.add("behavior.missing");
+  if (opts.behavior) for (const code of behaviorCodes(opts.behavior)) codes.add(code);
   if (!probe) {
     codes.add("env.probe_missing");
     return codes;

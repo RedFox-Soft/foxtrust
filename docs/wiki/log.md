@@ -62,3 +62,5 @@ Operations:
 ## [2026-10-06] query | JA4 recordings through Caddy caddy-ja3ja4: browser families not separable by JA4_ab, tool rows only → adr-bot-verdict, tls-fingerprints-at-the-proxy updated
 
 ## [2026-10-06] query | Decision: returning-device token (spec 008, B-12e) → adr-returning-device (new); index, adr-bot-verdict, challenge-bot-detection link it
+
+## [2026-10-06] query | Decision: behavior evidence (spec 009, B-12d) → adr-behavior-evidence (new); index, adr-bot-verdict, adr-returning-device, challenge-bot-detection link it

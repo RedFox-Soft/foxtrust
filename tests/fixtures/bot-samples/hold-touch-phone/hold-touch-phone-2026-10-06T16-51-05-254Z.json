@@ -1,0 +1,176 @@
+{
+  "label": "hold-touch-phone",
+  "kind": "human",
+  "tool": "chrome",
+  "version": "154.0.0.0",
+  "recordedAt": "2026-10-06T16:51:05.254Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "uaData": null,
+    "engine": "chromium",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "ru-RU",
+      "ru",
+      "en-US"
+    ],
+    "screen": {
+      "sw": 432,
+      "sh": 960,
+      "iw": 432,
+      "ih": 838,
+      "ow": 432,
+      "oh": 960,
+      "dpr": 2.5
+    },
+    "perm": false,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 350,
+      "h": 56
+    },
+    "kind": "touch",
+    "ptr": [
+      [
+        976,
+        182,
+        32
+      ],
+      [
+        991,
+        182,
+        32
+      ],
+      [
+        1005,
+        181,
+        31
+      ],
+      [
+        1024,
+        180,
+        31
+      ],
+      [
+        1042,
+        180,
+        31
+      ],
+      [
+        1059,
+        179,
+        31
+      ],
+      [
+        1074,
+        179,
+        31
+      ],
+      [
+        1092,
+        179,
+        31
+      ],
+      [
+        1109,
+        178,
+        31
+      ],
+      [
+        1126,
+        178,
+        31
+      ],
+      [
+        1143,
+        178,
+        31
+      ],
+      [
+        1158,
+        177,
+        31
+      ],
+      [
+        1192,
+        177,
+        31
+      ],
+      [
+        1224,
+        177,
+        31
+      ],
+      [
+        1259,
+        176,
+        31
+      ],
+      [
+        1276,
+        176,
+        31
+      ],
+      [
+        1291,
+        176,
+        31
+      ],
+      [
+        1341,
+        175,
+        31
+      ],
+      [
+        1710,
+        175,
+        31
+      ],
+      [
+        2063,
+        178,
+        29
+      ],
+      [
+        2079,
+        181,
+        27
+      ]
+    ],
+    "press": [
+      917,
+      183,
+      32
+    ],
+    "release": 2089,
+    "moves": {
+      "count": 21,
+      "maxPx": 8
+    },
+    "keys": [],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "touch"
+}

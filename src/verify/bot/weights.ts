@@ -10,6 +10,9 @@ export const KNOWN_CODES = [
   "env.ua_mismatch", "env.hints_mismatch", "env.perm_inconsistent", "env.window_zero", "env.software_gl",
   "env.tz_mismatch", "req.headless_ua", "req.no_accept_language", "transport.ja4_mismatch", "transport.ja4_tool",
   "profile.uniform", "attest.returning_device",
+  "behavior.missing", "behavior.untrusted", "behavior.teleport", "behavior.straight", "behavior.machine_timing",
+  "behavior.smooth_curve", "behavior.exact_center", "behavior.exact_hold", "behavior.no_key_repeat", "behavior.still_touch",
+  "behavior.press_in_motion",
 ] as const;
 export type ReasonCode = (typeof KNOWN_CODES)[number];
 export type PriorKey = "none" | "low" | "medium" | "high";

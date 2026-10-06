@@ -12,7 +12,7 @@ decided: 2026-10-06
 
 # ADR: bot verdict on the challenge page
 
-Decision for backlog item B-12c (spec 007). It extends [[adr-challenge-page]], where a correct proof-of-work alone earned a pass. [[adr-returning-device]] builds on it. The research behind it is in [[challenge-bot-detection]] and [[tls-fingerprints-at-the-proxy]]. Privacy limits: constitution v5.1.0, Principle IV.
+Decision for backlog item B-12c (spec 007). It extends [[adr-challenge-page]], where a correct proof-of-work alone earned a pass. [[adr-returning-device]] and [[adr-behavior-evidence]] build on it. The research behind it is in [[challenge-bot-detection]] and [[tls-fingerprints-at-the-proxy]]. Privacy limits: constitution v5.1.0, Principle IV.
 
 ## Decision
 
@@ -59,7 +59,7 @@ Real browsers, started normally (no automation flags) with throw-away profiles o
 - **SC-001** (no stock headless Playwright or Puppeteer passes): **pass**.
 - **SC-002** (real browsers pass): **pass**, with 0 % false positives on the recorded set. Starting weights unchanged.
 - **Not yet covered**: Safari and iOS (they need Apple devices) and other Android browsers. "Safer" turns JavaScript off on plain-HTTP pages, so `bot record` needs HTTPS to record it. Until these are recorded, enforce on traffic with many such visitors only after observe mode shows no false positives.
-- **SC-003** baseline: puppeteer-stealth and Camoufox pass. Behavior evidence (B-12d) is what must catch them.
+- **SC-003** baseline: puppeteer-stealth and Camoufox pass. Behavior evidence (B-12d) is what must catch them: [[adr-behavior-evidence]] catches puppeteer-stealth driven by scripted input; Camoufox `humanize` stays a baseline.
 
 ## Findings
 

@@ -167,6 +167,16 @@ Design and limits: [ADR challenge page](docs/wiki/synthesis/adr-challenge-page.m
 
 Design: [ADR bot verdict](docs/wiki/synthesis/adr-bot-verdict.md).
 
+**Press and hold.** Stealth browsers pass the environment checks, so the page also asks every challenged visitor to press and hold a button for one second while the proof-of-work runs. The pointer path to the button, the press and the release become `behavior.*` reason codes in the same score: a straight or generated path, a teleport onto the button, a press while still moving, a release exactly when the bar fills, events not from a real input device.
+
+- **Keyboard.** Tab to the button and hold Space or Enter. A person's hold is judged by the operating system's key auto-repeat and timing.
+- **Screen readers.** The button has a name and instructions, and progress is announced.
+- **One code is not enough.** Apart from events not from a real input device, no single code lifts a clean visitor to a step-up, and a keyboard or touch hold without pointer movement passes.
+- **Assistive input.** Switch devices and eye tracking may not produce a hold; such visitors can use the keyboard path. If your audience relies on them, set `FOXTRUST_BOT_HOLD=off`.
+- **Privacy.** Positions and timings are used for one decision in memory and dropped; the log has only the codes. `foxtrust bot record --hold --input <mouse|touchpad|touch|key>` records hold samples for `bot eval`.
+
+`FOXTRUST_BOT_HOLD=off` removes the step; it is ignored when `FOXTRUST_BOT_MODE=off`. Design: [ADR behavior evidence](docs/wiki/synthesis/adr-behavior-evidence.md).
+
 **Returning-device token.** A browser that passed cleanly also gets a `foxtrust_device` cookie: host-only, random, 30 days (`FOXTRUST_DEVICE_TTL_DAYS`). When the same browser is challenged again from another address (a new Tor circuit, a mobile network, travel), the page skips the proof-of-work. The bot verdict still runs. Limits:
 
 - **Cap.** One token gets passes for at most `FOXTRUST_DEVICE_CAP` (20) addresses per 24 hours; an IPv6 `/64` counts as one address.

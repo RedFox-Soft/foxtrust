@@ -1,3 +1,4 @@
+import { runHold } from "./hold.ts";
 import { runProbe } from "./probe.ts";
 
 /**
@@ -59,47 +60,67 @@ async function measureForRecorder(form: HTMLFormElement, probeMs: number): Promi
 }
 
 async function start(form: HTMLFormElement): Promise<void> {
-  const { n, d, path, record } = form.dataset;
+  const { n, d, path, record, hold } = form.dataset;
   const solution = form.elements.namedItem("s");
   const probeField = form.elements.namedItem("p");
+  const behaviorField = form.elements.namedItem("b");
   if (!navigator.cookieEnabled && record === undefined) {
     show("Cookies are needed to continue. Allow cookies for this site and reload the page.");
     return;
   }
   if (!n || !(probeField instanceof HTMLInputElement)) return;
   await whenVisible();
+
+  /** The press-and-hold step (spec 009), when the page has one. */
+  const holdStep = (): Promise<void> | null => {
+    const button = document.getElementById("foxtrust-hold");
+    const progress = document.getElementById("foxtrust-hold-progress");
+    if (hold === undefined || !(button instanceof HTMLButtonElement) || !(progress instanceof HTMLProgressElement)) return null;
+    if (!(behaviorField instanceof HTMLInputElement)) return null;
+    return runHold({ button, progress, show }).then((payload) => {
+      behaviorField.value = JSON.stringify({ ...payload, n });
+    });
+  };
+
   if (record !== undefined) {
     const probeStarted = performance.now();
     probeField.value = JSON.stringify(await runProbe(n));
-    await measureForRecorder(form, performance.now() - probeStarted);
+    const held = holdStep();
+    if (held) await held;
+    else await measureForRecorder(form, performance.now() - probeStarted);
     form.submit();
     return;
   }
   if (!d || !path || !(solution instanceof HTMLInputElement)) return;
 
-  // The probe runs while the worker solves, so it adds nothing to the visitor's wait (spec 007 SC-004).
+  // Probe, proof-of-work and hold run side by side; the answer goes when all are done (spec 007, 009).
   const started = Date.now();
   const worker = new Worker(`${path}/worker.js`);
   const probed = runProbe(n).then((result) => {
     probeField.value = JSON.stringify(result);
   });
-  worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
-    const message = event.data;
-    if (message.type === "progress") {
-      const seconds = Math.floor((Date.now() - started) / 1000);
-      if (seconds >= 3) show(`Still checking your browser (${seconds} s)…`);
-      return;
-    }
-    worker.terminate();
-    solution.value = message.s;
-    show("Done. Taking you back…");
-    void probed.finally(() => form.submit());
-  };
-  worker.onerror = () => {
-    worker.terminate();
-    show("Something went wrong while checking your browser. Reload the page to try again.");
-  };
+  const held = holdStep();
+  const solved = new Promise<void>((resolve, reject) => {
+    worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      const message = event.data;
+      if (message.type === "progress") {
+        const seconds = Math.floor((Date.now() - started) / 1000);
+        if (seconds >= 3 && !held) show(`Still checking your browser (${seconds} s)…`);
+        return;
+      }
+      worker.terminate();
+      solution.value = message.s;
+      resolve();
+    };
+    worker.onerror = () => {
+      worker.terminate();
+      reject(new Error("worker"));
+    };
+  });
   worker.postMessage({ n, d: Number(d) });
+  await Promise.all([solved, probed, held ?? Promise.resolve()]);
+  show("Done. Taking you back…");
+  form.submit();
 }
 
 if (form instanceof HTMLFormElement) {

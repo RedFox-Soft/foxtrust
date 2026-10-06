@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { contains, type Cidr } from "../../ip/cidr";
 import { formatIp, type IpValue } from "../../ip/parse";
+import { parseBehavior } from "../bot/behavior-schema";
 import { collectEvidence } from "../bot/evidence";
 import type { Ja4Families } from "../bot/ja4";
 import { decideAction, type BotAction, type BotPolicy } from "../bot/policy";
@@ -90,6 +91,8 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
   const { settings, secret, log } = deps;
   const { path } = settings;
   const botOn = deps.bot !== null && deps.bot.policy.mode !== "off";
+  /** The press-and-hold step is shown and its input expected (spec 009). */
+  const holdOn = botOn && deps.bot!.policy.hold;
 
   /** Client address, host and protocol, trusting forwarded headers only from trusted proxies. */
   function client(request: Request, peerAddress: string | null): Client {
@@ -141,7 +144,7 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
           seconds: waitSeconds,
         }
       : null;
-    const html = renderChallengePage({ path, challenge, nonce: b64url(readChallenge(challenge)!.nonce), bits, returnTo, wait });
+    const html = renderChallengePage({ path, challenge, nonce: b64url(readChallenge(challenge)!.nonce), bits, returnTo, wait, hold: holdOn });
     return new Response(html, { status: 200, headers: pageHeaders() });
   }
 
@@ -170,7 +173,10 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
   }
 
   /** Bot verdict of a correct answer (spec 007); probe values stay inside this function. */
-  function judge(request: Request, c: Client, ip: IpValue, result: Extract<AnswerResult, { ok: true }>, probeText: string | null, returningDevice: boolean) {
+  function judge(
+    request: Request, c: Client, ip: IpValue, result: Extract<AnswerResult, { ok: true }>, probeText: string | null, returningDevice: boolean,
+    behaviorText: string | null,
+  ) {
     const bot = deps.bot!;
     const headers = request.headers;
     const probe = result.kind === "pow" ? parseProbe(probeText, result.nonce) : null;
@@ -190,6 +196,8 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
       zones: bot.zones,
       families: bot.families,
       returningDevice,
+      behavior: result.kind === "pow" && holdOn ? parseBehavior(behaviorText, result.nonce) : null,
+      holdRequired: holdOn,
     });
     const scored = scoreVerdict(verdict?.level ?? null, codes, bot.weights);
     return { scored, ...decideAction(scored, bot.policy, result.stepUp) };
@@ -203,7 +211,10 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
   }
 
   /** The outcome of an answer: a pass and the way back, a step-up, a block, or the page again. */
-  function settle(request: Request, c: Client, result: AnswerResult, ip: IpValue, returnTo: string, challenge: string, probeText: string | null): Response {
+  function settle(
+    request: Request, c: Client, result: AnswerResult, ip: IpValue, returnTo: string, challenge: string, probeText: string | null,
+    behaviorText: string | null = null,
+  ): Response {
     const address = formatIp(ip);
     const used = presented(request, c.host);
     if (result.ok && result.deviceId !== undefined) {
@@ -218,7 +229,7 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
         log(`challenge: pass ${address} kind=${result.kind}${result.kind === "pow" ? ` bits=${result.bits}` : ""}`);
         return passResponse(ip, returnTo, c.plainHttp, devicePass(ip, c.host, c.plainHttp, used, true));
       }
-      const { scored, action, would } = judge(request, c, ip, result, probeText, viaDevice);
+      const { scored, action, would } = judge(request, c, ip, result, probeText, viaDevice, behaviorText);
       logDecision(action, would, ip, result, scored);
       const policy = deps.bot!.policy;
       const failedStepUp = result.stepUp && scored.score >= policy.stepUp;
@@ -270,7 +281,7 @@ export function challengeRoutes(deps: ChallengeRouteDeps) {
         const result = checkAnswer({
           challenge, solution: form.get("s") ?? "", ip: c.ip, secret, noJs: settings.noJs, replay: deps.replay, now: deps.clock(),
         });
-        return settle(request, c, result, c.ip, returnTo, challenge ?? "", form.get("p"));
+        return settle(request, c, result, c.ip, returnTo, challenge ?? "", form.get("p"), form.get("b"));
       },
       { parse: "none" },
     )

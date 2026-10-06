@@ -1,0 +1,98 @@
+{
+  "label": "hold-key-script",
+  "kind": "automation",
+  "tool": "hold-key-script",
+  "version": "153.0.8010.12",
+  "recordedAt": "2026-10-06T14:36:19.327Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "sec-ch-ua": "\"HeadlessChrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": true,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": true,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "uaData": {
+      "brands": [
+        {
+          "brand": "HeadlessChrome",
+          "version": "153"
+        },
+        {
+          "brand": "Not_A Brand",
+          "version": "8"
+        },
+        {
+          "brand": "Chromium",
+          "version": "153"
+        }
+      ],
+      "mobile": false,
+      "platform": "Windows"
+    },
+    "engine": "chromium",
+    "gl": "soft",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "en-US"
+    ],
+    "screen": {
+      "sw": 1280,
+      "sh": 720,
+      "iw": 1280,
+      "ih": 720,
+      "ow": 1280,
+      "oh": 720,
+      "dpr": 1
+    },
+    "perm": true,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 398,
+      "h": 56
+    },
+    "kind": "key",
+    "ptr": [],
+    "press": [
+      46,
+      null,
+      null
+    ],
+    "release": 1052,
+    "moves": {
+      "count": 0,
+      "maxPx": 0
+    },
+    "keys": [
+      [
+        46,
+        "d",
+        0
+      ],
+      [
+        1052,
+        "u",
+        0
+      ]
+    ],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "script"
+}

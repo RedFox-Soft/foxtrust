@@ -1,0 +1,305 @@
+{
+  "label": "hold-ghost-cursor",
+  "kind": "automation",
+  "tool": "hold-ghost-cursor",
+  "version": "154.0.0.0",
+  "recordedAt": "2026-10-06T16:26:31.653Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "accept-language": "en-US,en;q=0.9",
+    "sec-ch-ua": "\"Not A(Brand\";v=\"99\", \"Chromium\";v=\"154\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": true,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": true,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "uaData": {
+      "brands": [
+        {
+          "brand": "Not A(Brand",
+          "version": "99"
+        },
+        {
+          "brand": "Chromium",
+          "version": "154"
+        }
+      ],
+      "mobile": false,
+      "platform": "Windows"
+    },
+    "engine": "chromium",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "en-US"
+    ],
+    "screen": {
+      "sw": 800,
+      "sh": 600,
+      "iw": 800,
+      "ih": 600,
+      "ow": 780,
+      "oh": 580,
+      "dpr": 1
+    },
+    "perm": false,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 398,
+      "h": 56
+    },
+    "kind": "mouse",
+    "ptr": [
+      [
+        85,
+        -201,
+        -255
+      ],
+      [
+        228,
+        -201,
+        -236
+      ],
+      [
+        231,
+        -201,
+        -218
+      ],
+      [
+        248,
+        -201,
+        -200
+      ],
+      [
+        264,
+        -201,
+        -182
+      ],
+      [
+        281,
+        -193,
+        -164
+      ],
+      [
+        298,
+        -183,
+        -147
+      ],
+      [
+        315,
+        -170,
+        -130
+      ],
+      [
+        332,
+        -155,
+        -114
+      ],
+      [
+        348,
+        -137,
+        -98
+      ],
+      [
+        365,
+        -118,
+        -82
+      ],
+      [
+        381,
+        -96,
+        -67
+      ],
+      [
+        398,
+        -73,
+        -52
+      ],
+      [
+        415,
+        -48,
+        -37
+      ],
+      [
+        432,
+        -21,
+        -24
+      ],
+      [
+        448,
+        7,
+        -10
+      ],
+      [
+        465,
+        36,
+        3
+      ],
+      [
+        481,
+        66,
+        15
+      ],
+      [
+        498,
+        97,
+        27
+      ],
+      [
+        515,
+        129,
+        39
+      ],
+      [
+        531,
+        161,
+        50
+      ],
+      [
+        548,
+        194,
+        60
+      ],
+      [
+        565,
+        227,
+        70
+      ],
+      [
+        581,
+        261,
+        79
+      ],
+      [
+        598,
+        294,
+        87
+      ],
+      [
+        615,
+        327,
+        95
+      ],
+      [
+        631,
+        360,
+        102
+      ],
+      [
+        649,
+        392,
+        109
+      ],
+      [
+        665,
+        424,
+        115
+      ],
+      [
+        682,
+        424,
+        115
+      ],
+      [
+        698,
+        421,
+        115
+      ],
+      [
+        715,
+        419,
+        115
+      ],
+      [
+        732,
+        417,
+        115
+      ],
+      [
+        748,
+        415,
+        114
+      ],
+      [
+        765,
+        412,
+        112
+      ],
+      [
+        782,
+        409,
+        109
+      ],
+      [
+        798,
+        405,
+        106
+      ],
+      [
+        815,
+        400,
+        101
+      ],
+      [
+        832,
+        393,
+        95
+      ],
+      [
+        848,
+        386,
+        88
+      ],
+      [
+        865,
+        377,
+        79
+      ],
+      [
+        882,
+        366,
+        68
+      ],
+      [
+        898,
+        354,
+        56
+      ],
+      [
+        915,
+        339,
+        42
+      ]
+    ],
+    "press": [
+      920,
+      339,
+      42
+    ],
+    "release": 1925,
+    "moves": {
+      "count": 0,
+      "maxPx": 0
+    },
+    "keys": [],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "script"
+}

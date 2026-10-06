@@ -1,0 +1,111 @@
+{
+  "label": "hold-touch-phone",
+  "kind": "human",
+  "tool": "chrome",
+  "version": "154.0.0.0",
+  "recordedAt": "2026-10-06T16:51:18.400Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "uaData": null,
+    "engine": "chromium",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "ru-RU",
+      "ru",
+      "en-US"
+    ],
+    "screen": {
+      "sw": 432,
+      "sh": 960,
+      "iw": 432,
+      "ih": 838,
+      "ow": 432,
+      "oh": 960,
+      "dpr": 2.5
+    },
+    "perm": false,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 350,
+      "h": 56
+    },
+    "kind": "touch",
+    "ptr": [
+      [
+        617,
+        154,
+        32
+      ],
+      [
+        634,
+        154,
+        32
+      ],
+      [
+        650,
+        154,
+        32
+      ],
+      [
+        668,
+        154,
+        32
+      ],
+      [
+        685,
+        154,
+        32
+      ],
+      [
+        699,
+        154,
+        32
+      ],
+      [
+        1585,
+        154,
+        32
+      ],
+      [
+        1819,
+        157,
+        31
+      ]
+    ],
+    "press": [
+      580,
+      154,
+      32
+    ],
+    "release": 1824,
+    "moves": {
+      "count": 8,
+      "maxPx": 3
+    },
+    "keys": [],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "touch"
+}

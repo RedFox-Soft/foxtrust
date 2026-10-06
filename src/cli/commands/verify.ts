@@ -67,7 +67,7 @@ export async function verifyServe(args: string[], _ctx: Context): Promise<number
     printLine(
       bot
         ? `Bot verdict: ${bot.policy.mode}, weights ${bot.weights.version}, step-up ${bot.policy.stepUp}, block ${bot.policy.block}, ` +
-            `after step-up ${bot.policy.afterStepUp}, ${bot.families.size} JA4 families.`
+            `after step-up ${bot.policy.afterStepUp}, ${bot.families.size} JA4 families, hold step ${bot.policy.hold ? "on" : "off"}.`
         : "Bot verdict: off.",
     );
     printLine(

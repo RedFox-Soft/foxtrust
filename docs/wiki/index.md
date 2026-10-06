@@ -57,6 +57,7 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[candidate-data-sources]] — sources not yet ingested, by layer (network, anonymization, abuse, first-party); residential proxies out of scope
 - [[adr-challenge-page]] — ADR: built-in challenge page on the protected host, SHA-256 proof-of-work by level, /64 passes, no-JavaScript path off by default
 - [[adr-returning-device]] — ADR: returning-device token; zero-cost challenge after an address change, bot verdict still runs, cap 20 addresses/24 h, revocation in a hashed per-instance state file
+- [[adr-behavior-evidence]] — ADR: press-and-hold step for every challenged visitor; eleven behavior.* codes (path, press, release, key auto-repeat, untrusted events), scripted holds get no pass, the owner's mouse, phone and keyboard holds pass
 - [[adr-bot-verdict]] — ADR: bot verdict on the challenge page; probe + header cross-checks + optional JA4, log-odds over the address prior, observe by default, recorded labelled set
 - [[tls-fingerprints-at-the-proxy]] — JA4 for /verify per proxy (nginx/Caddy modules, Envoy native, Traefik impossible, Cloudflare Enterprise only); JA4 BSD-3 but JA4+ needs a FoxIO OEM licence
 - [[private-access-tokens]] — Privacy Pass for the challenge page: no public production issuer for third parties; verification feasible in Bun; deferred

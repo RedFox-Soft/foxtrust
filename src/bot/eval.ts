@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { Level } from "../model/types";
+import { behaviorCodes } from "../verify/bot/behavior";
+import { checkBehavior } from "../verify/bot/behavior-schema";
 import { collectEvidence } from "../verify/bot/evidence";
 import { JA4_FAMILIES_FILE, loadJa4Families } from "../verify/bot/ja4";
 import { decideAction, type BotAction, type BotPolicy } from "../verify/bot/policy";
@@ -12,6 +14,8 @@ import { loadZones, type Zones } from "../verify/bot/zones";
 /**
  * Evaluation of bot-verdict weights on the labelled set (spec 007 research R8, contracts `bot eval`).
  * A measurement, not a test: it reports SC-001/SC-002 for a weights version and compares two.
+ * Hold samples (spec 009 research R6) also get a behavior-only verdict: the sample's behavior codes
+ * on a clean environment, which is what a stealth browser driving the same input would score.
  */
 
 export type Sample = {
@@ -21,9 +25,15 @@ export type Sample = {
   country?: string;
   headers: Record<string, string>;
   probe: unknown;
+  /** The hold-step payload, for samples recorded with `bot record --hold`. */
+  behavior?: unknown;
 };
 
-export type LabelResult = { label: string; kind: "human" | "automation"; samples: number; pass: number; stepup: number; block: number; meanScore: number };
+export type LabelResult = {
+  label: string; kind: "human" | "automation"; samples: number; pass: number; stepup: number; block: number; meanScore: number;
+  /** Hold labels: passes on the behavior-only verdict; null for samples without a hold. */
+  behaviorPass: number | null;
+};
 
 export type EvalResult = {
   weightsVersion: string;
@@ -35,10 +45,23 @@ export type EvalResult = {
   sc001: boolean | null;
   /** SC-002: mainstream human ≥ 99 % and Tor Browser ≥ 95 % pass; null without human samples. */
   sc002: boolean | null;
+  /** Spec 009 success criteria on the hold labels; each is null without its samples. */
+  hold: {
+    /** SC-001: ≥ 95 % of scripted pointer holds get no pass on the behavior-only verdict. */
+    sc001: boolean | null;
+    /** SC-002: ≥ 98 % of human pointer and touch holds pass, and every keyboard hold. */
+    sc002: boolean | null;
+    /** SC-003: no stealth-automation hold passes, on either verdict. */
+    sc003: boolean | null;
+  };
 };
 
 const LEVEL: Record<Sample["addressKind"], Level> = { tor: "medium", residential: "low", cloud: "low" };
 const STOCK_AUTOMATION = /^(playwright-[a-z]+-headless|puppeteer-headless)$/;
+/** Camoufox `humanize` is reported as a baseline, not a target (spec 009 research R5). */
+const HOLD_BASELINE = "hold-camoufox-humanize";
+const HOLD_STEALTH = "hold-stealth-ghost";
+const HOLD_KEYBOARD = "hold-keyboard";
 
 export function readSamples(dir: string): Sample[] {
   const samples: Sample[] = [];
@@ -62,6 +85,8 @@ function evaluate(
   const enforce: BotPolicy = { ...policy, mode: "enforce" };
   for (const sample of samples) {
     const probe = checkProbe(sample.probe, "*");
+    const hold = sample.behavior !== undefined;
+    const behavior = hold ? checkBehavior(sample.behavior, "*") : null;
     const h = sample.headers;
     const codes = collectEvidence({
       kind: "pow",
@@ -78,12 +103,21 @@ function evaluate(
       zones,
       families,
       returningDevice: withDevice,
+      behavior,
+      holdRequired: hold,
     });
     const verdict = scoreVerdict(LEVEL[sample.addressKind], codes, weights);
     const { action } = decideAction(verdict, enforce, false);
-    const row = byLabel.get(sample.label) ?? { label: sample.label, kind: sample.kind, samples: 0, pass: 0, stepup: 0, block: 0, meanScore: 0, scoreSum: 0 };
+    const row = byLabel.get(sample.label) ??
+      { label: sample.label, kind: sample.kind, samples: 0, pass: 0, stepup: 0, block: 0, meanScore: 0, behaviorPass: null, scoreSum: 0 };
     row.samples++;
     row[action satisfies BotAction]++;
+    if (hold) {
+      const only = new Set(behavior ? behaviorCodes(behavior) : ["behavior.missing" as const]);
+      if (withDevice) only.add("attest.returning_device");
+      const alone = decideAction(scoreVerdict(LEVEL[sample.addressKind], only, weights), enforce, false);
+      row.behaviorPass = (row.behaviorPass ?? 0) + (alone.action === "pass" ? 1 : 0);
+    }
     row.scoreSum += verdict.score;
     byLabel.set(sample.label, row);
   }
@@ -98,6 +132,13 @@ function evaluate(
   const stock = labels.filter((l) => STOCK_AUTOMATION.test(l.label));
   const mainstreamRate = rate(mainstream);
   const torRate = rate(tor);
+  const holds = labels.filter((l) => l.behaviorPass !== null);
+  const scripted = holds.filter((l) => l.kind === "automation" && l.label !== HOLD_BASELINE && l.label !== "hold-key-script");
+  const people = holds.filter((l) => l.kind === "human");
+  const pointerPeople = people.filter((l) => l.label !== HOLD_KEYBOARD);
+  const keyboard = people.filter((l) => l.label === HOLD_KEYBOARD);
+  const stealth = holds.filter((l) => l.label === HOLD_STEALTH);
+  const sum = (rows: LabelResult[], pick: (r: LabelResult) => number) => rows.reduce((s, r) => s + pick(r), 0);
   return {
     weightsVersion: weights.version,
     labels,
@@ -105,6 +146,12 @@ function evaluate(
     torFalsePositiveRate: torRate,
     sc001: stock.length === 0 ? null : stock.every((l) => l.pass === 0),
     sc002: humans.length === 0 ? null : (mainstreamRate ?? 0) <= 0.01 && (torRate ?? 0) <= 0.05,
+    hold: {
+      sc001: scripted.length === 0 ? null : sum(scripted, (r) => r.behaviorPass ?? 0) <= 0.05 * sum(scripted, (r) => r.samples),
+      sc002: people.length === 0 ? null :
+        sum(pointerPeople, (r) => r.pass) >= 0.98 * sum(pointerPeople, (r) => r.samples) && keyboard.every((r) => r.pass === r.samples),
+      sc003: stealth.length === 0 ? null : stealth.every((r) => r.pass === 0 && r.behaviorPass === 0),
+    },
   };
 }
 

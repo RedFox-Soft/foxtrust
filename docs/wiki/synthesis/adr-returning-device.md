@@ -42,7 +42,7 @@ Decision for backlog item B-12e (spec 008).
 ## Limits
 
 - **Per-instance state**: several `verify` instances keep separate revocations and caps.
-- **Evasive automation**: puppeteer-stealth and Camoufox pass the verdict anyway (SC-003 of [[adr-bot-verdict]]). A token they earn lets them skip the proof-of-work on up to 20 addresses a day. Behavior evidence (B-12d) is what closes this.
+- **Evasive automation**: puppeteer-stealth and Camoufox pass the verdict anyway (SC-003 of [[adr-bot-verdict]]). A token they earn lets them skip the proof-of-work on up to 20 addresses a day. Behavior evidence closes this for scripted input: [[adr-behavior-evidence]].
 - **Revocation needs a visit**: a token is revoked only when its browser is caught on this site.
 
 ## Alternatives rejected

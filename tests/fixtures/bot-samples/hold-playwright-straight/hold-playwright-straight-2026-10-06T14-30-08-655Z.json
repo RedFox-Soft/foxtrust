@@ -1,0 +1,213 @@
+{
+  "label": "hold-playwright-straight",
+  "kind": "automation",
+  "tool": "hold-playwright-straight",
+  "version": "153.0.8010.12",
+  "recordedAt": "2026-10-06T14:30:08.655Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "sec-ch-ua": "\"HeadlessChrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": true,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": true,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "uaData": {
+      "brands": [
+        {
+          "brand": "HeadlessChrome",
+          "version": "153"
+        },
+        {
+          "brand": "Not_A Brand",
+          "version": "8"
+        },
+        {
+          "brand": "Chromium",
+          "version": "153"
+        }
+      ],
+      "mobile": false,
+      "platform": "Windows"
+    },
+    "engine": "chromium",
+    "gl": "soft",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "en-US"
+    ],
+    "screen": {
+      "sw": 1280,
+      "sh": 720,
+      "iw": 1280,
+      "ih": 720,
+      "ow": 1280,
+      "oh": 720,
+      "dpr": 1
+    },
+    "perm": true,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 398,
+      "h": 56
+    },
+    "kind": "mouse",
+    "ptr": [
+      [
+        52,
+        -415,
+        -301
+      ],
+      [
+        68,
+        -390,
+        -288
+      ],
+      [
+        85,
+        -364,
+        -274
+      ],
+      [
+        102,
+        -339,
+        -260
+      ],
+      [
+        118,
+        -313,
+        -246
+      ],
+      [
+        134,
+        -287,
+        -233
+      ],
+      [
+        151,
+        -262,
+        -219
+      ],
+      [
+        169,
+        -236,
+        -205
+      ],
+      [
+        185,
+        -211,
+        -192
+      ],
+      [
+        201,
+        -185,
+        -178
+      ],
+      [
+        217,
+        -159,
+        -164
+      ],
+      [
+        235,
+        -134,
+        -150
+      ],
+      [
+        252,
+        -108,
+        -137
+      ],
+      [
+        268,
+        -83,
+        -123
+      ],
+      [
+        285,
+        -57,
+        -109
+      ],
+      [
+        302,
+        -31,
+        -95
+      ],
+      [
+        318,
+        -6,
+        -82
+      ],
+      [
+        334,
+        20,
+        -68
+      ],
+      [
+        352,
+        45,
+        -54
+      ],
+      [
+        369,
+        71,
+        -41
+      ],
+      [
+        385,
+        97,
+        -27
+      ],
+      [
+        401,
+        122,
+        -13
+      ],
+      [
+        418,
+        148,
+        1
+      ],
+      [
+        434,
+        173,
+        14
+      ],
+      [
+        451,
+        199,
+        28
+      ]
+    ],
+    "press": [
+      454,
+      199,
+      28
+    ],
+    "release": 1463,
+    "moves": {
+      "count": 0,
+      "maxPx": 0
+    },
+    "keys": [],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "script"
+}

@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Development-only recorders for the bot-verdict labelled set; not part of FoxTrust",
   "dependencies": {
+    "ghost-cursor": "^1.4.2",
     "patchright": "^1.63.0",
     "playwright": "^1.63.0",
     "puppeteer": "^25.12.0",

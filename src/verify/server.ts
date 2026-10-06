@@ -128,7 +128,7 @@ export function createVerifyApp(deps: VerifyDeps) {
           bot: deps.bot
             ? {
                 mode: deps.bot.policy.mode, weightsVersion: deps.bot.weights.version, stepUp: deps.bot.policy.stepUp,
-                block: deps.bot.policy.block, afterStepUp: deps.bot.policy.afterStepUp, stepUpBits: deps.bot.policy.stepUpBits,
+                block: deps.bot.policy.block, afterStepUp: deps.bot.policy.afterStepUp, stepUpBits: deps.bot.policy.stepUpBits, hold: deps.bot.policy.hold,
                 ja4Families: deps.bot.families.size,
               }
             : { mode: "off" },

@@ -239,12 +239,15 @@ export function readBotSettings(text: (name: string) => string | null, problems:
   const bitsRaw = text("FOXTRUST_BOT_STEPUP_BITS");
   const stepUpBits = bitsRaw === null ? DEFAULT_BOT_POLICY.stepUpBits : Number(bitsRaw);
   if (!Number.isInteger(stepUpBits) || stepUpBits < 1 || stepUpBits > 8) problems.push("FOXTRUST_BOT_STEPUP_BITS must be a whole number from 1 to 8");
+  const holdText = text("FOXTRUST_BOT_HOLD") ?? "on";
+  if (holdText !== "on" && holdText !== "off") problems.push("FOXTRUST_BOT_HOLD must be on or off");
   return {
     mode: mode as BotPolicy["mode"],
     stepUp,
     block,
     afterStepUp: afterStepUp as BotPolicy["afterStepUp"],
     stepUpBits,
+    hold: holdText === "on",
     weightsFile: text("FOXTRUST_BOT_WEIGHTS"),
     ja4FamiliesFile: text("FOXTRUST_BOT_JA4_FAMILIES"),
   };

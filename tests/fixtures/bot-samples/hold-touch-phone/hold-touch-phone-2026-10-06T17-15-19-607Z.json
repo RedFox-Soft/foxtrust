@@ -1,0 +1,125 @@
+{
+  "label": "hold-touch-phone",
+  "kind": "human",
+  "tool": "chrome",
+  "version": "154.0.0.0",
+  "recordedAt": "2026-10-06T17:15:19.607Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "uaData": null,
+    "engine": "chromium",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "ru-RU",
+      "ru",
+      "en-US"
+    ],
+    "screen": {
+      "sw": 432,
+      "sh": 960,
+      "iw": 432,
+      "ih": 839,
+      "ow": 432,
+      "oh": 960,
+      "dpr": 2.5
+    },
+    "perm": false,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 350,
+      "h": 56
+    },
+    "kind": "touch",
+    "ptr": [
+      [
+        1147,
+        200,
+        32
+      ],
+      [
+        1149,
+        200,
+        32
+      ],
+      [
+        1178,
+        200,
+        32
+      ],
+      [
+        1212,
+        200,
+        32
+      ],
+      [
+        1278,
+        200,
+        32
+      ],
+      [
+        1295,
+        200,
+        32
+      ],
+      [
+        1412,
+        200,
+        32
+      ],
+      [
+        1763,
+        200,
+        32
+      ],
+      [
+        1847,
+        200,
+        32
+      ]
+    ],
+    "press": [
+      1046,
+      200,
+      32
+    ],
+    "release": 3197,
+    "moves": {
+      "count": 9,
+      "maxPx": 0
+    },
+    "keys": [],
+    "untrusted": 0,
+    "vis": [
+      [
+        61,
+        "f"
+      ],
+      [
+        61,
+        "f"
+      ]
+    ]
+  },
+  "inputKind": "touch"
+}

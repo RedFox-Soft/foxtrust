@@ -14,9 +14,11 @@ export type BotPolicy = {
   block: number;
   afterStepUp: "pass" | "block";
   stepUpBits: number;
+  /** Show the press-and-hold step to every challenged visitor (spec 009). */
+  hold: boolean;
 };
 
-export const DEFAULT_BOT_POLICY: BotPolicy = { mode: "observe", stepUp: 0.5, block: 0.9, afterStepUp: "pass", stepUpBits: 4 };
+export const DEFAULT_BOT_POLICY: BotPolicy = { mode: "observe", stepUp: 0.5, block: 0.9, afterStepUp: "pass", stepUpBits: 4, hold: true };
 
 export function decideAction(verdict: BotVerdict, policy: BotPolicy, wasStepUp: boolean): { action: BotAction; would: BotAction } {
   let would: BotAction;

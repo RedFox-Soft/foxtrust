@@ -1,0 +1,203 @@
+{
+  "label": "hold-keyboard",
+  "kind": "human",
+  "tool": "chrome",
+  "version": "150.0.7871.250",
+  "recordedAt": "2026-10-06T17:19:00.678Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.140.0 Chrome/150.0.7871.250 Electron/43.7.3 Safari/537.36",
+    "accept-language": "en-US",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.140.0 Chrome/150.0.7871.250 Electron/43.7.3 Safari/537.36",
+    "uaData": {
+      "brands": [
+        {
+          "brand": "Not;A=Brand",
+          "version": "8"
+        },
+        {
+          "brand": "Chromium",
+          "version": "150"
+        }
+      ],
+      "mobile": false,
+      "platform": "Windows"
+    },
+    "engine": "chromium",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "en-US",
+      "ru"
+    ],
+    "screen": {
+      "sw": 1536,
+      "sh": 960,
+      "iw": 583,
+      "ih": 768,
+      "ow": 1536,
+      "oh": 912,
+      "dpr": 1.25
+    },
+    "perm": false,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 0.1,
+    "box": {
+      "w": 398,
+      "h": 56
+    },
+    "kind": "key",
+    "ptr": [],
+    "press": [
+      636,
+      null,
+      null
+    ],
+    "release": 1873,
+    "moves": {
+      "count": 0,
+      "maxPx": 0
+    },
+    "keys": [
+      [
+        636,
+        "d",
+        0
+      ],
+      [
+        1127,
+        "d",
+        1
+      ],
+      [
+        1159,
+        "d",
+        1
+      ],
+      [
+        1191,
+        "d",
+        1
+      ],
+      [
+        1223,
+        "d",
+        1
+      ],
+      [
+        1256,
+        "d",
+        1
+      ],
+      [
+        1289,
+        "d",
+        1
+      ],
+      [
+        1321,
+        "d",
+        1
+      ],
+      [
+        1355,
+        "d",
+        1
+      ],
+      [
+        1390,
+        "d",
+        1
+      ],
+      [
+        1420,
+        "d",
+        1
+      ],
+      [
+        1451,
+        "d",
+        1
+      ],
+      [
+        1483,
+        "d",
+        1
+      ],
+      [
+        1516,
+        "d",
+        1
+      ],
+      [
+        1550,
+        "d",
+        1
+      ],
+      [
+        1581,
+        "d",
+        1
+      ],
+      [
+        1613,
+        "d",
+        1
+      ],
+      [
+        1645,
+        "d",
+        1
+      ],
+      [
+        1679,
+        "d",
+        1
+      ],
+      [
+        1709,
+        "d",
+        1
+      ],
+      [
+        1742,
+        "d",
+        1
+      ],
+      [
+        1774,
+        "d",
+        1
+      ],
+      [
+        1807,
+        "d",
+        1
+      ],
+      [
+        1872,
+        "u",
+        0
+      ]
+    ],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "key"
+}

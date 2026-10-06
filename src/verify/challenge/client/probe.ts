@@ -89,6 +89,8 @@ export async function runProbe(nonce: string): Promise<ProbeResult> {
 
   const tz = safe("tz", "", () => (Intl.DateTimeFormat().resolvedOptions().timeZone ?? "").slice(0, 64));
   const langs = safe<string[]>("langs", [], () => [...(nav.languages ?? [])].slice(0, 3).map((l) => l.slice(0, 35)));
+  // Android Chrome can report a 0×0 outer window for a moment after load; headless Chrome always does.
+  for (let i = 0; i < 20 && (outerWidth === 0 || outerHeight === 0); i++) await new Promise((resolve) => setTimeout(resolve, 50));
   const screenSize = safe("screen", { sw: 0, sh: 0, iw: 0, ih: 0, ow: 0, oh: 0, dpr: 0 }, () => ({
     sw: screen.width, sh: screen.height, iw: innerWidth, ih: innerHeight, ow: outerWidth, oh: outerHeight, dpr: devicePixelRatio,
   }));

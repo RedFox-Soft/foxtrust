@@ -9,7 +9,7 @@ sources: []
 
 # Challenge page: telling humans from bots without a captcha
 
-Research for backlog item B-12, the page that `/verify` sends `challenge` decisions to and that issues the pass token `/verify` already checks (`src/verify/token.ts`). Goal: no captcha to solve. The page computes a **bot verdict** for the browser session the way the core computes one for an address, and a policy turns it into pass, step-up or block. The first part, a proof-of-work page without client signals (B-12a), is built: [[adr-challenge-page]]. The environment and transport layers with the log-odds verdict (B-12c) are built: [[adr-bot-verdict]]. The returning-device token (B-12e) is built: [[adr-returning-device]].
+Research for backlog item B-12, the page that `/verify` sends `challenge` decisions to and that issues the pass token `/verify` already checks (`src/verify/token.ts`). Goal: no captcha to solve. The page computes a **bot verdict** for the browser session the way the core computes one for an address, and a policy turns it into pass, step-up or block. The first part, a proof-of-work page without client signals (B-12a), is built: [[adr-challenge-page]]. The environment and transport layers with the log-odds verdict (B-12c) are built: [[adr-bot-verdict]]. The returning-device token (B-12e) is built: [[adr-returning-device]]. The behavior layer (B-12d) is built as a press-and-hold step: [[adr-behavior-evidence]].
 
 ## Decided (2026-10-06)
 
@@ -39,6 +39,7 @@ Research for backlog item B-12, the page that `/verify` sends `challenge` decisi
 - Features: path noise and micro-corrections vs straight lines, Bézier curves (ghost-cursor) or teleports; velocity spread; time to first event; key interval distribution. `isTrusted = false` means `dispatchEvent`; CDP `Input.dispatchMouseEvent` still yields `isTrusted = true`.
 - **Payload**: compact encoding, encrypted with a per-challenge key, bound to the server nonce and the PoW solution so it cannot be replayed; the script is mangled per build. Obfuscation only slows reverse engineering (commercial vendors rotate VM-based obfuscators daily); the real defence is server-side consistency checks.
 - **Limits**: a PoW page that finishes in 1–3 s collects almost no input, so good behavior data comes from pages where people act (a login form) through an embeddable snippet, which overlaps the SDK (B-11). Touch-only and keyboard-only users and screen-reader users produce few or no pointer events: absence of events may step up the challenge, never block.
+- **As built** ([[adr-behavior-evidence]]): a one-second press-and-hold button on the challenge page itself gives every challenged visitor something to do; the snippet for login forms remains open. The payload is bound to the challenge nonce and size-limited rather than encrypted.
 
 ### Attestation (legitimate "trust from elsewhere")
 

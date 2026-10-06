@@ -1,0 +1,200 @@
+{
+  "label": "hold-camoufox-humanize",
+  "kind": "automation",
+  "tool": "hold-camoufox-humanize",
+  "version": "156.0",
+  "recordedAt": "2026-10-06T16:29:21.091Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:156.0) Gecko/20100101 Firefox/156.0",
+    "accept-language": "en-US,en;q=0.9",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:156.0) Gecko/20100101 Firefox/156.0",
+    "uaData": null,
+    "engine": "gecko",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "en-US",
+      "en"
+    ],
+    "screen": {
+      "sw": 1920,
+      "sh": 1080,
+      "iw": 1912,
+      "ih": 947,
+      "ow": 1912,
+      "oh": 1032,
+      "dpr": 1
+    },
+    "perm": false,
+    "err": []
+  },
+  "timing": {
+    "probeMs": null,
+    "powMs": null,
+    "powBits": 16
+  },
+  "behavior": {
+    "n": "*",
+    "res": 1,
+    "box": {
+      "w": 398,
+      "h": 56
+    },
+    "kind": "mouse",
+    "ptr": [
+      [
+        181,
+        -757,
+        -417
+      ],
+      [
+        222,
+        -756,
+        -417
+      ],
+      [
+        233,
+        -755,
+        -415
+      ],
+      [
+        243,
+        -755,
+        -414
+      ],
+      [
+        259,
+        -754,
+        -413
+      ],
+      [
+        271,
+        -753,
+        -412
+      ],
+      [
+        283,
+        -747,
+        -402
+      ],
+      [
+        295,
+        -742,
+        -392
+      ],
+      [
+        308,
+        -735,
+        -380
+      ],
+      [
+        322,
+        -721,
+        -364
+      ],
+      [
+        330,
+        -704,
+        -348
+      ],
+      [
+        357,
+        -602,
+        -272
+      ],
+      [
+        371,
+        -582,
+        -257
+      ],
+      [
+        497,
+        103,
+        39
+      ],
+      [
+        498,
+        131,
+        44
+      ],
+      [
+        509,
+        149,
+        46
+      ],
+      [
+        522,
+        153,
+        43
+      ],
+      [
+        534,
+        153,
+        39
+      ],
+      [
+        545,
+        152,
+        33
+      ],
+      [
+        566,
+        159,
+        27
+      ],
+      [
+        580,
+        171,
+        27
+      ],
+      [
+        591,
+        182,
+        29
+      ],
+      [
+        603,
+        192,
+        29
+      ],
+      [
+        612,
+        196,
+        29
+      ],
+      [
+        626,
+        197,
+        28
+      ],
+      [
+        641,
+        199,
+        28
+      ]
+    ],
+    "press": [
+      649,
+      199,
+      28
+    ],
+    "release": 1685,
+    "moves": {
+      "count": 0,
+      "maxPx": 0
+    },
+    "keys": [],
+    "untrusted": 0,
+    "vis": []
+  },
+  "inputKind": "script"
+}

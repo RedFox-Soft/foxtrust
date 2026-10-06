@@ -4,6 +4,7 @@ import { Elysia } from "elysia";
 import { evaluateSamples, type EvalResult } from "../../bot/eval";
 import { DEFAULT_DIFFICULTY, readBotSettings } from "../../verify/config";
 import { activeWeightsFile } from "../../verify/bot/weights";
+import { parseBehavior } from "../../verify/bot/behavior-schema";
 import { parseProbe } from "../../verify/bot/probe-schema";
 import { buildChallengeAssets } from "../../verify/challenge/assets";
 import { COMMON_HEADERS, pageHeaders, renderRecorded, renderRecorderPage } from "../../verify/challenge/page";
@@ -44,7 +45,11 @@ export async function botRecord(args: string[], _ctx: Context): Promise<number> 
   const out = one(args, "--out") ?? SAMPLES_DIR;
   const toolOverride = one(args, "--tool");
   const versionOverride = one(args, "--version");
+  const hold = takeFlag(args, "--hold");
+  const inputKind = one(args, "--input");
   rejectUnknown(args);
+  if (hold && !inputKind) throw new UsageError("--hold needs --input mouse|touchpad|touch|key|script");
+  if (inputKind && !["mouse", "touchpad", "touch", "key", "script"].includes(inputKind)) throw new UsageError("--input must be mouse, touchpad, touch, key or script");
   if (!label || !/^[a-z0-9-]{2,64}$/.test(label)) throw new UsageError("--label is required: 2–64 lower-case letters, digits or dashes");
   if (kind !== "human" && kind !== "automation") throw new UsageError("--kind must be human or automation");
   if (!["residential", "tor", "cloud"].includes(addressKind)) throw new UsageError("--address-kind must be residential, tor or cloud");
@@ -58,7 +63,7 @@ export async function botRecord(args: string[], _ctx: Context): Promise<number> 
     .get("/", () => {
       // A fresh nonce per page load: the device solves one medium-difficulty proof-of-work for timing.
       const powNonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url");
-      return new Response(renderRecorderPage({ label, powNonce, powBits: POW_BITS }), { headers: pageHeaders() });
+      return new Response(renderRecorderPage({ label, powNonce, powBits: POW_BITS, hold }), { headers: pageHeaders() });
     })
     .get("/page.js", script(assets["page.js"]))
     .get("/worker.js", script(assets["worker.js"]))
@@ -74,6 +79,9 @@ export async function botRecord(args: string[], _ctx: Context): Promise<number> 
           return Number.isFinite(value) && value > 0 && value < 600_000 ? value : null;
         };
         const timing = { probeMs: ms("tp"), powMs: ms("tw"), powBits: POW_BITS };
+        const behavior = hold ? parseBehavior(form.get("b"), "*") : null;
+        if (hold && !behavior) return new Response("the hold input is invalid\n", { status: 400 });
+        if (behavior) behavior.n = "*";
         if (!probe) return new Response("the probe result is invalid\n", { status: 400 });
         const headers: Record<string, string> = {};
         for (const name of HEADERS) {
@@ -85,7 +93,7 @@ export async function botRecord(args: string[], _ctx: Context): Promise<number> 
         const recordedAt = new Date().toISOString();
         const sample = {
           label, kind, tool: toolOverride ?? product.tool, version: versionOverride ?? product.version, recordedAt, addressKind,
-          headers: { ...headers, proto }, probe, timing,
+          headers: { ...headers, proto }, probe, timing, ...(behavior ? { behavior, inputKind } : {}),
         };
         const file = join(out, label, `${label}-${recordedAt.replace(/[:.]/g, "-")}.json`);
         await Bun.write(file, `${JSON.stringify(sample, null, 2)}\n`);
@@ -131,16 +139,21 @@ export async function botEval(args: string[], ctx: Context): Promise<number> {
     `Weights ${result.weightsVersion}${compare ? ` vs ${compare.weightsVersion}` : ""}; step-up ${policy.stepUp}, block ${policy.block}; ` +
       `first attempt${withDevice ? "; every sample presents a returning-device token" : ""}.`,
   );
+  printLine("bpass: hold samples passed on their behavior codes alone, as a stealth browser with the same input would be.");
   printTable(
-    ["label", "kind", "n", "pass", "stepup", "block", "mean", ...(compare ? [`pass@${compare.weightsVersion}`, "Δpass"] : [])],
+    ["label", "kind", "n", "pass", "stepup", "block", "mean", "bpass", ...(compare ? [`pass@${compare.weightsVersion}`, "Δpass"] : [])],
     result.labels.map((l) => {
       const c = other.get(l.label);
-      return [l.label, l.kind, l.samples, l.pass, l.stepup, l.block, l.meanScore, ...(compare ? [c?.pass ?? "-", c ? c.pass - l.pass : "-"] : [])];
+      return [
+        l.label, l.kind, l.samples, l.pass, l.stepup, l.block, l.meanScore, l.behaviorPass ?? "-",
+        ...(compare ? [c?.pass ?? "-", c ? c.pass - l.pass : "-"] : []),
+      ];
     }),
   );
   const summary = (r: EvalResult, name: string) => {
     printLine(`${name}: human false positives ${percent(r.humanFalsePositiveRate)} (Tor Browser ${percent(r.torFalsePositiveRate)}); ` +
       `SC-001 ${check(r.sc001)}; SC-002 ${check(r.sc002)}`);
+    printLine(`${name} hold step (spec 009): SC-001 ${check(r.hold.sc001)}; SC-002 ${check(r.hold.sc002)}; SC-003 ${check(r.hold.sc003)}`);
   };
   summary(result, result.weightsVersion);
   if (compare) summary(compare, compare.weightsVersion);

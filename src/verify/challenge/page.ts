@@ -5,9 +5,12 @@
 
 const STYLE = `:root{color-scheme:light dark;--bg:#f6f6f4;--fg:#1c1c1a;--muted:#63635e;--card:#fff;--line:#e3e3de}
 @media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ececea;--muted:#a3a39d;--card:#1f1f1d;--line:#33332f}}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;justify-items:center;align-content:start;padding:12vh 16px 16px;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:28rem;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px 24px}
-h1{margin:0 0 8px;font-size:1.25rem;font-weight:600}p{margin:0 0 12px}.muted{color:var(--muted);font-size:.875rem;margin:16px 0 0}a{color:inherit}`;
+h1{margin:0 0 8px;font-size:1.25rem;font-weight:600}p{margin:0 0 12px}.muted{color:var(--muted);font-size:.875rem;margin:16px 0 0}a{color:inherit}
+#foxtrust-hold{display:block;width:100%;min-height:56px;margin:8px 0;border:2px solid var(--fg);border-radius:10px;background:var(--card);color:var(--fg);font:inherit;font-weight:600;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}
+#foxtrust-hold:disabled{opacity:.5;cursor:default}#foxtrust-hold:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+#foxtrust-hold-progress{display:block;width:100%;height:8px}`;
 
 const STYLE_HASH = new Bun.CryptoHasher("sha256").update(STYLE).digest("base64");
 
@@ -60,6 +63,12 @@ ${opts.body}
 `;
 }
 
+/** The press-and-hold control (spec 009 research R4): a real button, its help text, and a progress bar. */
+const HOLD_MARKUP = `<button type="button" id="foxtrust-hold" aria-describedby="foxtrust-hold-help" disabled>Press and hold</button>
+<progress id="foxtrust-hold-progress" max="1000" value="0" aria-label="Hold progress"></progress>
+<p id="foxtrust-hold-help" class="muted">Hold the button, or Space or Enter, until the bar is full, then let go.</p>
+`;
+
 /** The challenge page: a proof-of-work form, plus the no-JavaScript path when it is on. */
 export function renderChallengePage(opts: {
   path: string;
@@ -68,6 +77,8 @@ export function renderChallengePage(opts: {
   bits: number;
   returnTo: string;
   wait: { challenge: string; seconds: number } | null;
+  /** Show the press-and-hold step (spec 009). */
+  hold?: boolean;
 }): string {
   const noscript = opts.wait
     ? `<p>Your browser does not run JavaScript. You will be taken back in ${opts.wait.seconds} seconds.</p>`
@@ -79,11 +90,12 @@ export function renderChallengePage(opts: {
     title: "Checking your browser",
     head: `${refresh}<script type="module" src="${escape(opts.path)}/page.js"></script>\n`,
     body: `<h1>Checking your browser</h1>
-<p id="foxtrust-status" role="status" aria-live="polite">This takes a few seconds and needs nothing from you.</p>
-<form id="foxtrust-challenge" method="post" action="${escape(opts.path)}" data-n="${escape(opts.nonce)}" data-d="${opts.bits}" data-path="${escape(opts.path)}">
+${opts.hold ? HOLD_MARKUP : ""}<p id="foxtrust-status" role="status" aria-live="polite">${opts.hold ? "One step: press and hold the button above." : "This takes a few seconds and needs nothing from you."}</p>
+<form id="foxtrust-challenge" method="post" action="${escape(opts.path)}" data-n="${escape(opts.nonce)}" data-d="${opts.bits}" data-path="${escape(opts.path)}"${opts.hold ? " data-hold" : ""}>
 <input type="hidden" name="c" value="${escape(opts.challenge)}">
 <input type="hidden" name="s" value="">
 <input type="hidden" name="p" value="">
+<input type="hidden" name="b" value="">
 <input type="hidden" name="r" value="${escape(opts.returnTo)}">
 </form>
 <noscript>${noscript}</noscript>`,
@@ -124,15 +136,16 @@ ${dispute}`,
 }
 
 /** `foxtrust bot record` (spec 007 research R8): the probe only, posted to /record; never served by verify. */
-export function renderRecorderPage(opts: { label: string; powNonce?: string; powBits?: number }): string {
+export function renderRecorderPage(opts: { label: string; powNonce?: string; powBits?: number; hold?: boolean }): string {
   const pow = opts.powNonce && opts.powBits ? ` data-pow-n="${escape(opts.powNonce)}" data-pow-d="${opts.powBits}"` : "";
   return document({
     title: "Recording a sample",
     head: `<script type="module" src="/page.js"></script>\n`,
     body: `<h1>Recording a sample</h1>
-<p id="foxtrust-status" role="status" aria-live="polite">Recording "${escape(opts.label)}"… this takes a moment.</p>
-<form id="foxtrust-challenge" method="post" action="/record" data-n="*" data-record="1"${pow}>
+${opts.hold ? HOLD_MARKUP : ""}<p id="foxtrust-status" role="status" aria-live="polite">Recording "${escape(opts.label)}"… this takes a moment.</p>
+<form id="foxtrust-challenge" method="post" action="/record" data-n="*" data-record="1"${pow}${opts.hold ? " data-hold" : ""}>
 <input type="hidden" name="p" value="">
+<input type="hidden" name="b" value="">
 <input type="hidden" name="tp" value="">
 <input type="hidden" name="tw" value="">
 </form>`,

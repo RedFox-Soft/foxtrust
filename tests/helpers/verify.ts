@@ -139,7 +139,7 @@ export async function startTestVerify(opts: {
     ...(opts.replayCap ? { replay: createReplayCache(opts.replayCap) } : {}),
     bot: builtIn && opts.bot
       ? await loadBotDeps({
-          ...DEFAULT_BOT_POLICY, mode: "enforce", ...opts.bot,
+          ...DEFAULT_BOT_POLICY, mode: "enforce", hold: false, ...opts.bot,
           weightsFile: opts.bot.weightsFile ?? null, ja4FamiliesFile: opts.bot.ja4FamiliesFile ?? null,
         })
       : null,
@@ -285,6 +285,9 @@ export type BotSample = {
   addressKind: "residential" | "tor" | "cloud";
   headers: Record<string, string>;
   probe: ProbeResult;
+  /** Hold-step input (spec 009), with n = "*". */
+  behavior?: Record<string, unknown>;
+  inputKind?: string;
 };
 
 export const BOT_SAMPLES = join(import.meta.dir, "..", "fixtures", "bot-samples");
@@ -319,7 +322,11 @@ export type SampleAnswer = AnswerResponse & { stepUpChallenge: string | null };
 export async function answerWithSample(
   v: TestVerify,
   sample: BotSample,
-  opts: { client?: string; headers?: Record<string, string>; probe?: Partial<ProbeResult> | null | string; challenge?: string } = {},
+  opts: {
+    client?: string; headers?: Record<string, string>; probe?: Partial<ProbeResult> | null | string; challenge?: string;
+    /** Hold input: an object merged over the sample's, a raw string, or null to omit it. */
+    behavior?: Record<string, unknown> | null | string;
+  } = {},
 ): Promise<SampleAnswer> {
   const client = opts.client ?? sampleAddress(sample);
   const headers = sampleHeaders(sample, opts.headers);
@@ -327,7 +334,10 @@ export async function answerWithSample(
   if (!challenge) throw new Error("no challenge on the page");
   const nonce = Buffer.from(readChallenge(challenge)!.nonce).toString("base64url");
   const p = opts.probe === null ? undefined : typeof opts.probe === "string" ? opts.probe : JSON.stringify({ ...sample.probe, n: nonce, ...opts.probe });
-  const body = new URLSearchParams({ c: challenge, s: solveChallenge(challenge), r: "/login", ...(p === undefined ? {} : { p }) }).toString();
+  const b = opts.behavior === null ? undefined
+    : typeof opts.behavior === "string" ? opts.behavior
+    : sample.behavior || opts.behavior ? JSON.stringify({ ...sample.behavior, ...opts.behavior, n: nonce }) : undefined;
+  const body = new URLSearchParams({ c: challenge, s: solveChallenge(challenge), r: "/login", ...(p === undefined ? {} : { p }), ...(b === undefined ? {} : { b }) }).toString();
   const answer = await postAnswer(v, { client, c: challenge, s: "", body, headers });
   return { ...answer, stepUpChallenge: /name="c" value="([^"]+)"/.exec(answer.html)?.[1] ?? null };
 }
