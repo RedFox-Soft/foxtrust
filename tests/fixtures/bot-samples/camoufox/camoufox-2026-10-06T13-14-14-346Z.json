@@ -1,0 +1,40 @@
+{
+  "label": "camoufox",
+  "kind": "automation",
+  "tool": "camoufox",
+  "version": "156.0",
+  "recordedAt": "2026-10-06T13:14:14.346Z",
+  "addressKind": "residential",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0",
+    "accept-language": "en-US,en;q=0.9",
+    "proto": "http"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0",
+    "uaData": null,
+    "engine": "gecko",
+    "gl": "hw",
+    "tz": "Europe/Minsk",
+    "langs": [
+      "en-US",
+      "en"
+    ],
+    "screen": {
+      "sw": 2560,
+      "sh": 1440,
+      "iw": 1592,
+      "ih": 1300,
+      "ow": 1592,
+      "oh": 1385,
+      "dpr": 1
+    },
+    "perm": false,
+    "err": []
+  }
+}

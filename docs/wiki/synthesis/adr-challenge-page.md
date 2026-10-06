@@ -12,7 +12,7 @@ decided: 2026-10-06
 
 # ADR: built-in challenge page with proof-of-work
 
-Decision for backlog item B-12a (spec 006). Before it, `/verify` could only send `challenge` decisions to an external page or fall back to `allow`. The wider research, and what later items add, is in [[challenge-bot-detection]].
+Decision for backlog item B-12a (spec 006). The bot verdict that now judges correct answers: [[adr-bot-verdict]]. Before it, `/verify` could only send `challenge` decisions to an external page or fall back to `allow`. The wider research, and what later items add, is in [[challenge-bot-detection]].
 
 ## Decision
 
@@ -44,7 +44,9 @@ From `tests/perf/challenge.bench.ts` in Bun on a desktop PC (2026-10-06):
 - A Chromium walk-through on a local `verify` passed end to end: page, scripts, worker, answer, `303`, cookie. It made no request to another origin.
 - The same walk-through through Caddy 2, nginx 1.27 and Traefik 3 in containers, with the README routes and `verify serve`, took 0.3–0.5 s from `/login` back to `/login` with the pass. It also surfaced the redirect-target issue above.
 
-**Still to measure** (spec 006 SC-001): a mid-range Android phone in Chrome, and Tor Browser at "Standard" and "Safer". "Safer" turns off the JavaScript JIT, which may make the solver 10–50× slower. If the 95th percentile at `medium` exceeds 3 s there, the defaults go down.
+**Phone** (measured by `bot record` on the device, 2026-10-06): one 16-bit (`medium`) solve took 208 ms in Chrome 154 on Android 10, well under the 3 s of spec 006 SC-001. A single solve shows the order of magnitude only: solve times are geometric, and the 95th percentile is about 3× the mean.
+
+**Still to measure**: Tor Browser at "Safer", which turns off the JavaScript JIT and may make the solver 10–50× slower. If the 95th percentile at `medium` exceeds 3 s there, the defaults go down.
 
 ## Limits
 

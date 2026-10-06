@@ -1,0 +1,10 @@
+{
+  "version": "2026-01-01.1",
+  "priors": { "none": -1.0, "low": -1.0, "medium": -1.0, "high": -1.0 },
+  "weights": { "env.webdriver": 2.0, "env.headless_ua": 2.0, "req.headless_ua": 2.0 },
+  "descriptions": {
+    "env.webdriver": "test weight",
+    "env.headless_ua": "test weight",
+    "req.headless_ua": "test weight"
+  }
+}

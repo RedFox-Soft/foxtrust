@@ -4,7 +4,7 @@ import { formatIp } from "../ip/parse";
 import type { Action } from "../policy";
 import type { ChallengeAssets } from "./challenge/assets";
 import { createReplayCache, type ReplayCache } from "./challenge/replay";
-import { challengeRoutePaths, challengeRoutes, PASS_COOKIE } from "./challenge/routes";
+import { challengeRoutePaths, challengeRoutes, PASS_COOKIE, type BotDeps } from "./challenge/routes";
 import { clientAddress } from "./client-ip";
 import { DEFAULT_CHALLENGE, type ChallengeSettings, type VerifyConfig } from "./config";
 import type { Loader } from "./loader";
@@ -28,6 +28,8 @@ export type VerifyDeps = {
   };
   /** Browser scripts of the built-in challenge page; required when the page is built in. */
   challengeAssets?: ChallengeAssets;
+  /** Bot verdict of the built-in page (spec 007): its policy, weights, zones and JA4 families. */
+  bot?: BotDeps | null;
   /** Accepted challenge nonces (default: a fresh cache with the standard cap). */
   replay?: ReplayCache;
   log?: (line: string) => void;
@@ -120,6 +122,13 @@ export function createVerifyApp(deps: VerifyDeps) {
             noJs: challenge.noJs,
             waitSeconds: challenge.waitSeconds,
           },
+          bot: deps.bot
+            ? {
+                mode: deps.bot.policy.mode, weightsVersion: deps.bot.weights.version, stepUp: deps.bot.policy.stepUp,
+                block: deps.bot.policy.block, afterStepUp: deps.bot.policy.afterStepUp, stepUpBits: deps.bot.policy.stepUpBits,
+                ja4Families: deps.bot.families.size,
+              }
+            : { mode: "off" },
         },
         { headers: { "Cache-Control": "no-store" } },
       ))
@@ -191,6 +200,7 @@ export function createVerifyApp(deps: VerifyDeps) {
       loader: deps.loader,
       replay: deps.replay ?? createReplayCache(),
       assets: deps.challengeAssets!,
+      bot: deps.bot ?? null,
       clock,
       log,
     }),

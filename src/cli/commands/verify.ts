@@ -1,6 +1,7 @@
 import { loadConfig } from "../../scoring/config";
 import { vocabularyFromConfig } from "../../policy";
 import { importTrustedKeys } from "../../snapshot/sign";
+import { loadBotDeps } from "../../verify/bot/load";
 import { buildChallengeAssets } from "../../verify/challenge/assets";
 import { readVerifyConfig, VerifyConfigError } from "../../verify/config";
 import { createLoader } from "../../verify/loader";
@@ -30,7 +31,15 @@ export async function verifyServe(args: string[], _ctx: Context): Promise<number
   const stopUpdates = loader.start(config.updateEvery);
   const { challenge } = config;
   const challengeAssets = challenge.page === "built-in" ? await buildChallengeAssets() : undefined;
-  const server = startVerifyServer({ loader, policy, config, port: config.port, log: warn, ...(challengeAssets ? { challengeAssets } : {}) });
+  let bot = null;
+  if (challenge.page === "built-in") {
+    try {
+      bot = await loadBotDeps(config.bot);
+    } catch (error) {
+      throw new UsageError((error as Error).message);
+    }
+  }
+  const server = startVerifyServer({ loader, policy, config, port: config.port, log: warn, bot, ...(challengeAssets ? { challengeAssets } : {}) });
   printLine(
     `/verify on port ${server.port}: publication ${config.publicationUrl}, ${trustedKeys.length} trusted key(s) ` +
       `(${trustedKeys.map((k) => k.keyId).join(", ")}), fail mode ${config.failMode}, updates "${config.updateEvery}".`,
@@ -41,6 +50,12 @@ export async function verifyServe(args: string[], _ctx: Context): Promise<number
     printLine(
       `Challenge page built in at ${challenge.path}: difficulty ${bits} bits, challenge ${challenge.challengeTtlSeconds} s, ` +
         `pass ${challenge.passTtlMinutes} min, no-JavaScript path ${challenge.noJs ? `on (${challenge.waitSeconds} s)` : "off"}.`,
+    );
+    printLine(
+      bot
+        ? `Bot verdict: ${bot.policy.mode}, weights ${bot.weights.version}, step-up ${bot.policy.stepUp}, block ${bot.policy.block}, ` +
+            `after step-up ${bot.policy.afterStepUp}, ${bot.families.size} JA4 families.`
+        : "Bot verdict: off.",
     );
   } else printLine(`Challenge page: external at ${config.challengeUrl}.`);
 

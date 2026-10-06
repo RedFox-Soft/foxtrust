@@ -56,3 +56,7 @@ Operations:
 ## [2026-10-06] query | Constitution v5.1.0: Principle IV covers client-side signals (B-12b) → challenge-bot-detection updated
 
 ## [2026-10-06] query | Research B-12f: tls-fingerprints-at-the-proxy (new), private-access-tokens (new); challenge-bot-detection updated
+
+## [2026-10-06] query | Decision: bot verdict (spec 007, B-12c) → adr-bot-verdict (new); challenge-bot-detection, adr-challenge-page link it
+
+## [2026-10-06] query | JA4 recordings through Caddy caddy-ja3ja4: browser families not separable by JA4_ab, tool rows only → adr-bot-verdict, tls-fingerprints-at-the-proxy updated

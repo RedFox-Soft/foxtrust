@@ -1,0 +1,5 @@
+family,ja4_ab,source,added
+tool:curl-schannel,t13d2012h1_2b729b4bf6f3,own recording: curl 8.14.1 (Schannel) on Windows 11 through Caddy caddy-ja3ja4,2026-10-06
+tool:python-urllib,t13d181100_85036bcba153,own recording: Python 3.12.10 urllib (OpenSSL) through Caddy caddy-ja3ja4,2026-10-06
+tool:node-fetch,t13d5212h1_b262b3658495,own recording: Node 24.18.0 fetch through Caddy caddy-ja3ja4,2026-10-06
+tool:bun-fetch,t13d1713h1_5b57614c22b0,own recording: Bun 1.4.2 fetch through Caddy caddy-ja3ja4,2026-10-06

@@ -43,6 +43,13 @@ Caddy modules without a licence (matt-/caddy-ja4, bangnokia/caddy-ja4) are not u
 - Setup guides cover the options that work without licence risk: Envoy (native) and phuslu's nginx module (BSD, also JA3 and HTTP/2). Mention, with caveats: FoxIO's nginx module (FoxIO licence on the repo), Caddy caddy-ja3ja4, the HAProxy Lua plugin. State plainly that Traefik cannot provide it.
 - The home server (Tunnel → Traefik) has no visitor fingerprint without Cloudflare Enterprise + Bot Management. Dogfooding B-12c there tests every layer except transport.
 
+## Own recordings (2026-10-06)
+
+Caddy 2 with caddy-ja3ja4, built with `xcaddy` in Docker, worked with no other configuration (`ja3_ja4` directive, `{tls.ja4}` placeholder, `header_up X-JA4 {tls.ja4}`). Values are in [[adr-bot-verdict]].
+
+- **Chrome 154, Edge 154 and Firefox 157** share the cipher hash `8daaf6152771`, and their extension counts differ by one or two between connections. The first two JA4 parts do not separate browser families reliably.
+- **Tools** (curl/Schannel, Python urllib, Node and Bun fetch) are distinct, and they offer HTTP/1.1 or no ALPN where browsers offer h2.
+
 ## Open questions
 
 - Does the JA4 code inside ja4-nginx-module fall under BSD-3 or FoxIO 1.1? The repo LICENSE is FoxIO 1.1, but its Software line does not list JA4. Ask FoxIO.

@@ -1,0 +1,13 @@
+{
+  "name": "foxtrust-bot-samples",
+  "private": true,
+  "type": "module",
+  "description": "Development-only recorders for the bot-verdict labelled set; not part of FoxTrust",
+  "dependencies": {
+    "patchright": "^1.63.0",
+    "playwright": "^1.63.0",
+    "puppeteer": "^25.12.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}

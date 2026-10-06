@@ -83,6 +83,7 @@ export function renderChallengePage(opts: {
 <form id="foxtrust-challenge" method="post" action="${escape(opts.path)}" data-n="${escape(opts.nonce)}" data-d="${opts.bits}" data-path="${escape(opts.path)}">
 <input type="hidden" name="c" value="${escape(opts.challenge)}">
 <input type="hidden" name="s" value="">
+<input type="hidden" name="p" value="">
 <input type="hidden" name="r" value="${escape(opts.returnTo)}">
 </form>
 <noscript>${noscript}</noscript>`,
@@ -107,4 +108,37 @@ export function renderMalformed(): string {
     body: `<h1>Request not understood</h1>
 <p>This check could not be completed. <a href="/">Go to the start page</a> and try again.</p>`,
   });
+}
+
+/** Refusal by the bot verdict (spec 007 FR-015): no reasons, only the way to dispute. */
+export function renderBlocked(opts: { disputeUrl: string | null }): string {
+  const dispute = opts.disputeUrl && /^https:\/\//i.test(opts.disputeUrl)
+    ? `<p>If you think this is a mistake, <a href="${escape(opts.disputeUrl)}">tell us here</a>.</p>`
+    : "<p>If you think this is a mistake, contact the site's operator.</p>";
+  return document({
+    title: "Access was refused",
+    body: `<h1>Access was refused</h1>
+<p>This connection looked automated, so it was not let through.</p>
+${dispute}`,
+  });
+}
+
+/** `foxtrust bot record` (spec 007 research R8): the probe only, posted to /record; never served by verify. */
+export function renderRecorderPage(opts: { label: string; powNonce?: string; powBits?: number }): string {
+  const pow = opts.powNonce && opts.powBits ? ` data-pow-n="${escape(opts.powNonce)}" data-pow-d="${opts.powBits}"` : "";
+  return document({
+    title: "Recording a sample",
+    head: `<script type="module" src="/page.js"></script>\n`,
+    body: `<h1>Recording a sample</h1>
+<p id="foxtrust-status" role="status" aria-live="polite">Recording "${escape(opts.label)}"… this takes a moment.</p>
+<form id="foxtrust-challenge" method="post" action="/record" data-n="*" data-record="1"${pow}>
+<input type="hidden" name="p" value="">
+<input type="hidden" name="tp" value="">
+<input type="hidden" name="tw" value="">
+</form>`,
+  });
+}
+
+export function renderRecorded(opts: { file: string }): string {
+  return document({ title: "Recorded", body: `<h1>Recorded</h1>\n<p>Saved as ${escape(opts.file)}.</p>` });
 }

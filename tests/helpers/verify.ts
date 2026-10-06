@@ -6,6 +6,10 @@ import { vocabularyFromConfig, type Action } from "../../src/policy";
 import { loadConfig } from "../../src/scoring/config";
 import { SNAPSHOT_DB_TYPE } from "../../src/snapshot/build";
 import { importTrustedKeys, loadSigningKey, sign } from "../../src/snapshot/sign";
+import { readdirSync } from "node:fs";
+import { loadBotDeps } from "../../src/verify/bot/load";
+import { DEFAULT_BOT_POLICY, type BotPolicy } from "../../src/verify/bot/policy";
+import type { ProbeResult } from "../../src/verify/bot/probe-types";
 import { buildChallengeAssets } from "../../src/verify/challenge/assets";
 import { readChallenge } from "../../src/verify/challenge/challenge";
 import { leadingZeroBits, sha256Block, solve } from "../../src/verify/challenge/pow";
@@ -32,11 +36,13 @@ export const ADDR = {
   low: { 4: "192.0.2.20", 6: "2001:db8:3::20" },
   cloud: { 4: "198.18.0.5", 6: "2001:db8:4::5" },
   unlisted: { 4: "100.64.0.1", 6: "2001:db8:ffff::1" },
+  /** A clean residential range with a country (spec 007: time-zone checks). */
+  residential: { 4: "198.19.0.10", 6: "2001:db8:5::10" },
 } as const;
 
 const SEEN = Math.floor(Date.now() / 1000) - 3600;
-const record = (risk: number, level: string, categories: string[], codes: string[]): MmdbValue => ({
-  risk, level, categories, reasons: codes.map((code) => ({ code, last_seen: SEEN, contribution: risk / codes.length })), network: {},
+const record = (risk: number, level: string, categories: string[], codes: string[], network: Record<string, MmdbValue> = {}): MmdbValue => ({
+  risk, level, categories, reasons: codes.map((code) => ({ code, last_seen: SEEN, contribution: risk / codes.length })), network,
 });
 
 /** Publishes a small signed customer snapshot (Tor, high-risk, low-risk and cloud ranges) to `pub`. */
@@ -49,11 +55,13 @@ export async function publishRecordedSnapshot(pub: TestPublication, version = "f
   const high = record(82, "high", ["hosting"], ["hosting", "botnet_c2"]);
   const low = record(12, "low", ["hosting"], ["hosting"]);
   const cloud = record(9, "low", ["cloud"], ["cloud"]);
+  const residential = record(0, "low", [], [], { country: "DE" });
   for (const [cidr, value] of [
     ["198.51.100.0/24", tor], ["2001:db8:1::/48", tor],
     ["203.0.113.0/24", high], ["2001:db8:2::/48", high],
     ["192.0.2.0/24", low], ["2001:db8:3::/48", low],
     ["198.18.0.0/24", cloud], ["2001:db8:4::/48", cloud],
+    ["198.19.0.0/24", residential], ["2001:db8:5::/48", residential],
   ] as const) writer.insert(parseCidr(cidr)!, value);
   const bytes = writer.build();
   const key = await loadSigningKey(pub.signingKeyPath);
@@ -87,6 +95,8 @@ export async function startTestVerify(opts: {
   challenge?: Partial<Omit<ChallengeSettings, "page" | "path">>;
   replayCap?: number;
   clock?: () => Date;
+  /** Bot verdict (spec 007); off unless a test sets it, so spec 006 tests see no verdict. */
+  bot?: Partial<BotPolicy> & { weightsFile?: string; ja4FamiliesFile?: string };
 }): Promise<TestVerify> {
   const logs: string[] = [];
   const policy = createPolicyHolder(opts.policyFile ?? EXAMPLE_POLICY, vocabularyFromConfig(await loadConfig(STAGE2_CONFIG)), (l) => logs.push(l));
@@ -111,6 +121,12 @@ export async function startTestVerify(opts: {
     loader, policy, port: 0, hostname: "127.0.0.1", log: (l) => logs.push(l),
     ...(builtIn ? { challengeAssets: await buildChallengeAssets() } : {}),
     ...(opts.replayCap ? { replay: createReplayCache(opts.replayCap) } : {}),
+    bot: builtIn && opts.bot
+      ? await loadBotDeps({
+          ...DEFAULT_BOT_POLICY, mode: "enforce", ...opts.bot,
+          weightsFile: opts.bot.weightsFile ?? null, ja4FamiliesFile: opts.bot.ja4FamiliesFile ?? null,
+        })
+      : null,
     ...(opts.clock ? { clock: opts.clock } : {}),
     config: {
       trustedProxies: opts.trustedProxies ?? LOOPBACK,
@@ -224,4 +240,61 @@ export async function passChallenge(v: TestVerify, opts: { client: string; retur
   const page = await getChallengePage(v, opts);
   if (!page.challenge) throw new Error(`no challenge on the page (status ${page.status})`);
   return postAnswer(v, { client: opts.client, c: page.challenge, s: solveChallenge(page.challenge), r: page.returnTo ?? "/" });
+}
+
+/** A recorded probe sample of the bot-verdict labelled set (spec 007 data-model "Labelled sample"). */
+export type BotSample = {
+  label: string;
+  kind: "human" | "automation";
+  tool: string;
+  version: string;
+  recordedAt: string;
+  addressKind: "residential" | "tor" | "cloud";
+  headers: Record<string, string>;
+  probe: ProbeResult;
+};
+
+export const BOT_SAMPLES = join(import.meta.dir, "..", "fixtures", "bot-samples");
+
+/** The `index`-th recorded sample of `label` (sorted by file name). */
+export async function loadSample(label: string, index = 0): Promise<BotSample> {
+  const files = readdirSync(join(BOT_SAMPLES, label)).filter((f) => f.endsWith(".json")).sort();
+  const file = files[index];
+  if (!file) throw new Error(`no sample ${index} for ${label}`);
+  return (await Bun.file(join(BOT_SAMPLES, label, file)).json()) as BotSample;
+}
+
+/** The fixture address a sample's address kind stands for. */
+export function sampleAddress(sample: Pick<BotSample, "addressKind">): string {
+  return sample.addressKind === "tor" ? ADDR.tor[4] : sample.addressKind === "cloud" ? ADDR.cloud[4] : ADDR.residential[4];
+}
+
+/** Request headers a browser would send with this sample, as seen behind a trusted proxy. */
+export function sampleHeaders(sample: BotSample, extra: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = {};
+  for (const [name, value] of Object.entries(sample.headers)) if (name !== "proto") headers[name] = value;
+  headers["x-forwarded-proto"] = sample.headers.proto ?? "https";
+  return { ...headers, ...extra };
+}
+
+export type SampleAnswer = AnswerResponse & { stepUpChallenge: string | null };
+
+/**
+ * The browser flow with a recorded sample: fetch the page as that browser, solve, and post the
+ * answer with the sample's probe bound to the challenge (or `probe` to override, null for none).
+ */
+export async function answerWithSample(
+  v: TestVerify,
+  sample: BotSample,
+  opts: { client?: string; headers?: Record<string, string>; probe?: Partial<ProbeResult> | null | string; challenge?: string } = {},
+): Promise<SampleAnswer> {
+  const client = opts.client ?? sampleAddress(sample);
+  const headers = sampleHeaders(sample, opts.headers);
+  const challenge = opts.challenge ?? (await getChallengePage(v, { client, returnTo: "/login", headers })).challenge;
+  if (!challenge) throw new Error("no challenge on the page");
+  const nonce = Buffer.from(readChallenge(challenge)!.nonce).toString("base64url");
+  const p = opts.probe === null ? undefined : typeof opts.probe === "string" ? opts.probe : JSON.stringify({ ...sample.probe, n: nonce, ...opts.probe });
+  const body = new URLSearchParams({ c: challenge, s: solveChallenge(challenge), r: "/login", ...(p === undefined ? {} : { p }) }).toString();
+  const answer = await postAnswer(v, { client, c: challenge, s: "", body, headers });
+  return { ...answer, stepUpChallenge: /name="c" value="([^"]+)"/.exec(answer.html)?.[1] ?? null };
 }

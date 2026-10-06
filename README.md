@@ -154,6 +154,19 @@ The following settings are optional:
 
 Design and limits: [ADR challenge page](docs/wiki/synthesis/adr-challenge-page.md).
 
+**Bot verdict.** Before solving, the challenge page checks the browser. It looks for automation markers (the webdriver flag, a headless browser name, driver globals) and for consistency between the user agent, client hints, the rendering engine, graphics, the time zone and the screen. `/verify` cross-checks these with the request's own headers and, when your proxy sends one, a JA4 TLS fingerprint. It turns the evidence into a bot score with reason codes. The visitor never sees the score or the codes.
+
+- **Modes.** `FOXTRUST_BOT_MODE=observe` is the default: everyone who solves the proof-of-work passes, and the log shows the score and `would=<action>`. Watch your traffic first, then set `enforce`.
+- **Actions in `enforce`:**
+  - a score from `FOXTRUST_BOT_STEPUP` (0.5) gets one harder proof-of-work;
+  - a score from `FOXTRUST_BOT_BLOCK` (0.9) gets a `403` page with your dispute link;
+  - after the step-up, `FOXTRUST_BOT_AFTER_STEPUP` (`pass` by default, or `block`) decides.
+- **JA4.** Optional. `/verify` reads `X-JA4` only from `FOXTRUST_TRUSTED_PROXIES`, and only JA4 itself, never other JA4+ methods. nginx (with a module), Caddy (`xcaddy` module) and Envoy can supply it; Traefik cannot ([details](docs/wiki/synthesis/tls-fingerprints-at-the-proxy.md)).
+- **Weights.** They live in `config/bot/<version>.json`, or `FOXTRUST_BOT_WEIGHTS`. `foxtrust bot eval` measures them on the labelled set in `tests/fixtures/bot-samples/`. `foxtrust bot record --label <name>` records a sample from your own browser on a development port. It is not part of `verify serve`, so visitors are never recorded.
+- **Logging.** Only the outcome, address, score and reason codes are logged; probe values are dropped after the decision.
+
+Design: [ADR bot verdict](docs/wiki/synthesis/adr-bot-verdict.md).
+
 ## Alerts
 
 The scheduler can tell the operator in Telegram when something needs attention, so problems don't sit unnoticed in logs:

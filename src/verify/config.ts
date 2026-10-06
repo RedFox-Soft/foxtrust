@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { parseCidr, type Cidr } from "../ip/cidr";
 import type { Level } from "../model/types";
 import type { Action } from "../policy";
+import { DEFAULT_BOT_POLICY, type BotPolicy } from "./bot/policy";
 
 /**
  * `/verify` configuration from the environment (spec 002 contracts/verify-http.md; the built-in
@@ -44,6 +45,8 @@ export type VerifyConfig = {
   challengeFallback: Action;
   challengeSecret: string | null;
   challenge: ChallengeSettings;
+  /** Bot verdict of the built-in page (spec 007); weights and JA4 list files are loaded at start. */
+  bot: BotPolicy & { weightsFile: string | null; ja4FamiliesFile: string | null };
   maxAgeHours: number;
   updateEvery: string;
   port: number;
@@ -159,6 +162,8 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
   const waitSeconds = int("FOXTRUST_CHALLENGE_NOJS_WAIT_SECONDS", DEFAULT_CHALLENGE.waitSeconds, 3, 120);
   if (waitSeconds >= challengeTtlSeconds) problems.push("FOXTRUST_CHALLENGE_NOJS_WAIT_SECONDS must be less than FOXTRUST_CHALLENGE_TTL_SECONDS");
 
+  const bot = readBotSettings(text, problems);
+
   const maxAgeHours = Number(text("FOXTRUST_MAX_AGE_HOURS") ?? "26");
   if (!Number.isFinite(maxAgeHours) || maxAgeHours <= 0) problems.push("FOXTRUST_MAX_AGE_HOURS must be a positive number");
   const updateEvery = text("FOXTRUST_UPDATE_EVERY") ?? "*/5 * * * *";
@@ -195,8 +200,38 @@ export function readVerifyConfig(env: Record<string, string | undefined> = Bun.e
       noJs: noJsText === "on",
       waitSeconds,
     },
+    bot,
     maxAgeHours,
     updateEvery,
     port,
+  };
+}
+
+/** FOXTRUST_BOT_* (spec 007 contracts/bot-verdict.md); the thresholds must be ordered. */
+export function readBotSettings(text: (name: string) => string | null, problems: string[]): VerifyConfig["bot"] {
+  const mode = text("FOXTRUST_BOT_MODE") ?? DEFAULT_BOT_POLICY.mode;
+  if (mode !== "observe" && mode !== "enforce" && mode !== "off") problems.push("FOXTRUST_BOT_MODE must be observe, enforce or off");
+  const number = (name: string, fallback: number) => {
+    const raw = text(name);
+    const value = raw === null ? fallback : Number(raw);
+    if (!Number.isFinite(value) || value <= 0 || value > 1) problems.push(`${name} must be a number above 0 and at most 1`);
+    return value;
+  };
+  const stepUp = number("FOXTRUST_BOT_STEPUP", DEFAULT_BOT_POLICY.stepUp);
+  const block = number("FOXTRUST_BOT_BLOCK", DEFAULT_BOT_POLICY.block);
+  if (stepUp >= block) problems.push("FOXTRUST_BOT_STEPUP must be below FOXTRUST_BOT_BLOCK");
+  const afterStepUp = text("FOXTRUST_BOT_AFTER_STEPUP") ?? DEFAULT_BOT_POLICY.afterStepUp;
+  if (afterStepUp !== "pass" && afterStepUp !== "block") problems.push("FOXTRUST_BOT_AFTER_STEPUP must be pass or block");
+  const bitsRaw = text("FOXTRUST_BOT_STEPUP_BITS");
+  const stepUpBits = bitsRaw === null ? DEFAULT_BOT_POLICY.stepUpBits : Number(bitsRaw);
+  if (!Number.isInteger(stepUpBits) || stepUpBits < 1 || stepUpBits > 8) problems.push("FOXTRUST_BOT_STEPUP_BITS must be a whole number from 1 to 8");
+  return {
+    mode: mode as BotPolicy["mode"],
+    stepUp,
+    block,
+    afterStepUp: afterStepUp as BotPolicy["afterStepUp"],
+    stepUpBits,
+    weightsFile: text("FOXTRUST_BOT_WEIGHTS"),
+    ja4FamiliesFile: text("FOXTRUST_BOT_JA4_FAMILIES"),
   };
 }

@@ -30,7 +30,7 @@ export type LoaderOptions = {
 };
 
 type ManifestFile = { version: string; path: string; sha256: string; size: number; builtAt: string; base?: string };
-type Manifest = { format: 1; full: ManifestFile; delta: ManifestFile | null };
+type Manifest = { format: 1; full: ManifestFile; delta: ManifestFile | null; disputeUrl: string | null };
 
 type Loaded = { version: string; builtAt: Date; db: Mmdb };
 
@@ -59,6 +59,8 @@ export type Loader = {
   current(): LoadedState | null;
   source(): VerdictSource;
   status(): LoaderStatus;
+  /** The dispute page named by the last verified manifest (the challenge page's block page links it). */
+  disputeUrl(): string | null;
 };
 
 class LoadError extends Error {}
@@ -90,6 +92,7 @@ function parseManifest(bytes: Uint8Array): Manifest {
     format: 1,
     full: parseFile(value.full, "full"),
     delta: value.delta === null || value.delta === undefined ? null : parseFile(value.delta, "delta"),
+    disputeUrl: typeof value.disputeUrl === "string" && value.disputeUrl.length <= 512 ? value.disputeUrl : null,
   };
 }
 
@@ -132,6 +135,7 @@ export function createLoader(opts: LoaderOptions): Loader {
   const maxBytes = opts.maxBytes ?? MAX_SNAPSHOT_BYTES;
 
   let state: LoadedState | null = null;
+  let disputeUrl: string | null = null;
   let manifestEtag: string | null = null;
   let lastCheckAt: Date | null = null;
   let lastSuccessAt: Date | null = null;
@@ -184,6 +188,7 @@ export function createLoader(opts: LoaderOptions): Loader {
       const sig = await get("v1/manifest.json.sig", SIGNATURE_BYTES);
       if (!(await verify(response.body!, sig.body!, opts.trustedKeys)).ok) throw new LoadError("manifest signature");
       const manifest = parseManifest(response.body!);
+      disputeUrl = manifest.disputeUrl;
 
       // The full snapshot first; a delta is applied only on top of its own base (US2-5).
       const full = state?.full.version === manifest.full.version ? state.full : await loadFile(manifest.full);
@@ -240,6 +245,7 @@ export function createLoader(opts: LoaderOptions): Loader {
         lookup: (ip) => (s ? s.lookup(ip) : null),
       };
     },
+    disputeUrl: () => disputeUrl,
     status() {
       const s = state;
       const builtAt = s ? (s.delta?.builtAt ?? s.full.builtAt) : null;

@@ -1,0 +1,41 @@
+{
+  "label": "tor-browser-safer",
+  "kind": "human",
+  "tool": "tor-or-firefox",
+  "version": "140.0",
+  "recordedAt": "2026-10-06T13:38:08.852Z",
+  "addressKind": "tor",
+  "headers": {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
+    "accept-language": "en-US,en;q=0.5",
+    "x-ja4": "t13d1715h2_5b57614c22b0_a54fffd0eb61",
+    "proto": "https"
+  },
+  "probe": {
+    "n": "*",
+    "webdriver": false,
+    "cdp": false,
+    "globals": 0,
+    "uaHeadless": false,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
+    "uaData": null,
+    "engine": "gecko",
+    "gl": "unknown",
+    "tz": "Atlantic/Reykjavik",
+    "langs": [
+      "en-US",
+      "en"
+    ],
+    "screen": {
+      "sw": 1400,
+      "sh": 600,
+      "iw": 1400,
+      "ih": 600,
+      "ow": 1400,
+      "oh": 600,
+      "dpr": 2
+    },
+    "perm": false,
+    "err": []
+  }
+}
