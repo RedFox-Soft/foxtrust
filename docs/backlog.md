@@ -46,10 +46,9 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 |----|------|------|------|-----------|
 | B-10 | **Spec: public API** `GET /v1/ip/{ip}` (customer verdict), API keys, free-tier rate limits, usage log within Principle IV | spec | L | A free key gets verdicts; over-limit requests get `429` |
 | B-11 | **Spec: TS SDK** for Bun and Node: local MMDB lookup, signed auto-update, API fallback; reuses the `/verify` loader and decision engine | spec | L | `npm i` → `lookup(ip)` works offline and updates hourly |
-| B-12c | **Spec: bot verdict.** Environment probe (automation markers, cross-layer consistency), log-odds score with the address risk as prior, versioned weights config, `env.*` reason codes in the operator log only, policy pass / step-up / block; labelled set of recorded payloads from real browsers and Playwright, Puppeteer, puppeteer-stealth, patchright, Camoufox | spec | L | On the labelled set, stock headless Playwright and Puppeteer never get a token on the first attempt; real browsers pass without step-up at the rate the spec sets |
+| B-12c | **Spec: bot verdict.** Environment probe (automation markers, cross-layer consistency), optional `X-JA4` from trusted proxies (JA4 only, not JA4+), log-odds score with the address risk as prior, versioned weights config, `env.*` reason codes in the operator log only, policy pass / step-up / block; labelled set of recorded payloads from real browsers and Playwright, Puppeteer, puppeteer-stealth, patchright, Camoufox | spec | L | On the labelled set, stock headless Playwright and Puppeteer never get a token on the first attempt; real browsers pass without step-up at the rate the spec sets |
 | B-12d | **Spec: behavior collector.** Pointer, key intervals (no key values), touch, scroll, focus, `isTrusted`; encrypted payload bound to nonce and PoW; features computed server-side in memory; press-and-hold step-up; later an embeddable snippet for login forms shared with B-11. Absence of events never blocks | spec | L | Scripted input (ghost-cursor, CDP) scores apart from human recordings on the labelled set; a keyboard-only user passes |
-| B-12e | **Spec: attestation.** Returning-device token (first-party, not bound to the address, revoked on a failed challenge); Private Access Tokens after B-12f | spec | M | A browser that passed once passes without PoW after its address changes |
-| B-12f | **Research: PAT issuers and JA4 at the proxy.** Which Privacy Pass issuers a third party can use and on what terms; which proxies (Traefik, nginx, Caddy, Cloudflare Tunnel) can pass JA4 / HTTP/2 fingerprints to `/verify`; wiki pages | research | S | Each issuer and proxy has a recorded answer |
+| B-12e | **Spec: returning-device token.** First-party, random, not bound to the address, revoked on a failed challenge (constitution IV). Private Access Tokens wait for a production issuer ([research](wiki/synthesis/private-access-tokens.md)) | spec | M | A browser that passed once passes without PoW after its address changes |
 | B-13 | **IP / ASN pages and "my IP" page**: public, indexable, customer verdict only | spec | M | `foxtrust.dev/ip/1.1.1.1` shows reasons without sources |
 | B-14 | **Self-service delisting**: prove control (rDNS or WHOIS contact), file a dispute, see its state; replaces the manual email flow in `docs/dispute.md`. More important now that behavior listings ship | spec | L | A dispute filed on the site removes the reason in the next hourly delta |
 
@@ -87,6 +86,10 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
   constitution v5.0.0.
 - B-07 (2026-10-05): CI on every push (typecheck, ESLint with typescript-eslint, tests).
 - B-05 (2026-10-05): Telegram operator alerts (spec 004); deploy on the server pending.
+- B-12f (2026-10-06): research. JA4 can reach `/verify` from nginx/Caddy modules and Envoy, not
+  Traefik; Cloudflare only on Enterprise; JA4+ needs a FoxIO OEM licence
+  ([page](wiki/synthesis/tls-fingerprints-at-the-proxy.md)). No PAT issuer usable by a third party
+  in production ([page](wiki/synthesis/private-access-tokens.md)).
 - B-12b (2026-10-06): constitution v5.1.0, Principle IV covers client-side signals of the challenge
   page and snippets (in memory only, codes and score logged, no fingerprint identifiers, no probing).
 - B-12a (2026-10-06): built-in challenge page in `/verify` (spec 006): SHA-256 proof-of-work by

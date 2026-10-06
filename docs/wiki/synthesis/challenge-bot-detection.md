@@ -21,7 +21,7 @@ Research for backlog item B-12, the page that `/verify` sends `challenge` decisi
 | Layer | Signals | Observed by | Notes |
 |-------|---------|-------------|-------|
 | Network (prior) | Customer verdict of the address: categories and behavior | snapshot, already in `/verify` | Sets the starting probability and the PoW difficulty |
-| Transport | JA4 TLS fingerprint, HTTP/2 fingerprint vs the claimed browser | the TLS-terminating proxy, passed as a header | `/verify` never sees the handshake; support per proxy is unknown |
+| Transport | JA4 TLS fingerprint (not JA4+) vs the claimed browser | the TLS-terminating proxy, passed as a header | Optional; works with nginx/Caddy modules and Envoy, not Traefik, Cloudflare only on Enterprise ([[tls-fingerprints-at-the-proxy]]) |
 | Environment | Automation markers; consistency between layers | page script + request headers | See below |
 | Behavior | Pointer, key timing, touch, scroll, focus, `isTrusted` | page script | See below |
 | Attestation | Private Access Tokens, returning-device token, passkey | page | Lowers the probability; never raises it |
@@ -42,7 +42,7 @@ Research for backlog item B-12, the page that `/verify` sends `challenge` decisi
 
 ### Attestation (legitimate "trust from elsewhere")
 
-- **Private Access Tokens / Privacy Pass** (RFC 9576–9578): a trusted issuer vouches for a real device without revealing who it is. Mostly Apple platforms; issuer availability and terms are not researched yet.
+- **Private Access Tokens / Privacy Pass** (RFC 9576–9578): a trusted issuer vouches for a real device without revealing who it is. Mostly Apple platforms. No public issuer may be used by a third-party origin in production yet, so this waits ([[private-access-tokens]]).
 - **Returning-device token**: a long-lived first-party cookie issued after a clean pass, not bound to the address. Also fixes re-challenges when a Tor exit or an IPv6 privacy address changes.
 - **Passkey / WebAuthn, FedCM sign-in**: voluntary step-up chosen by the person.
 
@@ -74,7 +74,5 @@ Constitution v5.1.0 (2026-10-06) extends Principle IV to client signals: raw eve
 ## Open questions
 
 - Cloudflare Turnstile as an optional operator-chosen step-up provider (external service, needs an ADR) or strictly in-house.
-- Which proxies can pass JA4 and HTTP/2 fingerprints to `/verify` (Traefik, nginx, Caddy, Cloudflare Tunnel).
-- Private Access Token issuers usable by a third party, and their terms.
 - Whether client-side reason codes form a third verdict view or stay operator log only.
 - Legal basis for client-side signal collection (security purpose under GDPR and ePrivacy Art. 5(3)); not checked.
