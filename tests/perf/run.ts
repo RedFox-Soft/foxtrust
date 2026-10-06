@@ -7,6 +7,7 @@ import { runFeed } from "../../src/ingest/run";
 import { shippedConfig } from "../helpers/seed";
 import { measureAccuracyEvaluation } from "./accuracy.bench";
 import { measureCategoryCap } from "./category-cap.measure";
+import { measureChallenge } from "./challenge.bench";
 import { measureIngest } from "./ingest.bench";
 import { measureLookup } from "./lookup.bench";
 import { measureSecondReader } from "./second-reader.measure";
@@ -61,6 +62,7 @@ for (const [name, fn] of [
   ["stage 2 SC-004/SC-005", measureVerify],
   ["stage 2 SC-006/SC-007", measureSnapshot],
   ["spec 003 SC-006", measureAccuracyEvaluation],
+  ["spec 006 SC-001/SC-005", measureChallenge],
 ] as const) {
   console.error(`measuring ${name}…`);
   measurements.push(...(await fn()));
