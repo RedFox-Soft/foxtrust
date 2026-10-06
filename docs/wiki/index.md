@@ -55,3 +55,5 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[2026-10-05-production-database-review]] — first production review: cached-plan memory leak, `last_seen` rewrite churn, history kept, Postgres tuning, follow-ups
 - [[adr-test-strategy]] — ADR: decision logic tested in memory, PostgreSQL per query path, families only where they matter, parallel test files
 - [[candidate-data-sources]] — sources not yet ingested, by layer (network, anonymization, abuse, first-party); residential proxies out of scope
+- [[adr-challenge-page]] — ADR: built-in challenge page on the protected host, SHA-256 proof-of-work by level, /64 passes, no-JavaScript path off by default
+- [[challenge-bot-detection]] — research for B-12: bot verdict from cost, environment, behavior, attestation (log-odds over the address prior); no captcha, no login-state probing
