@@ -1,0 +1,8 @@
+# Challenges every address on /login*, whatever its level (spec 006 US3: difficulty per level).
+version: 1
+default: allow
+rules:
+  - name: everyone-on-login
+    when:
+      path: "/login*"
+    action: challenge

@@ -6,6 +6,11 @@ import { vocabularyFromConfig, type Action } from "../../src/policy";
 import { loadConfig } from "../../src/scoring/config";
 import { SNAPSHOT_DB_TYPE } from "../../src/snapshot/build";
 import { importTrustedKeys, loadSigningKey, sign } from "../../src/snapshot/sign";
+import { buildChallengeAssets } from "../../src/verify/challenge/assets";
+import { readChallenge } from "../../src/verify/challenge/challenge";
+import { leadingZeroBits, sha256Block, solve } from "../../src/verify/challenge/pow";
+import { createReplayCache } from "../../src/verify/challenge/replay";
+import { DEFAULT_CHALLENGE, type ChallengeSettings, type DifficultyKey } from "../../src/verify/config";
 import { createLoader, type Loader } from "../../src/verify/loader";
 import { createPolicyHolder, type PolicyHolder } from "../../src/verify/policy-file";
 import { startVerifyServer } from "../../src/verify/server";
@@ -15,6 +20,10 @@ import type { TestPublication } from "./publication";
 export const EXAMPLE_POLICY = join(import.meta.dir, "..", "fixtures", "policies", "example.yaml");
 export const LOOPBACK: Cidr[] = [parseCidr("127.0.0.1/32")!, parseCidr("::1/128")!];
 export const PROXY_MODES = ["nginx", "traefik", "caddy"] as const;
+export const CHALLENGE_PATH = "/.foxtrust/challenge";
+export const CHALLENGE_SECRET = "test-challenge-secret-0123456789abcdef";
+/** Tests solve at 8 bits on every level unless they set a difficulty. */
+export const TEST_DIFFICULTY: Record<DifficultyKey, number> = { none: 8, low: 8, medium: 8, high: 8 };
 
 /** Addresses in the recorded snapshot below, per family. */
 export const ADDR = {
@@ -74,6 +83,10 @@ export async function startTestVerify(opts: {
   challengeUrl?: string | null;
   challengeFallback?: Action;
   challengeSecret?: string | null;
+  /** Settings of the built-in page; used when `challengeUrl` is a path. */
+  challenge?: Partial<Omit<ChallengeSettings, "page" | "path">>;
+  replayCap?: number;
+  clock?: () => Date;
 }): Promise<TestVerify> {
   const logs: string[] = [];
   const policy = createPolicyHolder(opts.policyFile ?? EXAMPLE_POLICY, vocabularyFromConfig(await loadConfig(STAGE2_CONFIG)), (l) => logs.push(l));
@@ -85,14 +98,27 @@ export async function startTestVerify(opts: {
     maxAgeHours: 26,
   });
   if (opts.pub) await loader.check();
+  const challengeUrl = opts.challengeUrl === undefined ? "https://challenge.example/pass" : opts.challengeUrl;
+  const builtIn = challengeUrl?.startsWith("/") ?? false;
+  const challenge: ChallengeSettings = {
+    ...DEFAULT_CHALLENGE,
+    difficulty: TEST_DIFFICULTY,
+    ...opts.challenge,
+    page: !challengeUrl ? "none" : builtIn ? "built-in" : "external",
+    path: builtIn ? challengeUrl : null,
+  };
   const server = startVerifyServer({
     loader, policy, port: 0, hostname: "127.0.0.1", log: (l) => logs.push(l),
+    ...(builtIn ? { challengeAssets: await buildChallengeAssets() } : {}),
+    ...(opts.replayCap ? { replay: createReplayCache(opts.replayCap) } : {}),
+    ...(opts.clock ? { clock: opts.clock } : {}),
     config: {
       trustedProxies: opts.trustedProxies ?? LOOPBACK,
       failMode: opts.failMode ?? "open",
-      challengeUrl: opts.challengeUrl === undefined ? "https://challenge.example/pass" : opts.challengeUrl,
+      challengeUrl,
       challengeFallback: opts.challengeFallback ?? "allow",
       challengeSecret: opts.challengeSecret ?? null,
+      challenge,
     },
   });
   return { url: `http://127.0.0.1:${server.port}`, loader, policy, logs, stop: server.stop };
@@ -119,4 +145,83 @@ export async function forwardAuth(
     location: h("location"),
     challengeLocation: h("x-foxtrust-challenge-location"),
   };
+}
+
+/** A browser visiting the challenge page through a trusted proxy (loopback) from `client`. */
+export async function getChallengePage(v: TestVerify, opts: { client: string; returnTo?: string; headers?: Record<string, string> }) {
+  const query = opts.returnTo === undefined ? "" : `?return=${encodeURIComponent(opts.returnTo)}`;
+  const res = await fetch(`${v.url}${CHALLENGE_PATH}${query}`, { headers: { "X-Forwarded-For": opts.client, ...opts.headers }, redirect: "manual" });
+  const html = await res.text();
+  const field = (name: string) => unescapeHtml(new RegExp(`name="${name}" value="([^"]*)"`).exec(html)?.[1] ?? "") || null;
+  const refresh = /<meta http-equiv="refresh" content="(\d+);url=([^"]+)">/.exec(html);
+  const waitUrl = refresh ? unescapeHtml(refresh[2]!) : null;
+  return {
+    status: res.status,
+    headers: res.headers,
+    html,
+    challenge: field("c"),
+    returnTo: field("r"),
+    waitSeconds: refresh ? Number(refresh[1]) : null,
+    waitUrl,
+    waitChallenge: waitUrl ? new URL(waitUrl, "http://x").searchParams.get("c") : null,
+  };
+}
+
+export function unescapeHtml(text: string): string {
+  return text.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
+/** The counter a browser's worker would find for this challenge. */
+export function solveChallenge(challenge: string): string {
+  const payload = readChallenge(challenge);
+  if (!payload) throw new Error("not a challenge");
+  return solve(payload.nonce, payload.bits).toString();
+}
+
+/** A counter that does not meet the challenge's difficulty. */
+export function wrongSolution(challenge: string): string {
+  const payload = readChallenge(challenge);
+  if (!payload) throw new Error("not a challenge");
+  for (let s = 0n; ; s++) if (leadingZeroBits(sha256Block(payload.nonce, s)) < payload.bits) return s.toString();
+}
+
+export type AnswerResponse = { status: number; location: string | null; cookie: string | null; pass: string | null; html: string };
+
+async function answerResponse(res: Response): Promise<AnswerResponse> {
+  const cookie = res.headers.get("set-cookie");
+  return {
+    status: res.status,
+    location: res.headers.get("location"),
+    cookie,
+    pass: cookie ? (/^foxtrust_pass=([^;]+)/.exec(cookie)?.[1] ?? null) : null,
+    html: await res.text(),
+  };
+}
+
+/** Posts a proof-of-work answer as the page's form would. */
+export async function postAnswer(
+  v: TestVerify,
+  opts: { client: string; c: string; s: string; r?: string; headers?: Record<string, string>; body?: string },
+): Promise<AnswerResponse> {
+  const body = opts.body ?? new URLSearchParams({ c: opts.c, s: opts.s, r: opts.r ?? "/" }).toString();
+  const res = await fetch(`${v.url}${CHALLENGE_PATH}`, {
+    method: "POST",
+    body,
+    headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Forwarded-For": opts.client, ...opts.headers },
+    redirect: "manual",
+  });
+  return answerResponse(res);
+}
+
+/** Follows a no-JavaScript refresh URL (relative to the page). */
+export async function getWait(v: TestVerify, opts: { client: string; url: string }): Promise<AnswerResponse> {
+  const res = await fetch(`${v.url}${opts.url}`, { headers: { "X-Forwarded-For": opts.client }, redirect: "manual" });
+  return answerResponse(res);
+}
+
+/** Fetches the page, solves it and answers: the whole browser flow. */
+export async function passChallenge(v: TestVerify, opts: { client: string; returnTo?: string }): Promise<AnswerResponse> {
+  const page = await getChallengePage(v, opts);
+  if (!page.challenge) throw new Error(`no challenge on the page (status ${page.status})`);
+  return postAnswer(v, { client: opts.client, c: page.challenge, s: solveChallenge(page.challenge), r: page.returnTo ?? "/" });
 }
