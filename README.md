@@ -100,6 +100,58 @@ forward_auth foxtrust-verify:8080 {
 
 Set `FOXTRUST_TRUSTED_PROXIES` to your proxy's address range: `X-Forwarded-For` is honoured only from there.
 
+**Challenge page.** `/verify` has its own challenge page, without a captcha. Set `FOXTRUST_CHALLENGE_URL=/.foxtrust/challenge` (a path, not a URL) and `FOXTRUST_CHALLENGE_SECRET` (≥ 32 characters, e.g. `openssl rand -base64 48`). A challenged visitor is sent to that path on the same host. The browser solves a small proof-of-work in the background, which takes about a second, and gets a pass cookie: 30 minutes, for its exact IPv4 address or its IPv6 `/64`. Riskier addresses get a harder proof-of-work. Route the path on each protected host to `verify` **without** forward-auth; your proxy's address must be in `FOXTRUST_TRUSTED_PROXIES`.
+
+```nginx
+location ^~ /.foxtrust/challenge {
+    proxy_pass http://foxtrust-verify:8080;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+```yaml
+# Traefik: a router with higher priority and without the foxtrust middleware
+http:
+  routers:
+    foxtrust-challenge:
+      rule: "Host(`app.example`) && PathPrefix(`/.foxtrust/challenge`)"
+      service: foxtrust-verify
+      priority: 1000
+  services:
+    foxtrust-verify:
+      loadBalancer:
+        servers: [{ url: "http://foxtrust-verify:8080" }]
+```
+
+```caddyfile
+# Caddy runs forward_auth before handle, so forward_auth goes inside the fallback handle.
+handle /.foxtrust/challenge* {
+    reverse_proxy foxtrust-verify:8080
+}
+handle {
+    forward_auth foxtrust-verify:8080 {
+        uri /verify?proxy=caddy
+    }
+    reverse_proxy app:3000
+}
+```
+
+The following settings are optional:
+
+- `FOXTRUST_CHALLENGE_DIFFICULTY`: proof-of-work bits per level, default `none=14,low=14,medium=16,high=18`.
+- `FOXTRUST_CHALLENGE_TTL_SECONDS`: default `120`.
+- `FOXTRUST_PASS_TTL_MINUTES`: default `30`.
+- `FOXTRUST_CHALLENGE_NOJS=on`: lets visitors without JavaScript pass by waiting `FOXTRUST_CHALLENGE_NOJS_WAIT_SECONDS` (default `10`). It is off by default, because bots can take that path too.
+
+`/status` shows the challenge settings. Each pass and each refused answer is logged in one line. Limits:
+
+- **What the proof-of-work does.** It puts a price on every pass. It does not detect bots.
+- **Replays.** Repeated answers are caught per `verify` instance.
+- **Plain HTTP.** On a plain-HTTP site, the proxy must send `X-Forwarded-Proto: http`, or the `Secure` pass cookie is dropped.
+
+Design and limits: [ADR challenge page](docs/wiki/synthesis/adr-challenge-page.md).
+
 ## Alerts
 
 The scheduler can tell the operator in Telegram when something needs attention, so problems don't sit unnoticed in logs:
