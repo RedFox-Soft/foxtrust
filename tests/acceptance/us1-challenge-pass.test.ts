@@ -25,16 +25,20 @@ describe("US1 (spec 006): a visitor passes without solving anything", () => {
   const withPass = (pass: string) => ({ Cookie: `foxtrust_pass=${pass}` });
 
   test("US1-1: a challenged request is sent to the page on the same host with the original path as the return address", async () => {
-    const expected = `${CHALLENGE_PATH}?return=${encodeURIComponent("/login?x=1")}`;
+    const page = `${CHALLENGE_PATH}?return=${encodeURIComponent("/login?x=1")}`;
+    const forwarded = { "X-Forwarded-Host": "app.example:8443", "X-Forwarded-Proto": "https" };
     for (const mode of PROXY_MODES) {
-      const r = await forwardAuth(v, { mode, client: ADDR.tor[4], uri: "/login?x=1", headers: { "X-Forwarded-Host": "app.example" } });
-      expect({ mode, action: r.action, rule: r.rule }).toEqual({ mode, action: "challenge", rule: "tor-on-login" });
-      if (mode === "nginx") {
-        expect(r.status).toBe(401);
-        expect(r.challengeLocation).toBe(expected);
-      } else {
-        expect(r.status).toBe(302);
-        expect(r.location).toBe(expected);
+      // With the forwarded host the location is absolute on it; without, relative to the request.
+      for (const [headers, expected] of [[forwarded, `https://app.example:8443${page}`], [{}, page]] as const) {
+        const r = await forwardAuth(v, { mode, client: ADDR.tor[4], uri: "/login?x=1", headers });
+        expect({ mode, action: r.action, rule: r.rule }).toEqual({ mode, action: "challenge", rule: "tor-on-login" });
+        if (mode === "nginx") {
+          expect(r.status).toBe(401);
+          expect(r.challengeLocation).toBe(expected);
+        } else {
+          expect(r.status).toBe(302);
+          expect(r.location).toBe(expected);
+        }
       }
     }
   });

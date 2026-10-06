@@ -19,6 +19,7 @@ Decision for backlog item B-12a (spec 006). Before it, `/verify` could only send
 | Topic | Choice | Why |
 |-------|--------|-----|
 | Where the page lives | `verify` serves it on a path of each protected host (`FOXTRUST_CHALLENGE_URL=/.foxtrust/challenge`); the operator's proxy routes that path to `verify` without forward-auth | Only a response from the protected host can set the pass cookie there; no callback, no token in a URL; one `verify` serves any number of hosts |
+| Redirect target | `<X-Forwarded-Proto>://<X-Forwarded-Host><path>?return=…`; relative only when the proxy names no host; the nginx auth location sets both headers | Found through real proxies: Traefik resolves a relative `Location` against the forward-auth address, nginx against its own listener (losing a mapped port or an outer TLS scheme) |
 | Loop protection | `/verify` lets through exactly the page's five routes (with an optional query), not a prefix | A prefix match could be turned into a policy bypass through dot segments or encodings |
 | Challenge | Stateless HMAC-signed `{kind, address, bits, nonce, exp, nbf}`; the MAC uses the domain `foxtrust-challenge/1` | Nothing is stored per visit; the domain keeps challenges and pass tokens, made with the same secret, from standing in for each other |
 | Proof-of-work | One-block SHA-256 of `nonce ‖ counter` with `d` leading zero bits, solved in a Web Worker by a pure TypeScript SHA-256 | WebCrypto is unavailable on plain-HTTP sites and has per-call overhead; a single block keeps the client fast; tests use the same solver |
@@ -41,6 +42,7 @@ From `tests/perf/challenge.bench.ts` in Bun on a desktop PC (2026-10-06):
 - Solver rate ≈ 1.1 M hashes/s. One answer check costs 22 µs at p99.
 - `/verify` p99 is 0.34 ms with a v2 pass cookie and 0.28 ms without one.
 - A Chromium walk-through on a local `verify` passed end to end: page, scripts, worker, answer, `303`, cookie. It made no request to another origin.
+- The same walk-through through Caddy 2, nginx 1.27 and Traefik 3 in containers, with the README routes and `verify serve`, took 0.3–0.5 s from `/login` back to `/login` with the pass. It also surfaced the redirect-target issue above.
 
 **Still to measure** (spec 006 SC-001): a mid-range Android phone in Chrome, and Tor Browser at "Standard" and "Safer". "Safer" turns off the JavaScript JIT, which may make the solver 10–50× slower. If the 95th percentile at `medium` exceeds 3 s there, the defaults go down.
 

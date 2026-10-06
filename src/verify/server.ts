@@ -51,17 +51,22 @@ function isChallengeRoute(uri: string, routes: string[]): boolean {
   return routes.includes(q === -1 ? uri : uri.slice(0, q));
 }
 
-/** The original URL as the proxy saw it, for the challenge page's return address. */
-function originalUrl(headers: Headers): string {
-  const uri = headers.get("x-forwarded-uri") ?? headers.get("x-original-uri") ?? "/";
-  const path = uri.startsWith("/") ? uri : `/${uri}`;
+/** `scheme://host[:port]` of the original request as the proxy reports it, or null. */
+function forwardedOrigin(headers: Headers): string | null {
   const host = headers.get("x-forwarded-host");
   const proto = headers.get("x-forwarded-proto");
   // Only a plain host[:port] is used; anything else is left out rather than echoed.
   if (host && /^[A-Za-z0-9.-]+(:\d{1,5})?$|^\[[0-9A-Fa-f:.]+\](:\d{1,5})?$/.test(host)) {
-    return `${proto === "http" ? "http" : "https"}://${host}${path}`;
+    return `${proto === "http" ? "http" : "https"}://${host}`;
   }
-  return path;
+  return null;
+}
+
+/** The original URL as the proxy saw it, for the challenge page's return address. */
+function originalUrl(headers: Headers): string {
+  const uri = headers.get("x-forwarded-uri") ?? headers.get("x-original-uri") ?? "/";
+  const path = uri.startsWith("/") ? uri : `/${uri}`;
+  return `${forwardedOrigin(headers) ?? ""}${path}`;
 }
 
 function headersFor(decision: Decision): Record<string, string> {
@@ -167,9 +172,12 @@ export function createVerifyApp(deps: VerifyDeps) {
       }
 
       if (decision.action !== "challenge") return new Response(null, { status: STATUS[decision.action], headers: out });
-      // A built-in page lives on the protected host, so it gets a relative path and the original path and query.
+      // A built-in page lives on the protected host: it gets the original path and query, and is
+      // addressed on the forwarded host when the proxy names it. Traefik resolves a relative Location
+      // against the forward-auth address and nginx against its own listener, so relative is the fallback.
       const returnTo = builtIn ? (uri.startsWith("/") ? uri : `/${uri}`) : originalUrl(headers);
-      const location = `${config.challengeUrl}${config.challengeUrl!.includes("?") ? "&" : "?"}return=${encodeURIComponent(returnTo)}`;
+      const base = builtIn ? `${forwardedOrigin(headers) ?? ""}${config.challengeUrl}` : config.challengeUrl!;
+      const location = `${base}${base.includes("?") ? "&" : "?"}return=${encodeURIComponent(returnTo)}`;
       if (mode === "nginx") return new Response(null, { status: 401, headers: { ...out, "X-FoxTrust-Challenge-Location": location } });
       return new Response(null, { status: 302, headers: { ...out, Location: location } });
     });
