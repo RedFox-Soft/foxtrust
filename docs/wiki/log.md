@@ -52,3 +52,5 @@ Operations:
 ## [2026-10-06] query | Research for the challenge page (B-12): challenge-bot-detection (new); decided no captcha by default and no login-state probing of other services
 
 ## [2026-10-06] query | Decision: built-in challenge page (spec 006, B-12a) → adr-challenge-page (new); challenge-bot-detection links it
+
+## [2026-10-06] query | Constitution v5.1.0: Principle IV covers client-side signals (B-12b) → challenge-bot-detection updated

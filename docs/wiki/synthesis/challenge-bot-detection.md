@@ -69,7 +69,7 @@ logit(P(bot)) = prior(address risk) + Σ wᵢ·signalᵢ − Σ wⱼ·attestatio
 
 ## Privacy
 
-Principle IV allows only the address, event type, timestamp and integration id for first-party telemetry. Client signals go beyond that. Proposed rule for a constitution amendment: raw events and environment values are processed in memory and dropped; only reason codes, the score and the action are logged; nothing is stored that identifies a browser across sites.
+Constitution v5.1.0 (2026-10-06) extends Principle IV to client signals: raw events and environment values are processed in memory for one decision and dropped; logs and storage keep only the address, time, action, bot score and reason codes; no key values, form or page content; no identifier that recognises a browser across sites or visits; no probing of other services; a returning-device token is first-party, random and carries no client data.
 
 ## Open questions
 

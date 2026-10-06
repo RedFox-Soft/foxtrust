@@ -1,31 +1,25 @@
 <!--
 Sync Impact Report
-- Version change: 4.0.0 → 5.0.0 (MAJOR: Principles II and III redefined)
-  (previous: 3.0.0 → 4.0.0 MAJOR, Principle VI; 2.1.0 → 3.0.0 MAJOR, Principle II;
-  2.0.0 → 2.1.0 MINOR, Principle V; 1.0.0 → 2.0.0 MAJOR, Principle V)
+- Version change: 5.0.0 → 5.1.0 (MINOR: Principle IV materially expanded)
+  (previous: 4.0.0 → 5.0.0 MAJOR, Principles II and III; 3.0.0 → 4.0.0 MAJOR, Principle VI;
+  2.1.0 → 3.0.0 MAJOR, Principle II; 2.0.0 → 2.1.0 MINOR, Principle V; 1.0.0 → 2.0.0 MAJOR,
+  Principle V)
 - Modified principles:
-  II. Explainable Verdicts: "shippable" is now a property of a feed, not only of its licence. A
-      feed is shippable when its licence allows commercial use and redistribution, or when an
-      accepted ADR records the decision to ship it (`ship: yes` on its feed page); `ship: no`
-      withdraws any feed. A feed shipped by decision is never named in customer-facing outputs,
-      manifests and licence notices included.
-  III. Licence-Clean, Traceable Data: licence facts stay as found; feeds with unknown or
-      non-commercial terms may ship only by a recorded decision (Principle II).
-- Decision behind the amendment (2026-10-05): Spamhaus DROP, abuse.ch Feodo Tracker and
-  blocklist.de reach customer verdicts without their source.
+  IV. Privacy by Default for First-Party Data: now also covers client-side signals that
+      FoxTrust's own code collects in a visitor's browser (challenge page, embeddable snippets):
+      processed in memory for one decision only; logs and storage limited to address, time,
+      action, bot score and reason codes; no key values, form or page content; no cross-site or
+      cross-visit browser identifier; no probing of the visitor's state at other services; a
+      returning-device token is first-party, random and carries no client data.
+- Decision behind the amendment (2026-10-06): backlog B-12b, before the bot verdict (B-12c) and
+  the behavior collector (B-12d); research in docs/wiki/synthesis/challenge-bot-detection.md.
 - Added sections: none
 - Removed sections: none
 - Templates: .specify/templates/*.md read the constitution at runtime; no edits required.
 - Dependent artifacts:
-  ⚠ AGENTS.md: version reference (v4.0.0) and the domain rules on shippable signals and
-    unknown licences.
-  ⚠ docs/wiki: ADR superseding adr-customer-facing-behavior-data; feed pages of the three feeds
-    get `ship: yes`; SCHEMA.md documents the `ship` field.
-  ⚠ specs/001-core-ip-lookup/contracts/feed-licence-page.md: gate rules gain the `ship` field.
-  ⚠ Code: the licence gate reads `ship`; stored signals of a feed follow its shippable status.
-  ⚠ README: snapshot and principles sections describe "shippable" as licence-only.
-  ⚠ specs/003-accuracy-measures assumes no behavior feed is shippable (public early detection
-    "not available"); historical, the figure now becomes available.
+  ✅ AGENTS.md: version reference updated to v5.1.0.
+  ✅ docs/wiki/synthesis/challenge-bot-detection.md: the proposed rule now points at Principle IV.
+  ✅ specs/006-challenge-page: already within the amended rule (no client signals collected).
 - Deferred TODOs: none
 -->
 
@@ -97,8 +91,22 @@ reasons, never a default, and it can be withdrawn per feed.
   usernames, passwords, emails and request bodies MUST NOT be collected.
 - Raw first-party events MUST have a documented retention period; only aggregated signals may
   outlive it.
+- Client-side signals that FoxTrust's own code collects in a visitor's browser (the challenge
+  page, embeddable snippets), such as environment checks and behavior events:
+  - MUST be processed in memory for one decision and dropped after it; raw events and
+    environment values MUST NOT be logged or stored;
+  - MUST leave only the address, time, action, bot score and reason codes in logs and storage;
+  - MUST NOT include key values, form contents or page content (key timing only as intervals);
+  - MUST NOT be turned into an identifier that recognises a browser across sites or visits; a
+    fingerprint or fingerprint hash MUST NOT be stored or used as an identifier.
+- FoxTrust MUST NOT probe a visitor's state at other services (login-state detection or any other
+  cross-site leak).
+- A returning-device token, if used, MUST be first-party to the protected site, random, and carry
+  no client data.
 
-Rationale: first-party signals are a competitive advantage only if integrators can trust them.
+Rationale: first-party signals are a competitive advantage only if integrators can trust them. A
+challenge that quietly fingerprints visitors or probes their accounts elsewhere would undermine the
+explainability and trust the product sells.
 
 ### V. Tests for User Cases and Security Only
 
@@ -185,4 +193,4 @@ Rationale: open formats drive adoption without our SDK; fewer moving parts keep 
 - Compliance is checked in every `/speckit-plan` Constitution Check and `/speckit-analyze` run;
   unresolved violations block implementation.
 
-**Version**: 5.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-10-05
+**Version**: 5.1.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-10-06
