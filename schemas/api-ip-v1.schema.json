@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foxtrust.dev/schemas/api/ip/v1.json",
+  "title": "Public API v1: GET /v1/ip/{ip}",
+  "description": "The customer verdict of one address, or an error (specs/010-public-api/contracts/api-v1.md). No source and no matched prefix can appear: every object is closed.",
+  "oneOf": [{ "$ref": "#/$defs/answer" }, { "$ref": "#/$defs/error" }],
+  "$defs": {
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ip", "risk", "level", "categories", "reasons", "network", "data", "disputeUrl"],
+      "properties": {
+        "ip": { "type": "string", "description": "Canonical address; IPv4-mapped IPv6 is shown as IPv4." },
+        "risk": { "type": "number", "minimum": 0, "maximum": 100 },
+        "level": { "enum": ["low", "medium", "high"] },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "lastSeen", "contribution"],
+            "properties": {
+              "code": { "type": "string" },
+              "lastSeen": { "type": "string", "format": "date-time" },
+              "contribution": { "type": "number", "minimum": 0, "maximum": 100 }
+            }
+          }
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["asn", "org", "country"],
+          "properties": {
+            "asn": { "type": ["integer", "null"] },
+            "org": { "type": ["string", "null"] },
+            "country": { "type": ["string", "null"] }
+          }
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "delta", "builtAt", "stale"],
+          "properties": {
+            "version": { "type": "string", "pattern": "^f\\d{8}$" },
+            "delta": { "type": ["string", "null"], "pattern": "^d\\d{8}T\\d{2}$" },
+            "builtAt": { "type": "string", "format": "date-time" },
+            "stale": { "type": "boolean" }
+          }
+        },
+        "disputeUrl": { "type": ["string", "null"] }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "enum": ["invalid_ip", "key_missing", "key_invalid", "key_in_query", "quota_exceeded", "rate_limited", "no_data"] },
+            "message": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 import { FEEDS } from "../feeds/registry";
 import { checkSources, disabledFeeds } from "../ingest/schedule";
 import { alertsList, alertsTest } from "./commands/alerts";
+import { apiServe } from "./commands/api";
 import { botEval, botRecord } from "./commands/bot";
 import { configActivate, configCheck, extraConfigChecks, extraConfigNotices } from "./commands/config";
 import { dbMigrate } from "./commands/db";
@@ -40,6 +41,7 @@ export const COMMANDS: Record<string, Command> = {
   "snapshot at": snapshotAt,
   "snapshot retention": snapshotRetention,
   "verify serve": verifyServe,
+  "api serve": apiServe,
   "bot record": botRecord,
   "bot eval": botEval,
   "policy check": policyCheck,

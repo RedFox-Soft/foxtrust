@@ -6,6 +6,8 @@ import { FEEDS } from "../../src/feeds/registry";
 import { runFeed } from "../../src/ingest/run";
 import { shippedConfig } from "../helpers/seed";
 import { measureAccuracyEvaluation } from "./accuracy.bench";
+import { measureApi } from "./api.bench";
+import { measureApiParity } from "./api-parity.measure";
 import { measureCategoryCap } from "./category-cap.measure";
 import { measureChallenge } from "./challenge.bench";
 import { measureIngest } from "./ingest.bench";
@@ -32,7 +34,7 @@ async function measureAccuracy(): Promise<Measurement[]> {
   const db = await tempDb("bench_eval");
   try {
     await activateConfig(db.sql, await shippedConfig());
-    for (const def of FEEDS) {
+    for (const def of FEEDS.filter((f) => FIXTURE_FILES[f.id])) {
       await runFeed(db.sql, def.id, { fromFiles: FIXTURE_FILES[def.id]!.map((n) => join(FIX, def.id, n)) });
     }
     const report = await evaluate(db.sql, { knownGood: await loadKnownGood() });
@@ -63,6 +65,8 @@ for (const [name, fn] of [
   ["stage 2 SC-006/SC-007", measureSnapshot],
   ["spec 003 SC-006", measureAccuracyEvaluation],
   ["spec 006 SC-001/SC-005", measureChallenge],
+  ["spec 010 SC-003", measureApiParity],
+  ["spec 010 SC-004", measureApi],
 ] as const) {
   console.error(`measuring ${name}…`);
   measurements.push(...(await fn()));

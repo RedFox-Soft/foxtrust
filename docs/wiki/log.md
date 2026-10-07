@@ -64,3 +64,5 @@ Operations:
 ## [2026-10-06] query | Decision: returning-device token (spec 008, B-12e) → adr-returning-device (new); index, adr-bot-verdict, challenge-bot-detection link it
 
 ## [2026-10-06] query | Decision: behavior evidence (spec 009, B-12d) → adr-behavior-evidence (new); index, adr-bot-verdict, adr-returning-device, challenge-bot-detection link it
+
+## [2026-10-07] query | Decision: public API v1 (spec 010, B-10) → adr-public-api (new); index and adr-publication-topology link it

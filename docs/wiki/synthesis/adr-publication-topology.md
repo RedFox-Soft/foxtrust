@@ -4,7 +4,7 @@ kind: decision
 title: "ADR: publish snapshots from our own server; verifiers pin keys"
 tags: [architecture, distribution]
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-07
 sources: []
 status: accepted
 decided: 2026-09-30
@@ -23,6 +23,7 @@ Stage 2 publishes the customer verdict as signed snapshot files. Customers' `/ve
   - `scheduler`: ingestion, the snapshot jobs (full `50 4 * * *`, delta `50 * * * *`, archive retention `15 4 * * *`, all under the advisory lock `snapshot`) and the only copy of the signing key;
   - `publication`: serves the publication volume read-only;
   - `verify`: the forward-auth service. It has no database and no key.
+  - `api` (added 2026-10-07): the public API, answering from the same published snapshot ([[adr-public-api]]).
 - **The signing key is a Docker secret** (`FOXTRUST_SIGNING_KEY=/run/secrets/signing_key`), mounted only into `scheduler`. It is never committed. Without it the scheduler still ingests and says that the snapshot jobs are disabled.
 - **Verifiers pin keys.** `/verify` trusts only the base64 Ed25519 keys in `FOXTRUST_TRUSTED_KEYS`. `v1/keys.json` in the publication is informational. Rotation: publish the new key, let verifiers trust both, switch the signing key, then remove the old key from the verifiers.
 - **Transport:** `http://` is allowed for the publication URL, because integrity comes from the signatures and the manifest's sha256 and size, not from TLS.

@@ -101,6 +101,32 @@ services:
       retries: 3
     logging: *logging
 
+  # Public API v1 (specs/010-public-api): verdicts from the published snapshot; accounts, keys and
+  # usage counts in the database. Publish it through the tunnel (e.g. api.foxtrust.dev).
+  api:
+    build: .
+    restart: unless-stopped
+    command: ["bun", "run", "src/cli/main.ts", "api", "serve"]
+    depends_on:
+      db:
+        condition: service_healthy
+      publication:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://foxtrust:foxtrust@db:5432/foxtrust
+      FOXTRUST_PUBLICATION_URL: http://publication:8081
+      FOXTRUST_TRUSTED_KEYS: ${FOXTRUST_TRUSTED_KEYS:-}
+      FOXTRUST_API_FREE_DAILY: ${FOXTRUST_API_FREE_DAILY:-}
+      FOXTRUST_API_FREE_BURST: ${FOXTRUST_API_FREE_BURST:-}
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8082/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
 secrets:
   signing_key:
     file: ${FOXTRUST_SIGNING_KEY_FILE:-./var/keys/signing.key.pem}

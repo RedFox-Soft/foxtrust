@@ -21,7 +21,8 @@ export function feedFiles(id: string, dir = benchFeedDir()): string[] {
 
 export async function loadStage2Data(sql: SQL, artifactRoot: string): Promise<void> {
   await activateConfig(sql, await loadConfig(STAGE2_CONFIG));
-  for (const def of FEEDS) {
+  // The stage 2 dataset: the feeds with fixtures (the cloud feed of spec 005 has its own fixture loader).
+  for (const def of FEEDS.filter((f) => FIXTURE_FILES[f.id])) {
     const report = await runFeed(sql, def.id, { fromFiles: feedFiles(def.id), artifactRoot });
     console.error(`  ${def.id}: ${report.status}, ${report.entryCount} entries${report.error ? `, ${report.error}` : ""}`);
     if (report.status !== "applied" && report.status !== "unchanged") throw new Error(`${def.id}: ${report.status}`);

@@ -44,7 +44,6 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 
 | ID | Item | Kind | Size | Done when |
 |----|------|------|------|-----------|
-| B-10 | **Spec 010: public API** `GET /v1/ip/{ip}` (customer verdict from the published snapshot), an account and API-key service (no CLI; managed through B-16 and B-15), free-tier rate limits, usage counts without queried addresses (Principle IV) | spec | L | A free key gets verdicts; over-limit requests get `429` |
 | B-11 | **Spec: TS SDK** for Bun and Node: local MMDB lookup, signed auto-update, API fallback; reuses the `/verify` loader and decision engine | spec | L | `npm i` → `lookup(ip)` works offline and updates hourly |
 | B-12c | **Spec 007: bot verdict** (observe mode by default; after one step-up pass unless the operator chooses block). *Built 2026-10-06 ([ADR](wiki/synthesis/adr-bot-verdict.md)); SC-001 and SC-002 pass on desktop Chrome/Edge/Opera/Firefox, Android Chrome and Tor Browser ("Standard" and "Safer"); open: Safari/iOS samples, phone timing.* Environment probe (automation markers, cross-layer consistency), optional `X-JA4` from trusted proxies (JA4 only, not JA4+), log-odds score with the address risk as prior, versioned weights config, `env.*` reason codes in the operator log only, policy pass / step-up / block; labelled set of recorded payloads from real browsers and Playwright, Puppeteer, puppeteer-stealth, patchright, Camoufox | spec | L | On the labelled set, stock headless Playwright and Puppeteer never get a token on the first attempt; real browsers pass without step-up at the rate the spec sets |
 | B-13 | **IP / ASN pages and "my IP" page**: public, indexable, customer verdict only | spec | M | `foxtrust.dev/ip/1.1.1.1` shows reasons without sources |
@@ -86,6 +85,10 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
   constitution v5.0.0.
 - B-07 (2026-10-05): CI on every push (typecheck, ESLint with typescript-eslint, tests).
 - B-05 (2026-10-05): Telegram operator alerts (spec 004); deploy on the server pending.
+- B-10 (2026-10-07): public API v1 (spec 010): `GET /v1/ip/{ip}` from the published snapshot,
+  accounts and `ftk_` keys (hash only) through one service for B-15 and B-16, free tier 1,000/day
+  and 5/s per key, usage counts without addresses; not deployed yet (needs B-02)
+  ([ADR](wiki/synthesis/adr-public-api.md)).
 - B-12d (2026-10-06): behavior evidence (spec 009): a press-and-hold step for every challenged
   visitor, eleven `behavior.*` codes; scripted holds (straight, ghost-cursor, stealth, CDP, key
   script) get no pass, the owner's mouse, phone and keyboard holds pass; touchpad samples pending

@@ -6,7 +6,7 @@ An IP reputation service. For every address it answers three questions:
 2. **What has it done recently?** Brute force, spam, scanning, credential stuffing, C2.
 3. **Why do we think so?** Every conclusion is backed by signals, each with its code, age and contribution.
 
-> Status: **pre-alpha**. Stage 1 (core) and stage 2 (distribution) are implemented: an explainable `lookup(ip)` over nine licence-checked feeds, signed MMDB snapshots of the customer verdict, and a `/verify` forward-auth service with policies. There is no public API yet.
+> Status: **pre-alpha**. Stage 1 (core) and stage 2 (distribution) are implemented: an explainable `lookup(ip)` over nine licence-checked feeds, signed MMDB snapshots of the customer verdict, a `/verify` forward-auth service with policies and a challenge page, and the public API `GET /v1/ip/{ip}` with keys and free-tier limits (not yet deployed).
 
 ## Quick start
 
@@ -184,6 +184,30 @@ Design: [ADR bot verdict](docs/wiki/synthesis/adr-bot-verdict.md).
 - **State.** Revocations and caps are kept in `FOXTRUST_DEVICE_STATE` (compose: volume `verify-state`). The file holds keyed hashes, no addresses, and is per `verify` instance.
 
 `FOXTRUST_DEVICE=off` turns it off. Design: [ADR returning device](docs/wiki/synthesis/adr-returning-device.md).
+
+## Public API
+
+`foxtrust api serve` (compose service `api`, port 8082) answers `GET /v1/ip/{ip}` with the customer verdict of one address, from the same signed snapshot that customers download:
+
+```bash
+curl -H "Authorization: Bearer ftk_…" https://api.foxtrust.dev/v1/ip/203.0.113.7
+```
+
+```json
+{ "ip": "203.0.113.7", "risk": 64, "level": "high", "categories": ["hosting"],
+  "reasons": [{ "code": "ssh_bruteforce", "lastSeen": "2026-10-06T21:14:00Z", "contribution": 52 }],
+  "network": { "asn": 64500, "org": "Example Hosting", "country": "NL" },
+  "data": { "version": "f20261007", "delta": "d20261007T09", "builtAt": "2026-10-07T09:05:12Z", "stale": false },
+  "disputeUrl": "https://foxtrust.dev/dispute" }
+```
+
+- **Keys.** Send the key in `Authorization: Bearer` or `X-API-Key`, never in the URL (`400`). Only a hash of the secret is stored; the key is shown once. Until the admin panel (backlog B-16) exists, the operator issues keys through `src/api/accounts.ts` ([quickstart](specs/010-public-api/quickstart.md) has the one-liner).
+- **Limits.** Free tier: 1,000 lookups per UTC day and 5 per second per key (`FOXTRUST_API_FREE_DAILY`, `FOXTRUST_API_FREE_BURST`; a key can have its own). Every answer carries `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`; over a limit, `429` with `Retry-After`. Invalid addresses and `503`s do not use the quota.
+- **Errors.** `{"error": {"code", "message"}}`: `invalid_ip` (400), `key_in_query` (400), `key_missing` and `key_invalid` (401), `quota_exceeded` and `rate_limited` (429), `no_data` (503, before the first snapshot). Data older than `FOXTRUST_MAX_AGE_HOURS` comes with `"stale": true`.
+- **Privacy.** Queried addresses are never stored or logged. The service keeps per key and UTC day only the counts of answered, invalid and limited lookups, for 400 days (`retention run` deletes older ones). Logs have one line per minute with counts.
+- **Freshness.** Answers are at most about an hour old (hourly deltas); the release gate applies to them as to snapshots.
+
+The response format is [schemas/api-ip-v1.schema.json](schemas/api-ip-v1.schema.json). Design: [ADR public API](docs/wiki/synthesis/adr-public-api.md).
 
 ## Alerts
 

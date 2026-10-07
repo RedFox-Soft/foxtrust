@@ -1,8 +1,11 @@
 import { rm } from "node:fs/promises";
+import { createAccounts } from "../api/accounts";
 import type { Db } from "../db/client";
 import { createDataVersion, resolveVersionAt } from "../db/versions";
 
 export const ARTIFACT_RETENTION_DAYS = 30;
+/** Daily API usage counters (spec 010 research R5): a year of billing and abuse history. */
+export const API_USAGE_RETENTION_DAYS = 400;
 const DAY_MS = 86_400_000;
 
 export type RetentionReport = {
@@ -10,12 +13,14 @@ export type RetentionReport = {
   episodesTrimmed: number;
   aggregatesDeleted: number;
   artifactsDeleted: number;
+  apiUsageDeleted: number;
   dataVersion: string;
 };
 
 /**
  * FR-029 and data-model.md retention: raw behavior rows older than `rawDays`, daily aggregates
- * older than `rawDays + aggregateDays`, fetched artifacts older than 30 days (held runs excepted).
+ * older than `rawDays + aggregateDays`, fetched artifacts older than 30 days (held runs excepted),
+ * and API usage counters older than 400 days.
  * Deleted aggregates cannot change a current verdict by more than rounding (FR-029a).
  */
 export async function runRetention(sql: Db, now: Date = new Date()): Promise<RetentionReport> {
@@ -36,6 +41,7 @@ export async function runRetention(sql: Db, now: Date = new Date()): Promise<Ret
       episodesTrimmed: Number(trimmed.count ?? 0),
       aggregatesDeleted: Number(aggregates.count ?? 0),
       artifactsDeleted: 0,
+      apiUsageDeleted: 0,
       dataVersion: dv.label,
     };
   })) as RetentionReport;
@@ -48,5 +54,6 @@ export async function runRetention(sql: Db, now: Date = new Date()): Promise<Ret
     await sql`UPDATE feed_run SET artifact_path = NULL WHERE id = ${row.id}`;
     report.artifactsDeleted++;
   }
+  report.apiUsageDeleted = await createAccounts(sql, undefined, () => now).pruneUsage(API_USAGE_RETENTION_DAYS);
   return report;
 }
