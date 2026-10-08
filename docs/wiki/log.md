@@ -68,3 +68,5 @@ Operations:
 ## [2026-10-07] query | Decision: public API v1 (spec 010, B-10) → adr-public-api (new); index and adr-publication-topology link it
 
 ## [2026-10-08] query | Decision: operator admin panel (spec 011, B-16) → adr-admin-panel (new); index, adr-publication-topology and adr-public-api link it
+
+## [2026-10-08] query | Decision: a FoxTrust account is a foxauth user, one to one (for B-15) → adr-public-api, backlog B-15
