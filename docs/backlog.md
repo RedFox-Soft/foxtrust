@@ -49,7 +49,6 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 | B-13 | **IP / ASN pages and "my IP" page**: public, indexable, customer verdict only | spec | M | `foxtrust.dev/ip/1.1.1.1` shows reasons without sources |
 | B-14 | **Self-service delisting**: prove control (rDNS or WHOIS contact), file a dispute, see its state; replaces the manual email flow in `docs/dispute.md`. More important now that behavior listings ship | spec | L | A dispute filed on the site removes the reason in the next hourly delta |
 | B-15 | **Spec: site and accounts** on `foxtrust.dev`: landing, API docs, sign-in through foxauth (OIDC), a personal page to create and revoke own keys and see usage; server-rendered HTML from Elysia with a strict CSP, no front-end framework. Uses the account and key service of B-10; limits self-service keys per account. Hosts B-13 and B-14 later | spec | L | A new visitor signs in, creates a free key and gets a verdict with it, without the operator |
-| B-16 | **Spec: operator admin panel**: accounts and keys (limits, revoke), usage, feed and run health, snapshot releases and gate holds, alerts; later the dispute queue (B-14). A separate service, not published: reachable only through the tunnel behind Cloudflare Access, plus an operator role in foxauth | spec | L | The operator revokes a key and releases a held snapshot from the panel, without the CLI |
 
 ## Next: more categories (can run in parallel with stage 3)
 
@@ -85,6 +84,10 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
   constitution v5.0.0.
 - B-07 (2026-10-05): CI on every push (typecheck, ESLint with typescript-eslint, tests).
 - B-05 (2026-10-05): Telegram operator alerts (spec 004); deploy on the server pending.
+- B-16 (2026-10-08): operator admin panel (spec 011): foxauth sign-in for the group
+  `foxtrust-operators`, accounts and keys, releases of held snapshots and confirmation of held runs
+  carried out by the scheduler, pipeline overview, audit; no script, no host port
+  ([ADR](wiki/synthesis/adr-admin-panel.md)).
 - B-10 (2026-10-07): public API v1 (spec 010): `GET /v1/ip/{ip}` from the published snapshot,
   accounts and `ftk_` keys (hash only) through one service for B-15 and B-16, free tier 1,000/day
   and 5/s per key, usage counts without addresses; not deployed yet (needs B-02)

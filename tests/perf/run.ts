@@ -6,6 +6,7 @@ import { FEEDS } from "../../src/feeds/registry";
 import { runFeed } from "../../src/ingest/run";
 import { shippedConfig } from "../helpers/seed";
 import { measureAccuracyEvaluation } from "./accuracy.bench";
+import { measureAdmin } from "./admin.measure";
 import { measureApi } from "./api.bench";
 import { measureApiParity } from "./api-parity.measure";
 import { measureCategoryCap } from "./category-cap.measure";
@@ -67,6 +68,7 @@ for (const [name, fn] of [
   ["spec 006 SC-001/SC-005", measureChallenge],
   ["spec 010 SC-003", measureApiParity],
   ["spec 010 SC-004", measureApi],
+  ["spec 011 SC-005", measureAdmin],
 ] as const) {
   console.error(`measuring ${name}…`);
   measurements.push(...(await fn()));

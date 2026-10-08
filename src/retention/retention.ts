@@ -6,6 +6,8 @@ import { createDataVersion, resolveVersionAt } from "../db/versions";
 export const ARTIFACT_RETENTION_DAYS = 30;
 /** Daily API usage counters (spec 010 research R5): a year of billing and abuse history. */
 export const API_USAGE_RETENTION_DAYS = 400;
+/** Admin audit records (spec 011 research R5). */
+export const ADMIN_AUDIT_RETENTION_DAYS = 400;
 const DAY_MS = 86_400_000;
 
 export type RetentionReport = {
@@ -14,13 +16,15 @@ export type RetentionReport = {
   aggregatesDeleted: number;
   artifactsDeleted: number;
   apiUsageDeleted: number;
+  adminSessionsDeleted: number;
+  adminAuditDeleted: number;
   dataVersion: string;
 };
 
 /**
  * FR-029 and data-model.md retention: raw behavior rows older than `rawDays`, daily aggregates
  * older than `rawDays + aggregateDays`, fetched artifacts older than 30 days (held runs excepted),
- * and API usage counters older than 400 days.
+ * API usage counters and admin audit records older than 400 days, and expired admin sessions.
  * Deleted aggregates cannot change a current verdict by more than rounding (FR-029a).
  */
 export async function runRetention(sql: Db, now: Date = new Date()): Promise<RetentionReport> {
@@ -42,6 +46,8 @@ export async function runRetention(sql: Db, now: Date = new Date()): Promise<Ret
       aggregatesDeleted: Number(aggregates.count ?? 0),
       artifactsDeleted: 0,
       apiUsageDeleted: 0,
+      adminSessionsDeleted: 0,
+      adminAuditDeleted: 0,
       dataVersion: dv.label,
     };
   })) as RetentionReport;
@@ -55,5 +61,9 @@ export async function runRetention(sql: Db, now: Date = new Date()): Promise<Ret
     report.artifactsDeleted++;
   }
   report.apiUsageDeleted = await createAccounts(sql, undefined, () => now).pruneUsage(API_USAGE_RETENTION_DAYS);
+  const sessions = await sql`DELETE FROM admin_session WHERE expires_at < ${now}`;
+  report.adminSessionsDeleted = Number(sessions.count ?? 0);
+  const audits = await sql`DELETE FROM admin_audit WHERE at < ${new Date(now.getTime() - ADMIN_AUDIT_RETENTION_DAYS * DAY_MS)}`;
+  report.adminAuditDeleted = Number(audits.count ?? 0);
   return report;
 }

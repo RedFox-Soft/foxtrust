@@ -127,9 +127,39 @@ services:
       retries: 3
     logging: *logging
 
+  # Operator admin panel (specs/011-admin-panel). No `ports:` on purpose: it must not listen on a
+  # host port. The tunnel connector reaches it on this compose network (admin:8083), behind
+  # Cloudflare Access; the panel also requires a foxauth sign-in by the operator group.
+  admin:
+    build: .
+    restart: unless-stopped
+    command: ["bun", "run", "src/cli/main.ts", "admin", "serve"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://foxtrust:foxtrust@db:5432/foxtrust
+      FOXTRUST_ADMIN_URL: ${FOXTRUST_ADMIN_URL:-}
+      FOXTRUST_ADMIN_ISSUER: ${FOXTRUST_ADMIN_ISSUER:-https://auth.foxauth.dev}
+      FOXTRUST_ADMIN_CLIENT_ID: ${FOXTRUST_ADMIN_CLIENT_ID:-}
+      FOXTRUST_ADMIN_CLIENT_SECRET_FILE: /run/secrets/admin_client_secret
+      FOXTRUST_ADMIN_GROUP: ${FOXTRUST_ADMIN_GROUP:-}
+      FOXTRUST_API_FREE_DAILY: ${FOXTRUST_API_FREE_DAILY:-}
+      FOXTRUST_API_FREE_BURST: ${FOXTRUST_API_FREE_BURST:-}
+    secrets:
+      - admin_client_secret
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8083/static/admin.css || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
 secrets:
   signing_key:
     file: ${FOXTRUST_SIGNING_KEY_FILE:-./var/keys/signing.key.pem}
+  admin_client_secret:
+    file: ${FOXTRUST_ADMIN_CLIENT_SECRET_HOST_FILE:-./var/keys/admin-client-secret}
 
 volumes:
   pgdata:

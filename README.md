@@ -201,13 +201,43 @@ curl -H "Authorization: Bearer ftk_…" https://api.foxtrust.dev/v1/ip/203.0.113
   "disputeUrl": "https://foxtrust.dev/dispute" }
 ```
 
-- **Keys.** Send the key in `Authorization: Bearer` or `X-API-Key`, never in the URL (`400`). Only a hash of the secret is stored; the key is shown once. Until the admin panel (backlog B-16) exists, the operator issues keys through `src/api/accounts.ts` ([quickstart](specs/010-public-api/quickstart.md) has the one-liner).
+- **Keys.** Send the key in `Authorization: Bearer` or `X-API-Key`, never in the URL (`400`). Only a hash of the secret is stored; the key is shown once. The operator issues keys in the [admin panel](#admin-panel); self-service sign-up comes with the site (backlog B-15).
 - **Limits.** Free tier: 1,000 lookups per UTC day and 5 per second per key (`FOXTRUST_API_FREE_DAILY`, `FOXTRUST_API_FREE_BURST`; a key can have its own). Every answer carries `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`; over a limit, `429` with `Retry-After`. Invalid addresses and `503`s do not use the quota.
 - **Errors.** `{"error": {"code", "message"}}`: `invalid_ip` (400), `key_in_query` (400), `key_missing` and `key_invalid` (401), `quota_exceeded` and `rate_limited` (429), `no_data` (503, before the first snapshot). Data older than `FOXTRUST_MAX_AGE_HOURS` comes with `"stale": true`.
 - **Privacy.** Queried addresses are never stored or logged. The service keeps per key and UTC day only the counts of answered, invalid and limited lookups, for 400 days (`retention run` deletes older ones). Logs have one line per minute with counts.
 - **Freshness.** Answers are at most about an hour old (hourly deltas); the release gate applies to them as to snapshots.
 
 The response format is [schemas/api-ip-v1.schema.json](schemas/api-ip-v1.schema.json). Design: [ADR public API](docs/wiki/synthesis/adr-public-api.md).
+
+## Admin panel
+
+`foxtrust admin serve` (compose service `admin`, port 8083) is the operator's web panel:
+
+- **Accounts and API keys**: create accounts, issue keys (the secret is shown once), change limits, revoke keys, disable accounts, and see usage per key and day.
+- **Releases**: the recent snapshot releases; a release held by the release gate can be released with a note of 10–1000 characters.
+- **Feeds**: each feed's last run, staleness, and whether the active config scores it; a run held by the shrink guard can be confirmed.
+- **Overview and audit**: open alerts, held runs and releases, pending requests, and the last 100 changes with who made them.
+
+Releases and run confirmations are carried out by the scheduler within a minute: it alone holds the signing key and the feed artifacts. The panel only records the request.
+
+**Access**: two layers.
+
+- **The tunnel**: the panel has no host port; the tunnel reaches it on the compose network, behind Cloudflare Access.
+- **foxauth**: the panel itself requires a sign-in (OIDC with PKCE). Only members of the bucket group `FOXTRUST_ADMIN_GROUP` (default `foxtrust-operators`, from the `groups` claim) get in.
+
+Sessions last 8 hours and end at sign-out. Pages have no script (styles: [Beer CSS](https://www.beercss.com), MIT, served from the panel itself), and every change is a same-origin form post with a CSRF token, recorded in the audit (kept 400 days).
+
+**foxauth setup** (once):
+
+1. A user bucket "FoxTrust staff" with registration closed and TOTP required; create the operator's account in it.
+2. A project "FoxTrust Admin" assigned to that bucket, with a confidential client:
+   - redirect URI `<FOXTRUST_ADMIN_URL>/auth/callback`;
+   - post-logout URI `<FOXTRUST_ADMIN_URL>/`;
+   - scopes `openid profile email groups`;
+   - `client_secret_basic`.
+3. The bucket group `foxtrust-operators` with the operator as member.
+
+Put the client id in `FOXTRUST_ADMIN_CLIENT_ID` and the secret in the file `FOXTRUST_ADMIN_CLIENT_SECRET_HOST_FILE` (a Docker secret). Design: [ADR admin panel](docs/wiki/synthesis/adr-admin-panel.md).
 
 ## Alerts
 

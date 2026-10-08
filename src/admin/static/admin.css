@@ -1,0 +1,41 @@
+/* FoxTrust operator pages (spec 011), on top of Beer CSS (package beercss, served at /static/beercss/):
+   only what it does not cover.
+   Colours come from Beer's Material 3 theme variables, so light and dark follow the device. */
+/* Beer CSS switches to dark with a script (body.dark); the panel has no script, so its dark variables
+   (copied from beer.min.css 5.0.3, body.dark) apply through the media query instead. */
+@media (prefers-color-scheme: dark) { body:not(.light) { --primary:#cfbcff;--on-primary:#381e72;--primary-container:#4f378a;--on-primary-container:#e9ddff;--secondary:#cbc2db;--on-secondary:#332d41;--secondary-container:#4a4458;--on-secondary-container:#e8def8;--tertiary:#efb8c8;--on-tertiary:#4a2532;--tertiary-container:#633b48;--on-tertiary-container:#ffd9e3;--error:#ffb4ab;--on-error:#690005;--error-container:#93000a;--on-error-container:#ffb4ab;--background:#1c1b1e;--on-background:#e6e1e6;--surface:#141316;--on-surface:#e6e1e6;--surface-variant:#49454e;--on-surface-variant:#cac4cf;--outline:#948f99;--outline-variant:#49454e;--shadow:#000;--scrim:#000;--inverse-surface:#e6e1e6;--inverse-on-surface:#313033;--inverse-primary:#6750a4;--surface-dim:#141316;--surface-bright:#3a383c;--surface-container-lowest:#0f0e11;--surface-container-low:#1c1b1e;--surface-container:#201f22;--surface-container-high:#2b292d;--surface-container-highest:#363438;--image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4AWL6//+/FAAAAP//qSv5QwAAAAZJREFUAwAJIAMaJWjIvQAAAABJRU5ErkJggg==) } }
+
+/* FoxTrust accent instead of Beer's default purple. */
+body { --primary: #b4461b; --on-primary: #ffffff; --primary-container: #ffdbcf; --on-primary-container: #3a0b00; }
+@media (prefers-color-scheme: dark) { body:not(.light) { --primary: #ffb59c; --on-primary: #5c1900; --primary-container: #822c05; --on-primary-container: #ffdbcf; } }
+
+/* Beer's Rounded and Sharp icon families are not served; point them at the Outlined file so a page
+   never fetches a missing font. (The server removes the CDN fallbacks from beer.min.css.) */
+@font-face { font-family: "Material Symbols Rounded"; font-style: normal; font-weight: 400; font-display: swap; src: url(beercss/material-symbols-outlined.woff2) format("woff2"); }
+@font-face { font-family: "Material Symbols Sharp"; font-style: normal; font-weight: 400; font-display: swap; src: url(beercss/material-symbols-outlined.woff2) format("woff2"); }
+
+header nav.wrap { flex-wrap: wrap; row-gap: 4px; }
+header .brand { margin: 12px 16px; }
+header form.inline { margin: 0; }
+main.responsive { padding-bottom: 32px; }
+main h1 { font-size: 1.6rem; line-height: 2rem; margin: 16px 0 12px; }
+main h2 { font-size: 1.15rem; line-height: 1.6rem; margin: 24px 0 8px; }
+article.notice, article.error { margin: 12px 0; }
+.muted { color: var(--on-surface-variant); font-size: .9rem; }
+main a:not(.button) { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.error-text { color: var(--error); }
+
+table td, table th { vertical-align: top; }
+table.stripes tbody tr:nth-child(odd) { background: var(--surface-container-low); }
+table.stripes tbody tr:nth-child(even) { background: transparent; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .92em; }
+.secret { display: block; margin-top: 8px; padding: 12px; border: 2px dashed var(--primary); border-radius: 8px; word-break: break-all; user-select: all; }
+
+.status-held, .status-failed, .status-requested { font-weight: 600; color: var(--tertiary); }
+.status-published, .status-done, .status-applied { color: var(--primary); }
+.status-rejected, .status-revoked, .status-disabled { color: var(--error); }
+
+form.stack { display: grid; gap: 4px; max-width: 34rem; }
+form.inline { display: inline; }
+nav.pager { margin: 12px 0; }

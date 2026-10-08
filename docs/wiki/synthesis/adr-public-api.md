@@ -4,7 +4,7 @@ kind: decision
 title: "ADR: public API v1 from the published snapshot, with keys and per-key limits"
 tags: [distribution, architecture]
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
 sources: []
 status: accepted
 decided: 2026-10-07
@@ -26,7 +26,7 @@ Decision for backlog item B-10 (spec 010). It adds a fourth container to the sta
 | Key changes | Active keys held in memory, reloaded every 30 s (one query); unknown ids get `401` without a query | Revocation and new keys take effect within a minute; lookups never wait for the database |
 | Limits | Per key: a token bucket (free tier 5/s) and a UTC-day quota (1,000), both configurable and overridable per key. Counted in memory per instance, flushed every 10 s; today's counts are read back at start | No write per lookup; a restart does not refill a quota. Only answered lookups use the quota |
 | Usage and logs | `api_usage_daily(key_id, day, answered, invalid, limited)`, kept 400 days; no per-request log line, one summary per minute | The queried addresses are customers' visitors' addresses: Principle IV forbids collecting them without opt-in |
-| Accounts | Every key belongs to an account. `src/api/accounts.ts` is the only code that touches the three tables | The site (B-15) and the admin panel (B-16) build on one service |
+| Accounts | Every key belongs to an account. `src/api/accounts.ts` is the only code that touches the three tables | The site (B-15) and the admin panel (B-16, [[adr-admin-panel]]) build on one service |
 | No key CLI | The only new command is `api serve`. Account and key commands were dropped on 2026-10-07 | The admin panel and the site come next; a CLI would be a third interface to maintain. Until then, keys are issued with a one-off call to the service |
 
 ## Measurements (2026-10-07, fixture data)

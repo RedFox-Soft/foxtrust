@@ -57,6 +57,7 @@ When this file exceeds ~300 lines or the wiki passes ~150 pages, shard into `wik
 - [[candidate-data-sources]] — sources not yet ingested, by layer (network, anonymization, abuse, first-party); residential proxies out of scope
 - [[adr-challenge-page]] — ADR: built-in challenge page on the protected host, SHA-256 proof-of-work by level, /64 passes, no-JavaScript path off by default
 - [[adr-returning-device]] — ADR: returning-device token; zero-cost challenge after an address change, bot verdict still runs, cap 20 addresses/24 h, revocation in a hashed per-instance state file
+- [[adr-admin-panel]] — ADR: operator panel behind foxauth OIDC (group `foxtrust-operators`, staff bucket with TOTP), no script, CSRF + audit; releases and held runs carried out by the scheduler
 - [[adr-public-api]] — ADR: public API v1 answers from the published snapshot; `ftk_` keys stored as hashes, 30 s key reload, per-key burst and UTC-day quota in memory, usage counts without addresses
 - [[adr-behavior-evidence]] — ADR: press-and-hold step for every challenged visitor; eleven behavior.* codes (path, press, release, key auto-repeat, untrusted events), scripted holds get no pass, the owner's mouse, phone and keyboard holds pass
 - [[adr-bot-verdict]] — ADR: bot verdict on the challenge page; probe + header cross-checks + optional JA4, log-odds over the address prior, observe by default, recorded labelled set

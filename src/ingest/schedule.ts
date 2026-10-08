@@ -1,3 +1,4 @@
+import { runOperatorRequests } from "../admin/requests";
 import { feedDeriver, releaseDeriver } from "../alerts/derive";
 import { createAlertTick } from "../alerts/reconcile";
 import { createRedactor, errorText, type Redact } from "../alerts/redact";
@@ -19,6 +20,8 @@ export const FULL_SNAPSHOT_SCHEDULE = "50 4 * * *";
 export const DELTA_SNAPSHOT_SCHEDULE = "50 * * * *";
 /** Spec 004 research R1: operator-alert reconcile tick. */
 export const ALERT_SCHEDULE = "* * * * *";
+/** Requests from the admin panel (spec 011): checked every minute. */
+export const OPERATOR_REQUEST_SCHEDULE = "* * * * *";
 
 function expandField(field: string, min: number, max: number): Set<number> {
   const out = new Set<number>();
@@ -218,6 +221,18 @@ export function startScheduler(
       ),
     );
   }
+  // Requests from the admin panel (spec 011): releases need the signing key, so without it only run
+  // confirmations are carried out and release requests wait.
+  jobs.push(
+    Bun.cron(
+      OPERATOR_REQUEST_SCHEDULE,
+      () =>
+        runJob("operator-requests", "operator requests", async () => {
+          await runOperatorRequests({ sql, release: release ?? null, log: (line) => log(`${stamp()} ${line}`) });
+        }, deps),
+      { tz: "UTC" },
+    ),
+  );
   if (alerts) {
     const tick = createAlertTick({ sql, settings: alerts, startedAt: new Date(), log, derivers: [feedDeriver(feeds), releaseDeriver] });
     jobs.push(Bun.cron(ALERT_SCHEDULE, tick, { tz: "UTC" }));

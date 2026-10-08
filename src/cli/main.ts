@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { FEEDS } from "../feeds/registry";
 import { checkSources, disabledFeeds } from "../ingest/schedule";
+import { adminServe } from "./commands/admin";
 import { alertsList, alertsTest } from "./commands/alerts";
 import { apiServe } from "./commands/api";
 import { botEval, botRecord } from "./commands/bot";
@@ -42,6 +43,7 @@ export const COMMANDS: Record<string, Command> = {
   "snapshot retention": snapshotRetention,
   "verify serve": verifyServe,
   "api serve": apiServe,
+  "admin serve": adminServe,
   "bot record": botRecord,
   "bot eval": botEval,
   "policy check": policyCheck,

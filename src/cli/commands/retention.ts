@@ -14,6 +14,8 @@ export async function retentionRun(args: string[], ctx: Context): Promise<number
       printLine(`daily aggregates deleted:  ${report.aggregatesDeleted}`);
       printLine(`artifacts deleted:         ${report.artifactsDeleted}`);
       printLine(`API usage days deleted:    ${report.apiUsageDeleted}`);
+      printLine(`admin sessions expired:    ${report.adminSessionsDeleted}`);
+      printLine(`admin audit rows deleted:  ${report.adminAuditDeleted}`);
       printLine(`data version:              ${report.dataVersion}`);
     }
     return EXIT.ok;
