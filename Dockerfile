@@ -1,6 +1,6 @@
 # FoxTrust image. By default it runs the scheduler: feed ingestion on Bun.cron, nightly retention
 # and, with a signing key, the snapshot jobs (`foxtrust schedule`). docker-compose.yml also runs
-# it as `publication serve` and `verify serve`. Docker keeps it running (restart policy), and
+# it as `publication serve`, `verify serve`, `api serve`, `admin serve` and `site serve`. Docker keeps it running (restart policy), and
 # the healthcheck below reports a hung scheduler through the heartbeat file it rewrites every minute.
 FROM oven/bun:1.4.2-alpine
 
@@ -15,6 +15,8 @@ COPY db ./db
 COPY config ./config
 # Licence records are the input of the ingestion licence gate (FR-014). Rebuild after editing them.
 COPY docs/wiki/entities ./docs/wiki/entities
+# The site renders the dispute page from this file (spec 012 FR-002); its URL is in every manifest.
+COPY docs/dispute.md ./docs/dispute.md
 
 # New named volumes take the owner of these directories, so the scheduler can write to them.
 RUN mkdir -p /app/var/publication /app/var/snapshots /app/var/verify && chown -R bun:bun /app/var

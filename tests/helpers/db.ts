@@ -51,5 +51,5 @@ export function withTestDb(): TestDb {
 export async function resetData(sql: SQL): Promise<void> {
   await sql.unsafe(`TRUNCATE behavior_daily, behavior_sighting, category_interval, network_interval,
     data_version, feed_run, feed, scoring_config, alert_problem, api_usage_daily, api_key, account,
-    admin_session, operator_request, admin_audit RESTART IDENTITY CASCADE`);
+    admin_session, operator_request, admin_audit, site_session RESTART IDENTITY CASCADE`);
 }

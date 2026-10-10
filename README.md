@@ -209,6 +209,15 @@ curl -H "Authorization: Bearer ftk_…" https://api.foxtrust.dev/v1/ip/203.0.113
 
 The response format is [schemas/api-ip-v1.schema.json](schemas/api-ip-v1.schema.json). Design: [ADR public API](docs/wiki/synthesis/adr-public-api.md).
 
+## Site
+
+`foxtrust site serve` (compose service `site`, port 8084) is the public site at the root of the domain:
+
+- **`/dispute`**: [docs/dispute.md](docs/dispute.md) as a page. Every snapshot manifest links to it, so the address never changes.
+- **`/`, `/docs/api`, `/docs/snapshots`, `/privacy`, `/terms`**: Markdown files in `src/site/content/`, filled with the configured API and publication hosts, free-tier limits and trusted keys (`FOXTRUST_SITE_API_URL`, `FOXTRUST_SITE_PUBLICATION_URL`, `FOXTRUST_TRUSTED_KEYS`, `FOXTRUST_API_FREE_*`).
+
+The pages are rendered once at start with Bun's built-in Markdown renderer, carry no script, and need neither the database nor foxauth. Without sign-in settings the site serves only these public pages. `FOXTRUST_SITE_URL` is the site's own address.
+
 ## Admin panel
 
 `foxtrust admin serve` (compose service `admin`, port 8083) is the operator's web panel:

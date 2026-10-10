@@ -16,6 +16,7 @@ import { policyCheck } from "./commands/policy";
 import { publicationServe } from "./commands/publication";
 import { retentionRun } from "./commands/retention";
 import { scheduleCommand } from "./commands/schedule";
+import { siteServe } from "./commands/site";
 import { snapshotAt, snapshotBuild, snapshotList, snapshotPublish, snapshotRetention, snapshotVerify } from "./commands/snapshot";
 import { verifyServe } from "./commands/verify";
 import { EXIT, takeFlag, UsageError, warn, type Command } from "./util";
@@ -44,6 +45,7 @@ export const COMMANDS: Record<string, Command> = {
   "verify serve": verifyServe,
   "api serve": apiServe,
   "admin serve": adminServe,
+  "site serve": siteServe,
   "bot record": botRecord,
   "bot eval": botEval,
   "policy check": policyCheck,

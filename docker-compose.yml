@@ -127,6 +127,27 @@ services:
       retries: 3
     logging: *logging
 
+  # Public site (specs/012-public-site): landing, the permanent /dispute page and the docs. Without
+  # FOXTRUST_SITE_CLIENT_ID it serves the public pages only and needs neither the database nor
+  # foxauth. No `ports:`: publish it through the proxy as the root of the domain (foxtrust.dev).
+  site:
+    build: .
+    restart: unless-stopped
+    command: ["bun", "run", "src/cli/main.ts", "site", "serve"]
+    environment:
+      FOXTRUST_SITE_URL: ${FOXTRUST_SITE_URL:-http://127.0.0.1:8084}
+      FOXTRUST_SITE_API_URL: ${FOXTRUST_SITE_API_URL:-}
+      FOXTRUST_SITE_PUBLICATION_URL: ${FOXTRUST_SITE_PUBLICATION_URL:-}
+      FOXTRUST_TRUSTED_KEYS: ${FOXTRUST_TRUSTED_KEYS:-}
+      FOXTRUST_API_FREE_DAILY: ${FOXTRUST_API_FREE_DAILY:-}
+      FOXTRUST_API_FREE_BURST: ${FOXTRUST_API_FREE_BURST:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8084/dispute || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
   # Operator admin panel (specs/011-admin-panel). No `ports:` on purpose: it must not listen on a
   # host port. The tunnel connector reaches it on this compose network (admin:8083), behind
   # Cloudflare Access; the panel also requires a foxauth sign-in by the operator group.
