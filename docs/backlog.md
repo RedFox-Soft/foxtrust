@@ -112,4 +112,6 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
   verdict level, `/32` / `/64` passes, no-JavaScript path off by default
   ([ADR](wiki/synthesis/adr-challenge-page.md)); timing on a phone and in Tor Browser "Safer" pending.
 - B-22 (2026-10-05): `cloud` category from public-cloud ASNs (config/cloud/asns.csv) and ipverse
-  prefixes (spec 005); activate config 2026-10-06.1 on the server after `eval --compare`.
+  prefixes (spec 005). Config 2026-10-06.1 active on the server since 2026-10-10 (dv963), after
+  `eval --compare` on production data: 0 known-good false positives at `medium` and `high` in both
+  configs, ΔFP and ΔFN 0, no address changed level.
