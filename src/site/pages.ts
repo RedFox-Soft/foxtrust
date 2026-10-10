@@ -56,9 +56,13 @@ ${opts.heading === false ? "" : `<h1>${escape(opts.title)}</h1>\n`}${opts.body}
 `;
 }
 
-/** A text page rendered from Markdown; its own `# ` heading is the page heading. */
+/**
+ * A text page rendered from Markdown; its own `# ` heading is the page heading. The `email_off`
+ * markers keep Cloudflare's email obfuscation away: it would replace the dispute mailbox with
+ * "[email protected]" and a decoding script that the CSP blocks.
+ */
 export const textPage = (page: Page, visitor: Visitor) =>
-  layout({ title: page.title, body: `<article class="prose">${page.html}</article>`, visitor, index: true, heading: false });
+  layout({ title: page.title, body: `<article class="prose"><!--email_off-->${page.html}<!--/email_off--></article>`, visitor, index: true, heading: false });
 
 export const messagePage = (title: string, text: string, visitor: Visitor, links = true) =>
   layout({
