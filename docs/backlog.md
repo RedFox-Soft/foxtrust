@@ -87,7 +87,7 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 - B-01 (2026-10-10): database backups. A nightly `pg_dump` at 03:30 UTC, restic at 04:00 UTC to the R2
   bucket `geekom-backup` (encrypted; 7 daily, 4 weekly, 6 monthly); secrets in Infisical. A restore
   on another machine matched production. Setup and decision: `homeserver` repo, wiki `adr-backups`.
-  Add `var/publication` to the backed-up paths with B-02.
+  The snapshot archive is not backed up: past verdicts are rebuilt from the database (2026-10-10).
 - B-00 (2026-10-05): behavior feeds ship without their source; `ship: yes|no` on feed pages,
   constitution v5.0.0.
 - B-07 (2026-10-05): CI on every push (typecheck, ESLint with typescript-eslint, tests).
