@@ -1,16 +1,21 @@
 import type { SQL } from "bun";
 import { Elysia } from "elysia";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { NotFoundError, ValidationError, type Accounts } from "../api/accounts";
 import { audit, latestAudit } from "./audit";
 import { feeds, overview, PAGE_SIZE, releaseOf, releases, runOf } from "./data";
-import { OidcError, type Oidc } from "./oidc";
+import { OidcError, type Oidc } from "../web/oidc";
 import {
   accountPage, accountsPage, auditPage, confirmPage, escape, feedsPage, field, keyPage, keysPage, layout, messagePage, overviewPage, pageHeaders,
   releasesPage, secretPage, type PageSession,
 } from "./pages";
 import { listRequests, requestRelease, requestRunConfirm, RequestError } from "./requests";
-import { cookieNames, createSessions, equalText, readCookie, SESSION_HOURS, type Session } from "./session";
+import { MAX_FORM, postAllowed, safeReturn } from "../web/forms";
+import { cookieNames, createSessions, readCookie, type Session } from "../web/session";
+import { createStatic } from "../web/static";
+
+export { safeReturn } from "../web/forms";
+export { beerStylesheet } from "../web/static";
 
 /**
  * The admin panel (spec 011 contracts/admin-http.md). Every route needs an operator session except
@@ -29,45 +34,20 @@ export type AdminDeps = {
   log?: (line: string) => void;
 };
 
-/** Beer CSS (package `beercss`, MIT): its stylesheet and icon fonts are served from this origin. */
-const BEER_DIR = dirname(Bun.resolveSync("beercss/dist/cdn/beer.min.css", import.meta.dir));
-const BEER_CDN_FALLBACK = /,url\(https:\/\/cdn\.jsdelivr\.net\/[^)]*\) format\("woff2"\)/g;
-
-/**
- * Beer's stylesheet without the CDN fallbacks of its @font-face rules: the panel's CSP allows fonts
- * from its own origin only, and the local font is listed first anyway.
- */
-export async function beerStylesheet(): Promise<string> {
-  const css = (await Bun.file(join(BEER_DIR, "beer.min.css")).text()).replace(BEER_CDN_FALLBACK, "");
-  if (/url\(https?:/.test(css)) throw new Error("beercss: the stylesheet still refers to another origin; check BEER_CDN_FALLBACK after an update");
-  return css;
-}
-
-/** Static files, by a fixed list: the panel's stylesheet, Beer CSS and its icon fonts. */
-const STATIC: Record<string, { path: string; type: string }> = {
-  "/static/admin.css": { path: join(import.meta.dir, "static", "admin.css"), type: "text/css; charset=utf-8" },
-  "/static/beercss/material-symbols-outlined.woff2": { path: join(BEER_DIR, "material-symbols-outlined.woff2"), type: "font/woff2" },
-  "/static/beercss/material-symbols-subset.woff2": { path: join(BEER_DIR, "material-symbols-subset.woff2"), type: "font/woff2" },
-};
-const MAX_FORM = 16_384;
+/** Operator sessions last 8 hours (spec 011 research R2). */
+const SESSION_HOURS = 8;
 
 type Ctx = { request: Request; url: URL; params: string[]; session: Session; page: PageSession; form: URLSearchParams };
 type Handler = (ctx: Ctx) => Promise<Response> | Response;
-
-/** A local path to return to after sign-in, never another site. */
-export function safeReturn(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\") || /[\r\n]/.test(value)) return "/";
-  return value;
-}
 
 export function createAdminApp(deps: AdminDeps) {
   const clock = deps.clock ?? (() => new Date());
   const log = deps.log ?? (() => {});
   const origin = new URL(deps.url).origin;
-  const names = cookieNames(deps.url.startsWith("https://"));
-  const sessions = createSessions(deps.sql, clock);
+  const names = cookieNames(deps.url.startsWith("https://"), "foxtrust_admin");
+  const sessions = createSessions(deps.sql, { table: "admin_session", hours: SESSION_HOURS }, clock);
   const groupKey = deps.group.toLowerCase();
-  const beerCss = beerStylesheet();
+  const assets = createStatic({ "/static/admin.css": join(import.meta.dir, "static", "admin.css") });
 
   const html = (status: number, body: string, headers: Headers | Record<string, string> = {}) => {
     const h = new Headers(pageHeaders());
@@ -310,21 +290,11 @@ export function createAdminApp(deps: AdminDeps) {
     return redirect(flow.returnTo, 303, headers);
   }
 
-  /** Same origin and the session's CSRF token, for every change. */
-  function postAllowed(request: Request, session: Session, form: URLSearchParams): boolean {
-    if (request.headers.get("origin") !== origin) return false;
-    const site = request.headers.get("sec-fetch-site");
-    if (site !== null && site !== "same-origin") return false;
-    return equalText(form.get("csrf") ?? "", session.csrf);
-  }
-
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
-    const staticHeaders = (type: string) => ({ "Content-Type": type, "Cache-Control": "max-age=86400", "X-Content-Type-Options": "nosniff" });
-    if (request.method === "GET" && path === "/static/beercss/beer.min.css") return new Response(await beerCss, { headers: staticHeaders("text/css; charset=utf-8") });
-    const asset = request.method === "GET" ? STATIC[path] : undefined;
-    if (asset) return new Response(Bun.file(asset.path), { headers: staticHeaders(asset.type) });
+    const asset = request.method === "GET" ? await assets.serve(path) : null;
+    if (asset) return asset;
     if (request.method === "GET" && path === "/auth/login") return login(url);
     if (request.method === "GET" && path === "/auth/callback") return callback(request, url);
 
@@ -343,7 +313,7 @@ export function createAdminApp(deps: AdminDeps) {
     const body = await request.text();
     if (body.length > MAX_FORM) return html(413, messagePage("Too large", "The form is too large.", false));
     const form = new URLSearchParams(body);
-    if (!postAllowed(request, session, form)) {
+    if (!postAllowed(request, origin, session.csrf, form)) {
       log("admin: refused a form post (origin or CSRF token)");
       return html(403, messagePage("Refused", "This request did not come from a page of this panel.", false));
     }

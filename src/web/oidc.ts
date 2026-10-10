@@ -1,11 +1,12 @@
 import { createPublicKey, verify, type KeyObject } from "node:crypto";
 
 /**
- * OIDC sign-in with foxauth for the admin panel (spec 011 research R1): authorization code flow
- * with PKCE (S256), a confidential client (`client_secret_basic`), and the ID token checks of OIDC
- * Core 3.1.3.7 plus RFC 9207 (`iss` in the authorization response). No dependency: `node:crypto`
- * verifies RS256 signatures. Groups come from the `groups` claim, or from userinfo when foxauth
- * sends a distributed claim (above 200 groups).
+ * OIDC sign-in with foxauth for the admin panel and the site (spec 011 research R1, spec 012 R1):
+ * authorization code flow with PKCE (S256), a confidential client (`client_secret_basic`), and the
+ * ID token checks of OIDC Core 3.1.3.7 plus RFC 9207 (`iss` in the authorization response). No
+ * dependency: `node:crypto` verifies RS256 signatures. Groups come from the `groups` claim, or from
+ * userinfo when foxauth sends a distributed claim (above 200 groups). Email and `email_verified`
+ * come from the ID token, or from userinfo when the token lacks them.
  */
 
 /** A failed sign-in. `reason` is for the operator log; the visitor only sees "sign-in failed". */
@@ -28,7 +29,7 @@ export type Discovery = {
 };
 
 export type Flow = { state: string; nonce: string; verifier: string };
-export type SignedIn = { subject: string; name: string; groups: string[]; idToken: string };
+export type SignedIn = { subject: string; name: string; email: string; emailVerified: boolean; groups: string[]; idToken: string };
 
 const SKEW_S = 60;
 const RETRY_MS = 30_000;
@@ -133,6 +134,17 @@ export function createOidc(opts: {
     return claims;
   }
 
+  /** Email and its verification: from the ID token, else from userinfo; an unreadable userinfo means none. */
+  async function emailOf(claims: Record<string, unknown>, accessToken: string | null, d: Discovery): Promise<{ email: string; emailVerified: boolean }> {
+    let source = claims;
+    if (typeof claims.email !== "string" && accessToken && d.userinfo_endpoint) {
+      const info = await getJson(d.userinfo_endpoint, { headers: { Authorization: `Bearer ${accessToken}` } }).catch(() => null);
+      if (info && (info.sub === undefined || info.sub === claims.sub)) source = info;
+    }
+    const email = typeof source.email === "string" ? source.email.trim().slice(0, 320) : "";
+    return { email, emailVerified: email !== "" && source.email_verified === true };
+  }
+
   async function groupsOf(claims: Record<string, unknown>, accessToken: string | null, d: Discovery): Promise<string[]> {
     if (Array.isArray(claims.groups)) return claims.groups.filter((g): g is string => typeof g === "string");
     const names = claims._claim_names as Record<string, unknown> | undefined;
@@ -187,11 +199,15 @@ export function createOidc(opts: {
       }
       if (typeof tokens.id_token !== "string") throw new OidcError("no ID token");
       const claims = await verifyIdToken(tokens.id_token, flow.nonce, d);
-      const groups = await groupsOf(claims, typeof tokens.access_token === "string" ? tokens.access_token : null, d);
+      const accessToken = typeof tokens.access_token === "string" ? tokens.access_token : null;
+      const groups = await groupsOf(claims, accessToken, d);
+      const { email, emailVerified } = await emailOf(claims, accessToken, d);
       const pick = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : null);
       return {
         subject: claims.sub as string,
-        name: pick(claims.name) ?? pick(claims.preferred_username) ?? pick(claims.email) ?? (claims.sub as string).slice(0, 200),
+        name: pick(claims.name) ?? pick(claims.preferred_username) ?? pick(email) ?? (claims.sub as string).slice(0, 200),
+        email,
+        emailVerified,
         groups,
         idToken: tokens.id_token,
       };

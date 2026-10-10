@@ -1,6 +1,6 @@
 import { SQL } from "bun";
 import { AdminConfigError, readAdminConfig } from "../../admin/config";
-import { createOidc, OidcConfigError } from "../../admin/oidc";
+import { createOidc, OidcConfigError } from "../../web/oidc";
 import { startAdminServer } from "../../admin/server";
 import { createAccounts } from "../../api/accounts";
 import { EXIT, printLine, rejectUnknown, UsageError, warn, type Context } from "../util";

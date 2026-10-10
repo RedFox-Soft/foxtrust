@@ -1,5 +1,5 @@
 import type { SQL } from "bun";
-import { createOidc } from "../../src/admin/oidc";
+import { createOidc } from "../../src/web/oidc";
 import { startAdminServer } from "../../src/admin/server";
 import { createAccounts, FREE_TIER, type Accounts } from "../../src/api/accounts";
 import type { FakeOidc, FakeUser } from "./oidc";
@@ -47,7 +47,7 @@ function keep(jar: Map<string, string>, res: Response) {
   }
 }
 
-export function browser(admin: TestAdmin, jar = new Map<string, string>()): Browser {
+export function browser(admin: { url: string }, jar = new Map<string, string>()): Browser {
   const cookieHeader = () => [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
   const b: Browser = {
     cookies: jar,

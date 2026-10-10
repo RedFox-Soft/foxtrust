@@ -2,6 +2,7 @@ import type { Account, KeyInfo, UsageDay } from "../api/accounts";
 import type { AuditRecord } from "./audit";
 import type { FeedView, Overview, ReleaseView, RunView } from "./data";
 import type { OperatorRequest } from "./requests";
+import { confirmBody, csrfField as csrfInput, escape, field, secretBody } from "../web/html";
 
 /**
  * Server-rendered pages of the admin panel (spec 011 research R3): no script at all, every value
@@ -10,24 +11,7 @@ import type { OperatorRequest } from "./requests";
  * script: the theme follows the device, and field labels float through `placeholder=" "`.
  */
 
-export const CSP =
-  "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
-
-export function pageHeaders(extra: Record<string, string> = {}): Record<string, string> {
-  return {
-    "Content-Type": "text/html; charset=utf-8",
-    "Content-Security-Policy": CSP,
-    "X-Frame-Options": "DENY",
-    "Referrer-Policy": "no-referrer",
-    "Cache-Control": "no-store",
-    "X-Content-Type-Options": "nosniff",
-    ...extra,
-  };
-}
-
-export function escape(value: string | number | null | undefined): string {
-  return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-}
+export { CSP, escape, field, pageHeaders } from "../web/html";
 
 const when = (d: Date | null | undefined) => (d ? `${new Date(d).toISOString().slice(0, 16).replace("T", " ")} UTC` : "—");
 const age = (d: Date, now: Date) => {
@@ -42,10 +26,7 @@ const NAV = [
   ["/releases", "Releases", "inventory_2"], ["/feeds", "Feeds", "rss_feed"], ["/audit", "Audit", "history"],
 ] as const;
 
-export const csrfField = (s: PageSession) => `<input type="hidden" name="csrf" value="${escape(s.csrf)}">`;
-
-/** A Beer CSS outlined field; the control needs `placeholder=" "` so the label floats without script. */
-export const field = (label: string, control: string) => `<div class="field label border">${control}<label>${escape(label)}</label></div>`;
+export const csrfField = (s: PageSession) => csrfInput(s.csrf);
 
 export function layout(opts: { title: string; session: PageSession | null; body: string; current?: string; notice?: string; error?: string }): string {
   const nav = opts.session
@@ -95,13 +76,7 @@ const pager = (path: string, page: number, full: boolean) =>
 export function confirmPage(
   s: PageSession, opts: { title: string; text: string; action: string; button: string; danger?: boolean; fields?: string; error?: string; cancel?: string },
 ): string {
-  return layout({
-    title: opts.title, session: s, ...(opts.error ? { error: opts.error } : {}),
-    body: `<article class="${opts.danger ? "error-container" : "secondary-container"}"><p>${escape(opts.text)}</p>
-<form method="post" action="${escape(opts.action)}" class="stack">${csrfField(s)}${opts.fields ?? ""}
-<nav><button type="submit"${opts.danger ? ' class="error"' : ""}>${escape(opts.button)}</button><a class="button border" href="${escape(opts.cancel ?? "/")}">Cancel</a></nav>
-</form></article>`,
-  });
+  return layout({ title: opts.title, session: s, ...(opts.error ? { error: opts.error } : {}), body: confirmBody(s.csrf, opts) });
 }
 
 const requestLine = (r: OperatorRequest, now: Date) =>
@@ -164,8 +139,7 @@ ${field("Burst per second (empty: tier default)", `<input type="number" name="bu
 export function secretPage(s: PageSession, key: string, info: KeyInfo): string {
   return layout({
     title: "New API key", session: s, current: "/keys",
-    body: `<article class="tertiary-container"><p><i>warning</i> Copy this key now. It is shown only once; FoxTrust keeps only a hash of it.</p>
-<code class="secret">${escape(key)}</code></article>
+    body: `${secretBody(key)}
 <p><a href="/keys/${escape(info.id)}">Key ${escape(info.display)}</a> · <a href="/accounts/${escape(info.accountId)}">Account</a></p>`,
   });
 }
