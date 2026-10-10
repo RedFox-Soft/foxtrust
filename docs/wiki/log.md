@@ -70,3 +70,5 @@ Operations:
 ## [2026-10-08] query | Decision: operator admin panel (spec 011, B-16) → adr-admin-panel (new); index, adr-publication-topology and adr-public-api link it
 
 ## [2026-10-08] query | Decision: a FoxTrust account is a foxauth user, one to one (for B-15) → adr-public-api, backlog B-15
+
+## [2026-10-10] query | Decision: self-registration only, no name or email stored (spec 012, B-15) → adr-public-api, backlog B-15
