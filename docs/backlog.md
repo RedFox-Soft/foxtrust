@@ -10,7 +10,7 @@ Last reviewed: 2026-10-06.
 
 - **Built:** ingestion of 8 licence-checked feeds, explainable internal lookup, signed MMDB
   snapshots of the customer verdict, `/verify` forward-auth, accuracy measures (specs 001–003).
-- **Running:** ingestion only, on the home server. No signing key yet, so nothing is published.
+- **Running:** ingestion, signed snapshot publication (`data.foxtrust.dev`) and the public site (`foxtrust.dev`) on the home server.
 - **Decided 2026-10-05:** behavior feeds (Spamhaus DROP, Feodo Tracker, blocklist.de) go to
   customers without their source ([ADR](wiki/synthesis/adr-ship-behavior-feeds-unnamed.md),
   constitution v5.0.0). Done in B-00.
@@ -34,8 +34,6 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 
 | ID | Item | Kind | Size | Done when |
 |----|------|------|------|-----------|
-| B-02 | **Signing key and publication** on `foxtrust.dev`: `keys generate`, `publication` service behind the tunnel, `FOXTRUST_DISPUTE_URL` set | ops | S | `https://…/v1/manifest.json` is public and `snapshot verify` passes on a downloaded full file |
-| B-03 | **Public dispute page and mailbox**: serve `docs/dispute.md` as HTML; `disputes@foxtrust.dev` delivers to you | ops | S | A test email arrives; the manifest links to the live page |
 | B-04 | **Dogfood `/verify`** in front of one of your own services (Traefik `forwardAuth`), policy in log-only mode first | ops | S | A week of `X-FoxTrust-Action` headers reviewed; no false blocks of your own traffic |
 | B-06 | **External uptime check** of the publication and of manifest age (stale > 26 h) | ops | S | Stopping the scheduler raises an alert the next day |
 
@@ -79,6 +77,13 @@ Sizes: **S** ≤ 1 day, **M** ≤ 1 week, **L** a spec of several weeks.
 ## Done
 
 - Specs 001 (core lookup), 002 (snapshot distribution), 003 (accuracy measures).
+- B-02 (2026-10-10): signed snapshots are public at `https://data.foxtrust.dev/v1/`. Signing key
+  731e0302 (private key in Infisical and on the server only), first full `f20261010` (20.5 MB, 0
+  known-good false positives); `snapshot verify` passes on the downloaded file. Scheduler builds
+  the full at 04:50 UTC and deltas hourly.
+- B-03 (2026-10-10): the dispute page is live at its permanent address `https://foxtrust.dev/dispute`
+  (spec 012 US1), and `disputes@foxtrust.dev` receives mail (Cloudflare Email Routing; its email
+  obfuscation is off and the pages carry `email_off` markers).
 - B-01 (2026-10-10): database backups. A nightly `pg_dump` at 03:30 UTC, restic at 04:00 UTC to the R2
   bucket `geekom-backup` (encrypted; 7 daily, 4 weekly, 6 monthly); secrets in Infisical. A restore
   on another machine matched production. Setup and decision: `homeserver` repo, wiki `adr-backups`.
